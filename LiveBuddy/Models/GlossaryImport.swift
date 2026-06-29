@@ -169,13 +169,14 @@ struct GlossaryImportParser {
         options: GlossaryImportOptions
     ) throws -> GlossaryImportResult {
         guard data.count <= maxDataBytes else { throw GlossaryImportError.fileTooLarge }
+        try Task.checkCancellation()
         let ext = URL(fileURLWithPath: fileName).pathExtension.lowercased()
         let candidates: [GlossaryImportCandidate]
         switch ext {
         case "tsv", "txt":
-            candidates = parseTSV(data: data)
+            candidates = try parseTSV(data: data)
         case "csv":
-            candidates = parseCSV(data: data)
+            candidates = try parseCSV(data: data)
         case "tbx", "xml":
             candidates = try parseTBX(data: data, options: options)
         case "zip":
@@ -184,12 +185,12 @@ struct GlossaryImportParser {
             if looksLikeXML(data) {
                 candidates = try parseTBX(data: data, options: options)
             } else if looksLikeCSV(data) {
-                candidates = parseCSV(data: data)
+                candidates = try parseCSV(data: data)
             } else {
                 throw GlossaryImportError.unsupportedFormat(fileName)
             }
         }
-        return buildResult(
+        return try buildResult(
             from: candidates,
             sourceName: sourceName,
             existingEntries: existingEntries,
@@ -207,32 +208,40 @@ struct GlossaryImportParser {
         if fileURL.pathExtension.lowercased() == "zip" {
             return try parseZIP(fileURL: fileURL, sourceName: sourceName, existingEntries: existingEntries, options: options)
         }
+        try Task.checkCancellation()
         let data = try Data(contentsOf: fileURL)
+        try Task.checkCancellation()
         return try parse(data: data, fileName: fileName, sourceName: sourceName, existingEntries: existingEntries, options: options)
     }
 
-    private func parseTSV(data: Data) -> [GlossaryImportCandidate] {
+    private func parseTSV(data: Data) throws -> [GlossaryImportCandidate] {
+        try Task.checkCancellation()
         let text = String(decoding: data, as: UTF8.self)
-        return text
-            .split(whereSeparator: \.isNewline)
-            .map(String.init)
-            .compactMap { line in
-                let columns = line.components(separatedBy: "\t")
-                guard columns.count >= 2 else {
-                    return GlossaryImportCandidate(source: line, target: "", note: "", unsupported: true)
-                }
-                return GlossaryImportCandidate(
-                    source: columns[0],
-                    target: columns[1],
-                    note: columns.dropFirst(2).joined(separator: " "),
-                    unsupported: false
-                )
+        var candidates: [GlossaryImportCandidate] = []
+        for (index, lineSlice) in text.split(whereSeparator: \.isNewline).enumerated() {
+            if index % 256 == 0 {
+                try Task.checkCancellation()
             }
+            let line = String(lineSlice)
+            let columns = line.components(separatedBy: "\t")
+            guard columns.count >= 2 else {
+                candidates.append(GlossaryImportCandidate(source: line, target: "", note: "", unsupported: true))
+                continue
+            }
+            candidates.append(GlossaryImportCandidate(
+                source: columns[0],
+                target: columns[1],
+                note: columns.dropFirst(2).joined(separator: " "),
+                unsupported: false
+            ))
+        }
+        return candidates
     }
 
-    private func parseCSV(data: Data) -> [GlossaryImportCandidate] {
+    private func parseCSV(data: Data) throws -> [GlossaryImportCandidate] {
+        try Task.checkCancellation()
         let text = String(decoding: data, as: UTF8.self)
-        let rows = CSVRowParser().parse(text)
+        let rows = try CSVRowParser().parse(text)
         guard !rows.isEmpty else { return [] }
 
         let first = rows[0].map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
@@ -245,11 +254,17 @@ struct GlossaryImportParser {
         let hasHeader = sourceIndex != nil && targetIndex != nil
         let dataRows = hasHeader ? rows.dropFirst() : rows[...]
 
-        return dataRows.map { row in
+        var candidates: [GlossaryImportCandidate] = []
+        candidates.reserveCapacity(dataRows.count)
+        for (index, row) in dataRows.enumerated() {
+            if index % 256 == 0 {
+                try Task.checkCancellation()
+            }
             let sourcePosition = sourceIndex ?? 0
             let targetPosition = targetIndex ?? 1
             guard row.indices.contains(sourcePosition), row.indices.contains(targetPosition) else {
-                return GlossaryImportCandidate(source: "", target: "", note: "", unsupported: true)
+                candidates.append(GlossaryImportCandidate(source: "", target: "", note: "", unsupported: true))
+                continue
             }
             let note: String
             if let noteIndex, row.indices.contains(noteIndex) {
@@ -259,15 +274,21 @@ struct GlossaryImportParser {
             } else {
                 note = ""
             }
-            return GlossaryImportCandidate(source: row[sourcePosition], target: row[targetPosition], note: note, unsupported: false)
+            candidates.append(GlossaryImportCandidate(source: row[sourcePosition], target: row[targetPosition], note: note, unsupported: false))
         }
+        return candidates
     }
 
     private func parseTBX(data: Data, options: GlossaryImportOptions) throws -> [GlossaryImportCandidate] {
+        try Task.checkCancellation()
         let delegate = TBXTermParserDelegate(options: options)
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        guard parser.parse() || delegate.stoppedAfterCandidateLimit else {
+        let didParse = parser.parse()
+        if delegate.wasCancelled {
+            throw CancellationError()
+        }
+        guard didParse || delegate.stoppedAfterCandidateLimit else {
             throw GlossaryImportError.parseFailed(parser.parserError?.localizedDescription ?? "Invalid XML")
         }
         return delegate.candidates
@@ -280,14 +301,17 @@ struct GlossaryImportParser {
         options: GlossaryImportOptions
     ) throws -> GlossaryImportResult {
         let archive = ZIPGlossaryArchive(fileURL: fileURL, maxEntryBytes: maxDataBytes)
+        try Task.checkCancellation()
         let entries = ZIPGlossaryEntryPrioritizer(options: options).prioritized(try archive.supportedEntries())
         var aggregate = GlossaryImportResult.empty(sourceName: sourceName)
         var existing = existingEntries
 
         for entry in entries {
+            try Task.checkCancellation()
             guard aggregate.added < options.sanitizedImportLimit else { break }
             let remaining = options.sanitizedImportLimit - aggregate.added
             let data = try archive.data(for: entry)
+            try Task.checkCancellation()
             let partial = try parse(
                 data: data,
                 fileName: entry,
@@ -319,12 +343,15 @@ struct GlossaryImportParser {
         sourceName: String,
         existingEntries: [GlossaryEntry],
         options: GlossaryImportOptions
-    ) -> GlossaryImportResult {
+    ) throws -> GlossaryImportResult {
         var result = GlossaryImportResult.empty(sourceName: sourceName)
         var seen = Set(existingEntries.map { GlossaryImportNormalizer.key($0.sourceTerm) })
         let limit = options.sanitizedImportLimit
 
-        for candidate in candidates {
+        for (index, candidate) in candidates.enumerated() {
+            if index % 256 == 0 {
+                try Task.checkCancellation()
+            }
             result.totalParsed += 1
             if candidate.unsupported {
                 result.skippedUnsupported += 1
@@ -389,17 +416,23 @@ private enum GlossaryImportNormalizer {
 }
 
 private struct CSVRowParser {
-    func parse(_ text: String) -> [[String]] {
+    func parse(_ text: String) throws -> [[String]] {
         var rows: [[String]] = []
         var row: [String] = []
         var field = ""
         var isQuoted = false
         var iterator = text.makeIterator()
+        var processedCharacters = 0
 
         while let character = iterator.next() {
+            processedCharacters += 1
+            if processedCharacters % 4_096 == 0 {
+                try Task.checkCancellation()
+            }
             if isQuoted {
                 if character == "\"" {
                     if let next = iterator.next() {
+                        processedCharacters += 1
                         if next == "\"" {
                             field.append("\"")
                         } else {
@@ -450,6 +483,7 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
     let options: GlossaryImportOptions
     private(set) var candidates: [GlossaryImportCandidate] = []
     private(set) var stoppedAfterCandidateLimit = false
+    private(set) var wasCancelled = false
     private var currentConcept: [String: [String]] = [:]
     private var currentLanguage: String?
     private var isInsideTerm = false
@@ -462,6 +496,8 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+        abortIfCancelled(parser)
+        guard !wasCancelled else { return }
         let name = elementName.lowercased()
         if name == "termentry" {
             currentConcept = [:]
@@ -474,12 +510,16 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
+        abortIfCancelled(parser)
+        guard !wasCancelled else { return }
         if isInsideTerm {
             termBuffer.append(string)
         }
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        abortIfCancelled(parser)
+        guard !wasCancelled else { return }
         let name = elementName.lowercased()
         if name == "term" {
             isInsideTerm = false
@@ -497,6 +537,12 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
                 parser.abortParsing()
             }
         }
+    }
+
+    private func abortIfCancelled(_ parser: XMLParser) {
+        guard Task.isCancelled else { return }
+        wasCancelled = true
+        parser.abortParsing()
     }
 
     private func languageCode(from attributes: [String: String]) -> String? {
@@ -578,6 +624,7 @@ private struct ZIPGlossaryArchive {
     }
 
     private func runUnzipData(arguments: [String]) throws -> Data {
+        try Task.checkCancellation()
         let temporaryDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("LiveBuddyUnzip-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
@@ -590,6 +637,10 @@ private struct ZIPGlossaryArchive {
 
         let stdout = try FileHandle(forWritingTo: stdoutURL)
         let stderr = try FileHandle(forWritingTo: stderrURL)
+        defer {
+            try? stdout.close()
+            try? stderr.close()
+        }
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
@@ -597,9 +648,16 @@ private struct ZIPGlossaryArchive {
         process.standardOutput = stdout
         process.standardError = stderr
         try process.run()
+        while process.isRunning {
+            if Task.isCancelled {
+                process.terminate()
+                process.waitUntilExit()
+                throw CancellationError()
+            }
+            Thread.sleep(forTimeInterval: 0.05)
+        }
         process.waitUntilExit()
-        try? stdout.close()
-        try? stderr.close()
+        try Task.checkCancellation()
 
         let output = try Data(contentsOf: stdoutURL)
         if process.terminationStatus != 0 {
