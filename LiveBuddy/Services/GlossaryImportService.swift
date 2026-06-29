@@ -55,6 +55,7 @@ final class GlossaryImportService: @unchecked Sendable {
             try FileManager.default.removeItem(at: destination)
         }
         try FileManager.default.moveItem(at: temporaryURL, to: destination)
+        await progress?(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing())
         let result = try parser.parse(fileURL: destination, sourceName: sourceName, existingEntries: existingEntries, options: options)
         if result.entries.isEmpty {
             throw GlossaryImportError.emptyImport

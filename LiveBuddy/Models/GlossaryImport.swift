@@ -88,6 +88,10 @@ struct GlossaryImportProgress: Equatable {
             self.fractionCompleted = nil
         }
     }
+
+    func switchingToProcessing() -> GlossaryImportProgress {
+        .indeterminate
+    }
 }
 
 enum GlossaryImportError: LocalizedError, Equatable {

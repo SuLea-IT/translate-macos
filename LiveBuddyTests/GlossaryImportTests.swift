@@ -7,6 +7,7 @@ struct GlossaryImportTests {
         #expect(GlossaryImportProgress(fractionCompleted: -0.5).fractionCompleted == 0)
         #expect(GlossaryImportProgress(fractionCompleted: 1.5).fractionCompleted == 1)
         #expect(GlossaryImportProgress.indeterminate.fractionCompleted == nil)
+        #expect(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing().fractionCompleted == nil)
     }
 
     @Test func tsvImportTrimsTermsAndKeepsCommentNote() throws {
