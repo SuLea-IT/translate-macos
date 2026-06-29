@@ -8,6 +8,9 @@ import CoreAudio
 final class AppState: ObservableObject {
     private static let settingsSaveDebounceNanoseconds: UInt64 = 750_000_000
     private static let transcriptSaveDebounceNanoseconds: UInt64 = 750_000_000
+    private static let maxTranscriptDraftCharacters = 4_000
+    private static let maxPendingOriginalSentences = 120
+    private static let maxPendingOriginalSentenceCharacters = 1_000
 
     private enum RuntimeControlRequest {
         case toggle
@@ -1259,12 +1262,32 @@ final class AppState: ObservableObject {
         guard !trimmed.isEmpty else { return }
         usageEngine.noteTranscriptActivity(at: Date())
         usageSnapshot = usageEngine.snapshot
-        let pending = originalDraft + (originalDraft.isEmpty ? "" : " ") + trimmed
+        let pending = boundedTranscriptDraft(originalDraft + (originalDraft.isEmpty ? "" : " ") + trimmed)
         let sentences = completedSentences(from: pending)
         for sentence in sentences.completed {
-            completedOriginalSentences.append(sentence)
+            completedOriginalSentences.append(boundedOriginalSentence(sentence))
         }
-        originalDraft = sentences.remainder
+        trimPendingOriginalSentences()
+        originalDraft = boundedTranscriptDraft(sentences.remainder)
+    }
+
+    private func boundedTranscriptDraft(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > Self.maxTranscriptDraftCharacters else { return trimmed }
+        return String(trimmed.suffix(Self.maxTranscriptDraftCharacters))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func boundedOriginalSentence(_ sentence: String) -> String {
+        let trimmed = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > Self.maxPendingOriginalSentenceCharacters else { return trimmed }
+        return String(trimmed.suffix(Self.maxPendingOriginalSentenceCharacters))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func trimPendingOriginalSentences() {
+        guard completedOriginalSentences.count > Self.maxPendingOriginalSentences else { return }
+        completedOriginalSentences.removeFirst(completedOriginalSentences.count - Self.maxPendingOriginalSentences)
     }
 
     private func appendCaption(_ text: String, language: String?, kind: CaptionKind) {
@@ -1272,7 +1295,7 @@ final class AppState: ObservableObject {
         guard !trimmed.isEmpty else { return }
         usageEngine.noteTranscriptActivity(at: Date())
         usageSnapshot = usageEngine.snapshot
-        var pending = captionDraft + (captionDraft.isEmpty ? "" : " ") + trimmed
+        var pending = boundedTranscriptDraft(captionDraft + (captionDraft.isEmpty ? "" : " ") + trimmed)
         let sentences = completedSentences(from: pending)
         for sentence in sentences.completed {
             let original: String?
@@ -1289,7 +1312,7 @@ final class AppState: ObservableObject {
             appendCurrentTranscriptLine(from: line)
         }
         pending = sentences.remainder
-        captionDraft = pending
+        captionDraft = boundedTranscriptDraft(pending)
         if captions.count > 80 {
             captions.removeFirst(captions.count - 80)
         }
