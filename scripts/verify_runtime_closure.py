@@ -7,11 +7,15 @@ root = Path(__file__).resolve().parents[1]
 client = root / "LiveBuddy" / "Services" / "GeminiLiveTranslateClient.swift"
 settings = root / "LiveBuddy" / "Views" / "Settings" / "SettingsView.swift"
 app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
+microphone_capture = root / "LiveBuddy" / "Services" / "MicrophoneCapture.swift"
+audio_player = root / "LiveBuddy" / "Utilities" / "PCM16AudioPlayer.swift"
 errors: list[str] = []
 
 client_text = client.read_text()
 settings_text = settings.read_text()
 app_state_text = app_state.read_text()
+microphone_text = microphone_capture.read_text()
+audio_player_text = audio_player.read_text()
 
 for token in ["socketOpenTimeout", "setupMessageTimeout", "withLiveTimeout", "receiveMessage(timeout:"]:
     if token not in client_text:
@@ -63,6 +67,23 @@ else:
     ]:
         if token not in body:
             errors.append(f"AppState.deinit must release runtime resource through {token}")
+
+mic_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", microphone_text)
+if not mic_deinit_match:
+    errors.append("MicrophoneCapture.deinit must stop the capture engine")
+else:
+    body = mic_deinit_match.group("body")
+    if "stop()" not in body:
+        errors.append("MicrophoneCapture.deinit must call stop()")
+
+player_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", audio_player_text)
+if not player_deinit_match:
+    errors.append("PCM16AudioPlayer.deinit must stop AVAudio playback resources")
+else:
+    body = player_deinit_match.group("body")
+    for token in ["player.stop()", "engine.stop()", "isPrepared = false"]:
+        if token not in body:
+            errors.append(f"PCM16AudioPlayer.deinit must release playback resource through {token}")
 
 if errors:
     print("Runtime closure verification failed:")

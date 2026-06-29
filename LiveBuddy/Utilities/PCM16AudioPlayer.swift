@@ -7,6 +7,12 @@ final class PCM16AudioPlayer: @unchecked Sendable {
     nonisolated(unsafe) private var isPrepared = false
     nonisolated(unsafe) private var isAttached = false
 
+    deinit {
+        player.stop()
+        engine.stop()
+        isPrepared = false
+    }
+
     nonisolated func playPCM16(_ data: Data, sampleRate: Double) {
         guard !data.isEmpty else { return }
         queue.async { [weak self] in

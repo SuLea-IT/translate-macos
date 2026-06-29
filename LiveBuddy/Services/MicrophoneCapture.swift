@@ -11,6 +11,10 @@ final class MicrophoneCapture {
         chunker = PCM16Chunker(onChunk: onAudioChunk)
     }
 
+    deinit {
+        stop()
+    }
+
     func start(selectedDeviceUID: String?) async throws {
         try await requestPermissionIfNeeded()
         let input = engine.inputNode
