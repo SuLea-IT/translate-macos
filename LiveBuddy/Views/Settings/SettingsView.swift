@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum NavigationItem: Hashable {
     case provider
@@ -17,6 +18,11 @@ struct SettingsView: View {
     @State private var tokenCheckError: String? = nil
     @State private var newGlossarySourceTerm = ""
     @State private var newGlossaryTargetTerm = ""
+    @State private var selectedGlossaryImportSourceID = GlossaryImportSource.microsoftTerminology.id
+    @State private var glossaryImportURLString = ""
+    @State private var glossaryImportLimit = 500
+    @State private var showingGlossaryFileImporter = false
+    @State private var glossaryImportInputMessage = ""
 
     var body: some View {
         NavigationSplitView {
@@ -381,6 +387,66 @@ struct SettingsView: View {
                 .disabled(newGlossarySourceTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text(appState.t(.publicTerminologySources))
+                    .font(.callout.weight(.semibold))
+                Text(appState.t(.glossaryImportHelp))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker(appState.t(.glossaryImportSource), selection: $selectedGlossaryImportSourceID) {
+                    ForEach(GlossaryImportSource.availableSources) { source in
+                        Text(localizedGlossarySourceName(source)).tag(source.id)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(selectedGlossaryImportSource.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if selectedGlossaryImportSourceRequiresURL {
+                    TextField(appState.t(.glossaryImportLinkPlaceholder), text: $glossaryImportURLString)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel(appState.t(.glossaryImportLink))
+                }
+
+                Stepper("\(appState.t(.importLimit)): \(glossaryImportLimit)", value: $glossaryImportLimit, in: 1...2_000, step: 50)
+
+                HStack {
+                    Button(appState.t(.downloadAndImport)) {
+                        Task { await importSelectedGlossarySource() }
+                    }
+                    .disabled(appState.isImportingGlossary || !canImportSelectedGlossarySource)
+
+                    Button(appState.t(.importFromFile)) {
+                        showingGlossaryFileImporter = true
+                    }
+                    .disabled(appState.isImportingGlossary)
+
+                    if appState.isImportingGlossary {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(appState.t(.importingGlossary))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if !glossaryImportInputMessage.isEmpty {
+                    Text(glossaryImportInputMessage)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+
+                if !appState.glossaryImportMessage.isEmpty {
+                    Text(appState.glossaryImportMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
+
             ForEach(appState.settings.glossaryEntries) { entry in
                 HStack {
                     Text(entry.sourceTerm)
@@ -399,6 +465,93 @@ struct SettingsView: View {
                     .help(appState.t(.deleteTerm))
                 }
             }
+        }
+        .fileImporter(
+            isPresented: $showingGlossaryFileImporter,
+            allowedContentTypes: glossaryImportContentTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            handleGlossaryFileImporterResult(result)
+        }
+    }
+
+    private var selectedGlossaryImportSource: GlossaryImportSource {
+        GlossaryImportSource.availableSources.first { $0.id == selectedGlossaryImportSourceID } ?? .microsoftTerminology
+    }
+
+    private var selectedGlossaryImportSourceRequiresURL: Bool {
+        switch selectedGlossaryImportSource.kind {
+        case .builtIn:
+            return false
+        case .customURL, .localFile:
+            return true
+        }
+    }
+
+    private var canImportSelectedGlossarySource: Bool {
+        switch selectedGlossaryImportSource.kind {
+        case .builtIn:
+            return true
+        case .customURL, .localFile:
+            return GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) != nil
+        }
+    }
+
+    private var glossaryImportContentTypes: [UTType] {
+        [
+            .commaSeparatedText,
+            .plainText,
+            .xml,
+            UTType(filenameExtension: "tsv"),
+            UTType(filenameExtension: "txt"),
+            UTType(filenameExtension: "tbx"),
+            UTType(filenameExtension: "zip")
+        ].compactMap { $0 }
+    }
+
+    private func localizedGlossarySourceName(_ source: GlossaryImportSource) -> String {
+        switch source.id {
+        case GlossaryImportSource.microsoftTerminology.id:
+            return appState.t(.microsoftTerminology)
+        case GlossaryImportSource.iateExport.id:
+            return appState.t(.iateExportSource)
+        case GlossaryImportSource.customLink.id:
+            return appState.t(.customGlossaryLink)
+        default:
+            return source.displayName
+        }
+    }
+
+    @MainActor
+    private func importSelectedGlossarySource() async {
+        glossaryImportInputMessage = ""
+        let source = selectedGlossaryImportSource
+        switch source.kind {
+        case .builtIn(let url):
+            await appState.importGlossary(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
+        case .customURL, .localFile:
+            guard let url = GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) else {
+                glossaryImportInputMessage = appState.t(.httpsLinksOnly)
+                return
+            }
+            await appState.importGlossary(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
+        }
+    }
+
+    private func handleGlossaryFileImporterResult(_ result: Result<[URL], Error>) {
+        glossaryImportInputMessage = ""
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            let didStartAccessing = url.startAccessingSecurityScopedResource()
+            Task {
+                await appState.importGlossary(fromLocalFile: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
+                if didStartAccessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+        case .failure(let error):
+            glossaryImportInputMessage = error.localizedDescription
         }
     }
 

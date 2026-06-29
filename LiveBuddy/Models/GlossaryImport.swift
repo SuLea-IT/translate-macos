@@ -12,11 +12,13 @@ struct GlossaryImportSource: Identifiable, Equatable {
     var detail: String
     var kind: Kind
 
+    static let microsoftTerminologyURL = URL(string: "https://download.microsoft.com/download/E/B/A/EBABD7D1-D746-4F5D-8C1B-23634D038BC8/MicrosoftTermCollection.tbx.zip")!
+
     static let microsoftTerminology = GlossaryImportSource(
         id: "microsoft-terminology",
         displayName: "Microsoft Terminology",
-        detail: "Download Microsoft software terminology packages from a public terminology source.",
-        kind: .customURL
+        detail: "Download Microsoft software terminology TBX package from Microsoft Download Center.",
+        kind: .builtIn(microsoftTerminologyURL)
     )
 
     static let iateExport = GlossaryImportSource(
@@ -32,6 +34,12 @@ struct GlossaryImportSource: Identifiable, Equatable {
         detail: "Import a glossary from a user-provided HTTPS URL.",
         kind: .customURL
     )
+
+    static let availableSources: [GlossaryImportSource] = [
+        .microsoftTerminology,
+        .iateExport,
+        .customLink
+    ]
 }
 
 struct GlossaryImportOptions: Equatable {

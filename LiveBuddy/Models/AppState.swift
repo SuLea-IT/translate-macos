@@ -367,13 +367,31 @@ final class AppState: ObservableObject {
 
     private func applyGlossaryImportResult(_ result: GlossaryImportResult) {
         settings.glossaryEntries = GlossaryImportMerger().merge(existing: settings.glossaryEntries, imported: result.entries)
-        glossaryImportMessage = "Imported \(result.added) terms from \(result.sourceName). Skipped duplicates: \(result.skippedDuplicate)."
+        glossaryImportMessage = settings.interfaceLanguage.localized(
+            .importedTermsResult,
+            arguments: [result.added, result.sourceName, result.skippedDuplicate]
+        )
         updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
         refreshSetupChecklist()
     }
 
     private func handleGlossaryImportFailure(_ error: Error) {
-        glossaryImportMessage = error.localizedDescription
+        if let importError = error as? GlossaryImportError {
+            switch importError {
+            case .unsupportedURL:
+                glossaryImportMessage = settings.interfaceLanguage.localized(.httpsLinksOnly)
+            case .unsupportedFormat:
+                glossaryImportMessage = settings.interfaceLanguage.localized(.unsupportedGlossaryFormat)
+            case .emptyImport:
+                glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryImportEmpty)
+            case .downloadFailed:
+                glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryDownloadFailed)
+            case .fileTooLarge, .parseFailed:
+                glossaryImportMessage = importError.localizedDescription
+            }
+        } else {
+            glossaryImportMessage = error.localizedDescription
+        }
         updateStatus(glossaryImportMessage, level: .error, log: true)
     }
 
