@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 enum NavigationItem: Hashable {
     case provider
     case caption
+    case glossary
     case test
     case transcripts
     case logs
@@ -24,6 +25,7 @@ struct SettingsView: View {
     @State private var glossaryImportLimit = 500
     @State private var showingGlossaryFileImporter = false
     @State private var glossaryImportInputMessage = ""
+    @State private var isGlossaryListExpanded = false
 
     var body: some View {
         NavigationSplitView {
@@ -50,6 +52,9 @@ struct SettingsView: View {
                 Section(appState.t(.settings)) {
                     NavigationLink(value: NavigationItem.caption) {
                         Label(appState.t(.caption), systemImage: "captions.bubble")
+                    }
+                    NavigationLink(value: NavigationItem.glossary) {
+                        Label(appState.t(.terminologyGlossary), systemImage: "text.book.closed")
                     }
                     NavigationLink(value: NavigationItem.provider) {
                         Label(appState.t(.apiProvider), systemImage: "network")
@@ -84,6 +89,8 @@ struct SettingsView: View {
                         providerForm
                     case .caption:
                         captionForm
+                    case .glossary:
+                        glossaryForm
                     case .test:
                         preflightTestForm
                     case .transcripts:
@@ -292,8 +299,6 @@ struct SettingsView: View {
 
             usageControlSection
 
-            glossarySection
-
             Section(appState.t(.globalShortcuts)) {
                 Toggle(appState.t(.enableGlobalShortcuts), isOn: appState.globalShortcutsEnabledBinding())
 
@@ -460,7 +465,23 @@ struct SettingsView: View {
         minutes <= 0 ? appState.t(.usageLimitDisabled) : "\(Int(minutes)) min"
     }
 
-    private var glossarySection: some View {
+    private var glossaryForm: some View {
+        Form {
+            glossaryEditorSection
+            glossaryImportSection
+            glossaryEntriesSection
+        }
+        .formStyle(.grouped)
+        .fileImporter(
+            isPresented: $showingGlossaryFileImporter,
+            allowedContentTypes: glossaryImportContentTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            handleGlossaryFileImporterResult(result)
+        }
+    }
+
+    private var glossaryEditorSection: some View {
         Section(appState.t(.terminologyGlossary)) {
             HStack {
                 TextField(appState.t(.sourceTerm), text: $newGlossarySourceTerm)
@@ -472,10 +493,12 @@ struct SettingsView: View {
                 }
                 .disabled(newGlossarySourceTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+        }
+    }
 
+    private var glossaryImportSection: some View {
+        Section(appState.t(.publicTerminologySources)) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(appState.t(.publicTerminologySources))
-                    .font(.callout.weight(.semibold))
                 Text(appState.t(.glossaryImportHelp))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -545,8 +568,33 @@ struct SettingsView: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+    }
 
-            ForEach(appState.settings.glossaryEntries) { entry in
+    private var glossaryEntriesSection: some View {
+        let display = GlossaryListDisplay(
+            entries: appState.settings.glossaryEntries,
+            isExpanded: isGlossaryListExpanded,
+            collapsedLimit: 20
+        )
+
+        return Section {
+            HStack {
+                Text(appState.t(.glossaryEntrySummary, display.visibleEntries.count, appState.settings.glossaryEntries.count))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if display.shouldShowToggle {
+                    Button(isGlossaryListExpanded ? appState.t(.showFewerTerms) : appState.t(.showAllTerms)) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isGlossaryListExpanded.toggle()
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+
+            ForEach(display.visibleEntries) { entry in
                 HStack {
                     Text(entry.sourceTerm)
                         .font(.callout.weight(.medium))
@@ -564,13 +612,8 @@ struct SettingsView: View {
                     .help(appState.t(.deleteTerm))
                 }
             }
-        }
-        .fileImporter(
-            isPresented: $showingGlossaryFileImporter,
-            allowedContentTypes: glossaryImportContentTypes,
-            allowsMultipleSelection: false
-        ) { result in
-            handleGlossaryFileImporterResult(result)
+        } header: {
+            Text(appState.t(.terminologyGlossary))
         }
     }
 

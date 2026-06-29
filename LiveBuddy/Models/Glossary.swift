@@ -78,3 +78,22 @@ struct GlossaryEntryEditor {
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+struct GlossaryListDisplay {
+    var entries: [GlossaryEntry]
+    var isExpanded: Bool
+    var collapsedLimit: Int = 20
+
+    var visibleEntries: [GlossaryEntry] {
+        guard !isExpanded else { return entries }
+        return Array(entries.prefix(max(collapsedLimit, 0)))
+    }
+
+    var hiddenCount: Int {
+        max(entries.count - visibleEntries.count, 0)
+    }
+
+    var shouldShowToggle: Bool {
+        entries.count > max(collapsedLimit, 0)
+    }
+}

@@ -105,6 +105,9 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case httpsLinksOnly
     case importingGlossary
     case glossaryImportHelp
+    case glossaryEntrySummary
+    case showAllTerms
+    case showFewerTerms
     case test
     case runTest
     case preflightTest
@@ -366,6 +369,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .httpsLinksOnly: "Only HTTPS glossary links are supported",
         .importingGlossary: "Importing glossary…",
         .glossaryImportHelp: "Download public terminology or import your own CSV, TSV, TBX/XML, TXT, or ZIP glossary.",
+        .glossaryEntrySummary: "Showing %d of %d terms.",
+        .showAllTerms: "Show all terms",
+        .showFewerTerms: "Show fewer",
         .test: "Test",
         .runTest: "Run Test",
         .preflightTest: "Preflight Test",
@@ -595,6 +601,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "仅支持 HTTPS 术语链接",
             .importingGlossary: "正在导入术语表…",
             .glossaryImportHelp: "下载公开术语库，或导入你自己的 CSV、TSV、TBX/XML、TXT、ZIP 术语表。",
+            .glossaryEntrySummary: "已显示 %d / %d 条术语。",
+            .showAllTerms: "显示全部术语",
+            .showFewerTerms: "收起术语",
             .test: "测试",
             .runTest: "运行测试",
             .preflightTest: "翻译前测试",
@@ -821,6 +830,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "HTTPS の用語リンクのみ対応しています",
             .importingGlossary: "用語集をインポート中…",
             .glossaryImportHelp: "公開用語集をダウンロードするか、CSV、TSV、TBX/XML、TXT、ZIP をインポートします。",
+            .glossaryEntrySummary: "%d / %d 件の用語を表示中。",
+            .showAllTerms: "すべての用語を表示",
+            .showFewerTerms: "表示を減らす",
             .test: "テスト",
             .runTest: "テストを実行",
             .preflightTest: "開始前テスト",
@@ -1045,6 +1057,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "HTTPS 용어 링크만 지원합니다",
             .importingGlossary: "용어집 가져오는 중…",
             .glossaryImportHelp: "공개 용어를 다운로드하거나 CSV, TSV, TBX/XML, TXT, ZIP 용어집을 가져옵니다。",
+            .glossaryEntrySummary: "%d/%d개 용어 표시 중.",
+            .showAllTerms: "모든 용어 표시",
+            .showFewerTerms: "적게 표시",
             .test: "테스트",
             .runTest: "테스트 실행",
             .preflightTest: "시작 전 테스트",
@@ -1268,6 +1283,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "Solo se admiten enlaces HTTPS",
             .importingGlossary: "Importando glosario…",
             .glossaryImportHelp: "Descarga terminología pública o importa CSV, TSV, TBX/XML, TXT o ZIP.",
+            .glossaryEntrySummary: "Mostrando %d de %d términos.",
+            .showAllTerms: "Mostrar todos los términos",
+            .showFewerTerms: "Mostrar menos",
             .test: "Prueba",
             .runTest: "Ejecutar prueba",
             .preflightTest: "Prueba previa",
@@ -1491,6 +1509,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "Seuls les liens HTTPS sont pris en charge",
             .importingGlossary: "Importation du glossaire…",
             .glossaryImportHelp: "Téléchargez une terminologie publique ou importez CSV, TSV, TBX/XML, TXT ou ZIP.",
+            .glossaryEntrySummary: "%d termes affichés sur %d.",
+            .showAllTerms: "Afficher tous les termes",
+            .showFewerTerms: "Afficher moins",
             .test: "Test",
             .runTest: "Lancer le test",
             .preflightTest: "Test préalable",
@@ -1714,6 +1735,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "Nur HTTPS-Glossarlinks werden unterstützt",
             .importingGlossary: "Glossar wird importiert…",
             .glossaryImportHelp: "Öffentliche Terminologie laden oder CSV, TSV, TBX/XML, TXT oder ZIP importieren.",
+            .glossaryEntrySummary: "%d von %d Begriffen werden angezeigt.",
+            .showAllTerms: "Alle Begriffe anzeigen",
+            .showFewerTerms: "Weniger anzeigen",
             .test: "Test",
             .runTest: "Test ausführen",
             .preflightTest: "Vorabtest",
@@ -1937,6 +1961,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .httpsLinksOnly: "Chỉ hỗ trợ liên kết HTTPS",
             .importingGlossary: "Đang nhập bảng thuật ngữ…",
             .glossaryImportHelp: "Tải thuật ngữ công khai hoặc nhập CSV, TSV, TBX/XML, TXT, ZIP.",
+            .glossaryEntrySummary: "Đang hiển thị %d/%d thuật ngữ.",
+            .showAllTerms: "Hiển thị tất cả thuật ngữ",
+            .showFewerTerms: "Hiển thị ít hơn",
             .test: "Kiểm tra",
             .runTest: "Chạy kiểm tra",
             .preflightTest: "Kiểm tra trước khi dịch",

@@ -67,4 +67,19 @@ struct GlossaryTests {
 
         #expect(entries == [second])
     }
+
+    @Test func listDisplayCollapsesLargeImportedGlossariesByDefault() {
+        let entries = (1...60).map { index in
+            GlossaryEntry(sourceTerm: "Term \(index)", targetTerm: "术语 \(index)")
+        }
+
+        let collapsed = GlossaryListDisplay(entries: entries, isExpanded: false, collapsedLimit: 20)
+        let expanded = GlossaryListDisplay(entries: entries, isExpanded: true, collapsedLimit: 20)
+
+        #expect(collapsed.visibleEntries.count == 20)
+        #expect(collapsed.hiddenCount == 40)
+        #expect(collapsed.shouldShowToggle)
+        #expect(expanded.visibleEntries.count == 60)
+        #expect(expanded.hiddenCount == 0)
+    }
 }
