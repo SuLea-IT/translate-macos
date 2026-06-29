@@ -25,6 +25,7 @@ final class AppState: ObservableObject {
             configureGlobalShortcutsIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolume()
             updateUsageControlSettings()
+            refreshSetupChecklistIfNeeded(oldValue: oldValue)
         }
     }
     @Published private(set) var captions: [CaptionLine] = []
@@ -352,7 +353,6 @@ final class AppState: ObservableObject {
 
     func updateGlobalShortcutsEnabled(_ value: Bool) {
         settings.globalShortcutsEnabled = value
-        refreshSetupChecklist()
     }
 
     @discardableResult
@@ -408,12 +408,10 @@ final class AppState: ObservableObject {
             updateStatus(settings.interfaceLanguage.localized(issue.titleKey), level: .error, log: true)
         }
         settings.apiKey = apiKey
-        refreshSetupChecklist()
     }
 
     func updateSetting<Value>(_ keyPath: WritableKeyPath<AppSettings, Value>, to value: Value) {
         settings[keyPath: keyPath] = value
-        refreshSetupChecklist()
     }
 
     func addGlossaryEntry(sourceTerm: String, targetTerm: String) {
@@ -422,12 +420,10 @@ final class AppState: ObservableObject {
             targetTerm: targetTerm,
             to: settings.glossaryEntries
         )
-        refreshSetupChecklist()
     }
 
     func deleteGlossaryEntry(_ entry: GlossaryEntry) {
         settings.glossaryEntries = GlossaryEntryEditor().delete(entry, from: settings.glossaryEntries)
-        refreshSetupChecklist()
     }
 
     func clearGlossaryEntries() {
@@ -435,7 +431,6 @@ final class AppState: ObservableObject {
         settings.glossaryEntries = GlossaryEntryEditor().deleteAll(from: settings.glossaryEntries)
         glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryCleared)
         updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
-        refreshSetupChecklist()
     }
 
     func startGlossaryImport(from url: URL, sourceName: String, importLimit: Int) {
@@ -624,6 +619,14 @@ final class AppState: ObservableObject {
         case .toggleMute:
             updateSetting(\.audioPlayerMuted, to: !settings.audioPlayerMuted)
         }
+    }
+
+    private func refreshSetupChecklistIfNeeded(oldValue: AppSettings) {
+        let setupInputsChanged =
+            oldValue.apiKey != settings.apiKey ||
+            oldValue.audioSource != settings.audioSource
+        guard setupInputsChanged else { return }
+        refreshSetupChecklist()
     }
 
     func refreshSetupChecklist() {
