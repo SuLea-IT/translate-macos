@@ -26,8 +26,8 @@ else:
         "scheduleSettingsSave()",
         "rebuildRunningSessionIfNeeded(oldValue: oldValue)",
         "configureGlobalShortcutsIfNeeded(oldValue: oldValue)",
-        "updateAudioPlayerVolume()",
-        "updateUsageControlSettings()",
+        "updateAudioPlayerVolumeIfNeeded(oldValue: oldValue)",
+        "updateUsageControlSettingsIfNeeded(oldValue: oldValue)",
     ]:
         if token not in body:
             errors.append(f"settings didSet must keep side effects and coalesce persistence through {token}")

@@ -23,8 +23,8 @@ final class AppState: ObservableObject {
             scheduleSettingsSave()
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
             configureGlobalShortcutsIfNeeded(oldValue: oldValue)
-            updateAudioPlayerVolume()
-            updateUsageControlSettings()
+            updateAudioPlayerVolumeIfNeeded(oldValue: oldValue)
+            updateUsageControlSettingsIfNeeded(oldValue: oldValue)
             refreshSetupChecklistIfNeeded(oldValue: oldValue)
         }
     }
@@ -1126,6 +1126,12 @@ final class AppState: ObservableObject {
         pendingAudioSendChunks = 0
     }
 
+    private func updateUsageControlSettingsIfNeeded(oldValue: AppSettings) {
+        let usageControlsChanged = oldValue.usageControls != settings.usageControls
+        guard usageControlsChanged else { return }
+        updateUsageControlSettings()
+    }
+
     private func updateUsageControlSettings() {
         let now = Date()
         usageEngine.updateSettings(settings.usageControls, now: now)
@@ -1469,6 +1475,14 @@ final class AppState: ObservableObject {
             guard !Task.isCancelled else { return }
             self.restartTask = nil
         }
+    }
+
+    private func updateAudioPlayerVolumeIfNeeded(oldValue: AppSettings) {
+        let audioOutputChanged =
+            oldValue.audioPlayerVolume != settings.audioPlayerVolume ||
+            oldValue.audioPlayerMuted != settings.audioPlayerMuted
+        guard audioOutputChanged else { return }
+        updateAudioPlayerVolume()
     }
 
     private func updateAudioPlayerVolume() {
