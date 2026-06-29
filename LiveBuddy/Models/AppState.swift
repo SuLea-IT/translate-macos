@@ -100,6 +100,7 @@ final class AppState: ObservableObject {
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
     private var currentSessionID: UUID?
+    private var currentTranscriptLines: [TranscriptLine] = []
     private var usageEngine: UsageControlEngine
     private var micChunkCount = 0
     private var screenChunkCount = 0
@@ -199,6 +200,7 @@ final class AppState: ObservableObject {
         captionDraft = ""
         originalDraft = ""
         completedOriginalSentences.removeAll()
+        currentTranscriptLines.removeAll()
         resetAudioCounters()
         resetUsageSession()
         updateStatus("Connecting", level: .connecting, log: true)
@@ -1218,13 +1220,26 @@ final class AppState: ObservableObject {
             } else {
                 original = nil
             }
-            captions.append(CaptionLine(text: sentence, originalText: original, languageCode: language, kind: kind))
+            let line = CaptionLine(text: sentence, originalText: original, languageCode: language, kind: kind)
+            captions.append(line)
+            appendCurrentTranscriptLine(from: line)
         }
         pending = sentences.remainder
         captionDraft = pending
         if captions.count > 80 {
             captions.removeFirst(captions.count - 80)
         }
+    }
+
+    private func appendCurrentTranscriptLine(from line: CaptionLine) {
+        guard line.kind == .output else { return }
+        currentTranscriptLines.append(TranscriptLine(
+            id: line.id,
+            text: line.text,
+            originalText: line.originalText,
+            languageCode: line.languageCode,
+            timestamp: line.timestamp
+        ))
     }
 
     var subtitleLines: [SubtitleDisplayLine] {
@@ -1375,6 +1390,7 @@ final class AppState: ObservableObject {
     // MARK: - Transcript Sessions
 
     private func beginTranscriptSession() {
+        currentTranscriptLines.removeAll()
         let session = TranscriptSession(
             id: UUID(),
             startedAt: Date(),
@@ -1403,20 +1419,20 @@ final class AppState: ObservableObject {
                 languageCode: settings.targetLanguageCode,
                 kind: .output
             ))
+            if let line = captions.last {
+                appendCurrentTranscriptLine(from: line)
+            }
             captionDraft = ""
             originalDraft = ""
             completedOriginalSentences.removeAll()
         }
 
-        let outputLines = captions
-            .filter { $0.kind == .output }
-            .map { TranscriptLine(id: $0.id, text: $0.text, originalText: $0.originalText, languageCode: $0.languageCode, timestamp: $0.timestamp) }
-
         var session = transcriptSessions[index]
-        session.lines = outputLines
+        session.lines = currentTranscriptLines
         session.endedAt = Date()
         transcriptSessions[index] = session
         currentSessionID = nil
+        currentTranscriptLines.removeAll()
         saveTranscriptSessions()
     }
 
@@ -1444,6 +1460,7 @@ final class AppState: ObservableObject {
         captionDraft = ""
         originalDraft = ""
         completedOriginalSentences.removeAll()
+        currentTranscriptLines.removeAll()
         captions.removeAll()
         beginTranscriptSession()
     }
@@ -1453,6 +1470,7 @@ final class AppState: ObservableObject {
         captionDraft = ""
         originalDraft = ""
         completedOriginalSentences.removeAll()
+        currentTranscriptLines.removeAll()
     }
 
     private func saveTranscriptSessions() {

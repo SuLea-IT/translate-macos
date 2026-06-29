@@ -63,10 +63,13 @@ for token in [
 for token in [
     "private func clearActiveTranscriptState()",
     "private func restartTranscriptSessionIfRunning()",
+    "private var currentTranscriptLines: [TranscriptLine] = []",
+    "private func appendCurrentTranscriptLine(from line: CaptionLine)",
     "currentSessionID = nil",
     "captionDraft = \"\"",
     "originalDraft = \"\"",
     "completedOriginalSentences.removeAll()",
+    "currentTranscriptLines.removeAll()",
     "captions.removeAll()",
     "beginTranscriptSession()",
 ]:
@@ -107,6 +110,30 @@ else:
         errors.append("AppState.start() must connect, start capture, create transcript session, and mark running")
     elif not (connect_index < capture_index < begin_index < running_index):
         errors.append("AppState.start() must create transcript sessions only after connection and capture succeed, before isRunning = true")
+
+append_caption_match = re.search(r"private func appendCaption\(_ text: String, language: String\?, kind: CaptionKind\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func appendCurrentTranscriptLine", app_state_text)
+if not append_caption_match:
+    errors.append("AppState.appendCaption(_:language:kind:) not found for full transcript history")
+else:
+    body = append_caption_match.group("body")
+    for token in [
+        "let line = CaptionLine(",
+        "captions.append(line)",
+        "appendCurrentTranscriptLine(from: line)",
+        "captions.removeFirst(captions.count - 80)",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.appendCaption must keep transcript history independent from display cache through {token}")
+    if body.find("appendCurrentTranscriptLine(from: line)") > body.find("captions.removeFirst(captions.count - 80)"):
+        errors.append("AppState.appendCaption must store full transcript history before trimming caption display cache")
+
+finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", app_state_text)
+if finish_match:
+    body = finish_match.group("body")
+    if "session.lines = currentTranscriptLines" not in body:
+        errors.append("AppState.finishTranscriptSession must persist full currentTranscriptLines")
+    if ".filter { $0.kind == .output }" in body and "captions" in body:
+        errors.append("AppState.finishTranscriptSession must not rebuild transcript from trimmed caption display cache")
 
 for token in [
     "TranscriptArchiveExporter",
