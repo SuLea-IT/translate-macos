@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 import sys
 
 root = Path(__file__).resolve().parents[1]
 transcripts_view = root / "LiveBuddy" / "Views" / "Settings" / "TranscriptsView.swift"
 interface_file = root / "LiveBuddy" / "Models" / "InterfaceLanguage.swift"
 export_model = root / "LiveBuddy" / "Models" / "TranscriptExport.swift"
+app_state_file = root / "LiveBuddy" / "Models" / "AppState.swift"
 errors: list[str] = []
 
 view_text = transcripts_view.read_text()
 interface_text = interface_file.read_text()
 export_text = export_model.read_text()
+app_state_text = app_state_file.read_text()
 
 for token in [
     "isShowingClearTranscriptsConfirmation",
@@ -56,6 +59,27 @@ for token in [
 ]:
     if token not in view_text:
         errors.append(f"TranscriptsView must keep selected transcript detail synchronized through {token}")
+
+for token in [
+    "private func clearActiveTranscriptState()",
+    "currentSessionID = nil",
+    "captionDraft = \"\"",
+    "originalDraft = \"\"",
+    "completedOriginalSentences.removeAll()",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState must release active transcript state through {token}")
+
+for context, pattern in [
+    ("finishTranscriptSession", r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession"),
+    ("deleteTranscriptSession", r"func deleteTranscriptSession\(_ session: TranscriptSession\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteAllTranscriptSessions"),
+    ("deleteAllTranscriptSessions", r"func deleteAllTranscriptSessions\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func clearActiveTranscriptState"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for active transcript cleanup")
+    elif "clearActiveTranscriptState()" not in match.group("body"):
+        errors.append(f"AppState.{context} must clear active transcript state when needed")
 
 for token in [
     "TranscriptArchiveExporter",

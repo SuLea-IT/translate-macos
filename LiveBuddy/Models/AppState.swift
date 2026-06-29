@@ -1388,8 +1388,11 @@ final class AppState: ObservableObject {
     }
 
     private func finishTranscriptSession() {
-        guard let sessionID = currentSessionID,
-              let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) else { return }
+        guard let sessionID = currentSessionID else { return }
+        guard let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) else {
+            clearActiveTranscriptState()
+            return
+        }
 
         // Flush any remaining drafts
         if !captionDraft.isEmpty {
@@ -1418,13 +1421,24 @@ final class AppState: ObservableObject {
     }
 
     func deleteTranscriptSession(_ session: TranscriptSession) {
+        if currentSessionID == session.id {
+            clearActiveTranscriptState()
+        }
         transcriptSessions.removeAll { $0.id == session.id }
         saveTranscriptSessions()
     }
 
     func deleteAllTranscriptSessions() {
+        clearActiveTranscriptState()
         transcriptSessions.removeAll()
         saveTranscriptSessions()
+    }
+
+    private func clearActiveTranscriptState() {
+        currentSessionID = nil
+        captionDraft = ""
+        originalDraft = ""
+        completedOriginalSentences.removeAll()
     }
 
     private func saveTranscriptSessions() {
