@@ -120,4 +120,22 @@ final class AudioDeviceManager {
     static func getDeviceID(for uid: String) -> AudioDeviceID? {
         getInputDevices().first { $0.uid == uid }?.deviceID
     }
+
+    static func preferredVirtualInputDevice(from devices: [AudioDevice], selectedUID: String?) -> AudioDevice? {
+        if let selectedUID,
+           let selected = devices.first(where: { $0.uid == selectedUID }) {
+            return selected
+        }
+        return devices.first(where: isLikelyVirtualLoopbackDevice)
+    }
+
+    static func isLikelyVirtualLoopbackDevice(_ device: AudioDevice) -> Bool {
+        let haystack = "\(device.name) \(device.uid)".lowercased()
+        return haystack.contains("blackhole")
+            || haystack.contains("black hole")
+            || haystack.contains("loopback")
+            || haystack.contains("soundflower")
+            || haystack.contains("vb-cable")
+            || haystack.contains("virtual")
+    }
 }
