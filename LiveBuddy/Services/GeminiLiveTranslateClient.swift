@@ -24,22 +24,31 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func connect() async throws {
-        let key = settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=\(escapedKey)") else {
-            throw LiveTranslateError.invalidAPIKey
-        }
+        try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            let key = settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let url = URL(string: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=\(escapedKey)") else {
+                throw LiveTranslateError.invalidAPIKey
+            }
 
-        let task = session.webSocketTask(with: url)
-        webSocket = task
-        do {
-            try await waitForSocketOpen(task)
-            try await sendSetup()
-            try await waitForSetupComplete()
-            receiveLoop()
-        } catch {
-            close()
-            throw error
+            let task = session.webSocketTask(with: url)
+            webSocket = task
+            do {
+                try await waitForSocketOpen(task)
+                try Task.checkCancellation()
+                try await sendSetup()
+                try Task.checkCancellation()
+                try await waitForSetupComplete()
+                receiveLoop()
+            } catch {
+                close()
+                throw error
+            }
+        } onCancel: { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                self?.close()
+            }
         }
     }
 
@@ -158,6 +167,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     private func waitForSetupComplete() async throws {
         let deadline = Date().addingTimeInterval(setupMessageTimeout)
         while Date() < deadline {
+            try Task.checkCancellation()
             let remaining = max(0.01, deadline.timeIntervalSinceNow)
             let message = try await receiveMessage(timeout: remaining)
             let root = try decodedObject(from: message)
