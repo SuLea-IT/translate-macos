@@ -26,6 +26,7 @@ struct SettingsView: View {
     @State private var showingGlossaryFileImporter = false
     @State private var glossaryImportInputMessage = ""
     @State private var isGlossaryListExpanded = false
+    @State private var glossarySearchText = ""
 
     var body: some View {
         NavigationSplitView {
@@ -574,13 +575,17 @@ struct SettingsView: View {
     private var glossaryEntriesSection: some View {
         let display = GlossaryListDisplay(
             entries: appState.settings.glossaryEntries,
+            query: glossarySearchText,
             isExpanded: isGlossaryListExpanded,
             collapsedLimit: 20
         )
 
         return Section {
+            TextField(appState.t(.searchGlossaryTerms), text: $glossarySearchText)
+                .textFieldStyle(.roundedBorder)
+
             HStack {
-                Text(appState.t(.glossaryEntrySummary, display.visibleEntries.count, appState.settings.glossaryEntries.count))
+                Text(appState.t(.glossaryEntrySummary, display.visibleEntries.count, display.matchingEntries.count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()

@@ -1,6 +1,6 @@
 import AVFoundation
 
-final class PCM16AudioPlayer {
+final class PCM16AudioPlayer: @unchecked Sendable {
     nonisolated(unsafe) private let engine = AVAudioEngine()
     nonisolated(unsafe) private let player = AVAudioPlayerNode()
     private let queue = DispatchQueue(label: "livebuddy.audio.playback")

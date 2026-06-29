@@ -583,6 +583,7 @@ final class AppState: ObservableObject {
 
     private func makeGeminiClient() -> GeminiLiveTranslateClient {
         let client = GeminiLiveTranslateClient(settings: settings)
+        let audioPlayer = self.audioPlayer
         client.onInputTranscript = { [weak self] text, language in
             Task { @MainActor [weak self] in
                 if let language, !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -597,8 +598,8 @@ final class AppState: ObservableObject {
                 self?.appendCaption(text, language: language, kind: .output)
             }
         }
-        client.onAudioChunk = { [weak self] data in
-            self?.audioPlayer.playPCM16(data, sampleRate: 24_000)
+        client.onAudioChunk = { data in
+            audioPlayer.playPCM16(data, sampleRate: 24_000)
         }
         client.onStatus = { [weak self] message in
             Task { @MainActor [weak self] in

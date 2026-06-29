@@ -106,6 +106,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case importingGlossary
     case glossaryImportHelp
     case glossaryEntrySummary
+    case searchGlossaryTerms
     case showAllTerms
     case showFewerTerms
     case test
@@ -370,6 +371,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .importingGlossary: "Importing glossary…",
         .glossaryImportHelp: "Download public terminology or import your own CSV, TSV, TBX/XML, TXT, or ZIP glossary.",
         .glossaryEntrySummary: "Showing %d of %d terms.",
+        .searchGlossaryTerms: "Search terms",
         .showAllTerms: "Show all terms",
         .showFewerTerms: "Show fewer",
         .test: "Test",
@@ -602,6 +604,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "正在导入术语表…",
             .glossaryImportHelp: "下载公开术语库，或导入你自己的 CSV、TSV、TBX/XML、TXT、ZIP 术语表。",
             .glossaryEntrySummary: "已显示 %d / %d 条术语。",
+            .searchGlossaryTerms: "搜索术语",
             .showAllTerms: "显示全部术语",
             .showFewerTerms: "收起术语",
             .test: "测试",
@@ -831,6 +834,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "用語集をインポート中…",
             .glossaryImportHelp: "公開用語集をダウンロードするか、CSV、TSV、TBX/XML、TXT、ZIP をインポートします。",
             .glossaryEntrySummary: "%d / %d 件の用語を表示中。",
+            .searchGlossaryTerms: "用語を検索",
             .showAllTerms: "すべての用語を表示",
             .showFewerTerms: "表示を減らす",
             .test: "テスト",
@@ -1058,6 +1062,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "용어집 가져오는 중…",
             .glossaryImportHelp: "공개 용어를 다운로드하거나 CSV, TSV, TBX/XML, TXT, ZIP 용어집을 가져옵니다。",
             .glossaryEntrySummary: "%d/%d개 용어 표시 중.",
+            .searchGlossaryTerms: "용어 검색",
             .showAllTerms: "모든 용어 표시",
             .showFewerTerms: "적게 표시",
             .test: "테스트",
@@ -1284,6 +1289,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "Importando glosario…",
             .glossaryImportHelp: "Descarga terminología pública o importa CSV, TSV, TBX/XML, TXT o ZIP.",
             .glossaryEntrySummary: "Mostrando %d de %d términos.",
+            .searchGlossaryTerms: "Buscar términos",
             .showAllTerms: "Mostrar todos los términos",
             .showFewerTerms: "Mostrar menos",
             .test: "Prueba",
@@ -1510,6 +1516,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "Importation du glossaire…",
             .glossaryImportHelp: "Téléchargez une terminologie publique ou importez CSV, TSV, TBX/XML, TXT ou ZIP.",
             .glossaryEntrySummary: "%d termes affichés sur %d.",
+            .searchGlossaryTerms: "Rechercher des termes",
             .showAllTerms: "Afficher tous les termes",
             .showFewerTerms: "Afficher moins",
             .test: "Test",
@@ -1736,6 +1743,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "Glossar wird importiert…",
             .glossaryImportHelp: "Öffentliche Terminologie laden oder CSV, TSV, TBX/XML, TXT oder ZIP importieren.",
             .glossaryEntrySummary: "%d von %d Begriffen werden angezeigt.",
+            .searchGlossaryTerms: "Begriffe suchen",
             .showAllTerms: "Alle Begriffe anzeigen",
             .showFewerTerms: "Weniger anzeigen",
             .test: "Test",
@@ -1962,6 +1970,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importingGlossary: "Đang nhập bảng thuật ngữ…",
             .glossaryImportHelp: "Tải thuật ngữ công khai hoặc nhập CSV, TSV, TBX/XML, TXT, ZIP.",
             .glossaryEntrySummary: "Đang hiển thị %d/%d thuật ngữ.",
+            .searchGlossaryTerms: "Tìm thuật ngữ",
             .showAllTerms: "Hiển thị tất cả thuật ngữ",
             .showFewerTerms: "Hiển thị ít hơn",
             .test: "Kiểm tra",

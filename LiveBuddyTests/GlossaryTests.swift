@@ -82,4 +82,23 @@ struct GlossaryTests {
         #expect(expanded.visibleEntries.count == 60)
         #expect(expanded.hiddenCount == 0)
     }
+
+    @Test func listDisplayFiltersBySourceTargetAndNoteBeforeApplyingCollapseLimit() {
+        let entries = [
+            GlossaryEntry(sourceTerm: "screen recording", targetTerm: "屏幕录制", note: "Imported"),
+            GlossaryEntry(sourceTerm: "API key", targetTerm: "密钥", note: "Provider"),
+            GlossaryEntry(sourceTerm: "meeting notes", targetTerm: "会议纪要", note: "summary")
+        ]
+
+        let sourceMatch = GlossaryListDisplay(entries: entries, query: "SCREEN", isExpanded: false, collapsedLimit: 20)
+        let targetMatch = GlossaryListDisplay(entries: entries, query: "密钥", isExpanded: false, collapsedLimit: 20)
+        let noteMatch = GlossaryListDisplay(entries: entries, query: "summary", isExpanded: false, collapsedLimit: 20)
+        let noMatch = GlossaryListDisplay(entries: entries, query: "not found", isExpanded: false, collapsedLimit: 20)
+
+        #expect(sourceMatch.visibleEntries.map(\.sourceTerm) == ["screen recording"])
+        #expect(targetMatch.visibleEntries.map(\.sourceTerm) == ["API key"])
+        #expect(noteMatch.visibleEntries.map(\.sourceTerm) == ["meeting notes"])
+        #expect(noMatch.visibleEntries.isEmpty)
+        #expect(sourceMatch.hiddenCount == 0)
+    }
 }

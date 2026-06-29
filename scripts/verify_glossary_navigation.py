@@ -31,6 +31,10 @@ if "GlossaryListDisplay(" not in text:
     errors.append("Glossary page must use GlossaryListDisplay to avoid showing all entries by default")
 if "isGlossaryListExpanded" not in text:
     errors.append("Glossary page must have expand/collapse state")
+if "glossarySearchText" not in text or ".searchGlossaryTerms" not in text:
+    errors.append("Glossary page must provide a search field for large imported glossaries")
+if "query: glossarySearchText" not in text:
+    errors.append("GlossaryListDisplay must filter entries by the glossary search text")
 
 if errors:
     print("Glossary navigation verification failed:")
