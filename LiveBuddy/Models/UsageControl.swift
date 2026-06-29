@@ -138,8 +138,8 @@ struct UsageControlEngine {
                 return resumeFromSettingsChange()
             }
         case .sessionLimit, .dailyLimit:
-            let nextBufferedDuration = pausedBuffer.first?.duration ?? 0
-            if limitReasonIfSending(nextBufferedDuration) == nil {
+            let replayDuration = replayBufferDuration
+            if limitReasonIfSending(replayDuration) == nil {
                 return resumeFromSettingsChange()
             }
         }
@@ -250,9 +250,17 @@ struct UsageControlEngine {
     }
 
     private mutating func resumeFromSettingsChange() -> UsageControlDecision {
-        let replay = prerollBuffer + pausedBuffer
+        let replay = replayBuffer
         refreshSnapshot(runtimeState: .resuming)
         return .resume(replayChunks: replay)
+    }
+
+    private var replayBuffer: [BufferedAudioChunk] {
+        prerollBuffer + pausedBuffer
+    }
+
+    private var replayBufferDuration: TimeInterval {
+        replayBuffer.reduce(0) { $0 + $1.duration }
     }
 
     private mutating func updateSpeechState(level: Float, now: Date) {

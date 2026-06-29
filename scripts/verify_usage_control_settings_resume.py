@@ -17,9 +17,10 @@ for token in [
     "guard settings.idleAutoPauseEnabled else {",
     "return resumeFromSettingsChange()",
     "case .sessionLimit, .dailyLimit:",
-    "limitReasonIfSending(nextBufferedDuration) == nil",
+    "let replayDuration = replayBufferDuration",
+    "limitReasonIfSending(replayDuration) == nil",
     "private mutating func resumeFromSettingsChange() -> UsageControlDecision",
-    "let replay = prerollBuffer + pausedBuffer",
+    "let replay = replayBuffer",
     "refreshSnapshot(runtimeState: .resuming)",
     "return .resume(replayChunks: replay)",
 ]:
