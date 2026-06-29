@@ -42,10 +42,15 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: 2)
 
         let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
-        try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
-        try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
-        try await stream.startCapture()
-        self.stream = stream
+        do {
+            try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
+            try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
+            try await stream.startCapture()
+            self.stream = stream
+        } catch {
+            await cleanupFailedStart(stream)
+            throw error
+        }
     }
 
     func stop() async {
@@ -53,6 +58,13 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         guard let stream else { return }
         try? await stream.stopCapture()
         self.stream = nil
+    }
+
+    private func cleanupFailedStart(_ stream: SCStream) async {
+        chunker.reset()
+        try? stream.removeStreamOutput(self, type: .audio)
+        try? stream.removeStreamOutput(self, type: .screen)
+        try? await stream.stopCapture()
     }
 
     nonisolated func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
