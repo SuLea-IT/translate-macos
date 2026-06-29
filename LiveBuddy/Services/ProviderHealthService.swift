@@ -31,6 +31,8 @@ struct ProviderHealthService {
 }
 
 extension ProviderHealthService {
+    private static let requestTimeout: TimeInterval = 8
+
     static let geminiDefault = ProviderHealthService { apiKey in
         let modelsToTry = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"]
         var lastError: Error?
@@ -78,7 +80,25 @@ extension ProviderHealthService {
             ]
         ])
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = requestTimeout
+        configuration.timeoutIntervalForResource = requestTimeout
+        let session = URLSession(configuration: configuration)
+        defer {
+            session.invalidateAndCancel()
+        }
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError where error.code == .timedOut {
+            throw NSError(
+                domain: "LiveBuddy",
+                code: NSURLErrorTimedOut,
+                userInfo: [NSLocalizedDescriptionKey: "Timed out after \(Int(requestTimeout.rounded())) seconds."]
+            )
+        }
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NSError(domain: "LiveBuddy", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid server response"])
