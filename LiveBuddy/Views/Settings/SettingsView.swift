@@ -546,7 +546,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
 
-                Text(selectedGlossaryImportSource.detail)
+                Text(localizedGlossarySourceDetail(selectedGlossaryImportSource))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -770,6 +770,19 @@ struct SettingsView: View {
             return appState.t(.customGlossaryLink)
         default:
             return source.displayName
+        }
+    }
+
+    private func localizedGlossarySourceDetail(_ source: GlossaryImportSource) -> String {
+        switch source.id {
+        case GlossaryImportSource.microsoftTerminology.id:
+            return appState.t(.microsoftTerminologyDetail)
+        case GlossaryImportSource.iateExport.id:
+            return appState.t(.iateExportSourceDetail)
+        case GlossaryImportSource.customLink.id:
+            return appState.t(.customGlossaryLinkDetail)
+        default:
+            return source.detail
         }
     }
 

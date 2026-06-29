@@ -96,6 +96,9 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case microsoftTerminology
     case iateExportSource
     case customGlossaryLink
+    case microsoftTerminologyDetail
+    case iateExportSourceDetail
+    case customGlossaryLinkDetail
     case glossaryImportLink
     case glossaryImportLinkPlaceholder
     case importFromFile
@@ -375,6 +378,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .microsoftTerminology: "Microsoft Terminology",
         .iateExportSource: "IATE export / custom link",
         .customGlossaryLink: "Custom link",
+        .microsoftTerminologyDetail: "Download Microsoft software terminology package from Microsoft Download Center.",
+        .iateExportSourceDetail: "Import a CSV, TBX, XML, TSV, TXT, or ZIP export link.",
+        .customGlossaryLinkDetail: "Import a glossary from a user-provided HTTPS URL.",
         .glossaryImportLink: "Glossary link",
         .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx, or .zip",
         .importFromFile: "Import from File",
@@ -622,6 +628,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft 术语库",
             .iateExportSource: "IATE 导出 / 自定义链接",
             .customGlossaryLink: "自定义链接",
+            .microsoftTerminologyDetail: "从 Microsoft 下载中心下载软件术语包。",
+            .iateExportSourceDetail: "导入 CSV、TBX、XML、TSV、TXT 或 ZIP 导出链接。",
+            .customGlossaryLinkDetail: "从用户提供的 HTTPS URL 导入术语库。",
             .glossaryImportLink: "术语链接",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv、.tsv、.tbx 或 .zip",
             .importFromFile: "从文件导入",
@@ -866,6 +875,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "IATE エクスポート / カスタムリンク",
             .customGlossaryLink: "カスタムリンク",
+            .microsoftTerminologyDetail: "Microsoft Download Center からソフトウェア用語パッケージをダウンロードします。",
+            .iateExportSourceDetail: "CSV、TBX、XML、TSV、TXT、ZIP のエクスポートリンクをインポートします。",
+            .customGlossaryLinkDetail: "ユーザー指定の HTTPS URL から用語集をインポートします。",
             .glossaryImportLink: "用語リンク",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv、.tsv、.tbx、.zip",
             .importFromFile: "ファイルからインポート",
@@ -1108,6 +1120,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "IATE 내보내기 / 사용자 링크",
             .customGlossaryLink: "사용자 링크",
+            .microsoftTerminologyDetail: "Microsoft Download Center에서 소프트웨어 용어 패키지를 다운로드합니다.",
+            .iateExportSourceDetail: "CSV, TBX, XML, TSV, TXT 또는 ZIP 내보내기 링크를 가져옵니다.",
+            .customGlossaryLinkDetail: "사용자가 제공한 HTTPS URL에서 용어집을 가져옵니다.",
             .glossaryImportLink: "용어 링크",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx 또는 .zip",
             .importFromFile: "파일에서 가져오기",
@@ -1349,6 +1364,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "Exportación IATE / enlace personalizado",
             .customGlossaryLink: "Enlace personalizado",
+            .microsoftTerminologyDetail: "Descarga el paquete de terminología de software desde Microsoft Download Center.",
+            .iateExportSourceDetail: "Importa un enlace de exportación CSV, TBX, XML, TSV, TXT o ZIP.",
+            .customGlossaryLinkDetail: "Importa un glosario desde una URL HTTPS proporcionada por el usuario.",
             .glossaryImportLink: "Enlace del glosario",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx o .zip",
             .importFromFile: "Importar desde archivo",
@@ -1590,6 +1608,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "Export IATE / lien personnalisé",
             .customGlossaryLink: "Lien personnalisé",
+            .microsoftTerminologyDetail: "Télécharge le package de terminologie logicielle depuis le Centre de téléchargement Microsoft.",
+            .iateExportSourceDetail: "Importe un lien d’export CSV, TBX, XML, TSV, TXT ou ZIP.",
+            .customGlossaryLinkDetail: "Importe un glossaire depuis une URL HTTPS fournie par l’utilisateur.",
             .glossaryImportLink: "Lien du glossaire",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx ou .zip",
             .importFromFile: "Importer depuis un fichier",
@@ -1831,6 +1852,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "IATE-Export / eigener Link",
             .customGlossaryLink: "Eigener Link",
+            .microsoftTerminologyDetail: "Lädt das Software-Terminologiepaket aus dem Microsoft Download Center herunter.",
+            .iateExportSourceDetail: "Importiert einen CSV-, TBX-, XML-, TSV-, TXT- oder ZIP-Exportlink.",
+            .customGlossaryLinkDetail: "Importiert ein Glossar von einer benutzerdefinierten HTTPS-URL.",
             .glossaryImportLink: "Glossarlink",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx oder .zip",
             .importFromFile: "Aus Datei importieren",
@@ -2072,6 +2096,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .microsoftTerminology: "Microsoft Terminology",
             .iateExportSource: "Bản xuất IATE / liên kết tùy chỉnh",
             .customGlossaryLink: "Liên kết tùy chỉnh",
+            .microsoftTerminologyDetail: "Tải gói thuật ngữ phần mềm từ Microsoft Download Center.",
+            .iateExportSourceDetail: "Nhập liên kết xuất CSV, TBX, XML, TSV, TXT hoặc ZIP.",
+            .customGlossaryLinkDetail: "Nhập bảng thuật ngữ từ URL HTTPS do người dùng cung cấp.",
             .glossaryImportLink: "Liên kết thuật ngữ",
             .glossaryImportLinkPlaceholder: "https://example.com/terms.csv, .tsv, .tbx hoặc .zip",
             .importFromFile: "Nhập từ tệp",

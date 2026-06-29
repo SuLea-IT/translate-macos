@@ -25,6 +25,14 @@ else:
         "start",
         "translationAndAudio",
         "terminologyGlossary",
+        "publicTerminologySources",
+        "glossaryImportSource",
+        "microsoftTerminology",
+        "iateExportSource",
+        "customGlossaryLink",
+        "microsoftTerminologyDetail",
+        "iateExportSourceDetail",
+        "customGlossaryLinkDetail",
         "sourceTerm",
         "preferredTranslation",
         "preserveOriginalTerm",
@@ -187,6 +195,12 @@ if "Picker(appState.t(.interfaceLanguage), selection: appState.binding(\\.interf
     errors.append("SettingsView must expose an Interface Language picker")
 if "Picker(appState.t(.interfaceLanguage), selection: appState.binding(\\.interfaceLanguage))" not in menu_bar_text:
     errors.append("MenuBarView must expose an Interface Language picker")
+if "localizedGlossarySourceDetail(_ source: GlossaryImportSource)" not in settings_view_text:
+    errors.append("SettingsView must localize glossary source detail text")
+if "Text(selectedGlossaryImportSource.detail)" in settings_view_text:
+    errors.append("SettingsView must not render raw English glossary source detail text")
+if "Text(localizedGlossarySourceDetail(selectedGlossaryImportSource))" not in settings_view_text:
+    errors.append("SettingsView glossary source detail must use localizedGlossarySourceDetail")
 for file_name, text in [
     ("SettingsView", settings_view_text),
     ("MenuBarView", menu_bar_text),

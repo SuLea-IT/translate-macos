@@ -23,6 +23,16 @@ struct InterfaceLanguageTests {
         #expect(InterfaceLanguage.japanese.localized(.start) == "開始")
     }
 
+    @Test func localizesGlossaryImportSourceDetails() {
+        for language in InterfaceLanguage.allCases {
+            #expect(language.localized(.microsoftTerminologyDetail) != InterfaceText.microsoftTerminologyDetail.rawValue)
+            #expect(language.localized(.iateExportSourceDetail) != InterfaceText.iateExportSourceDetail.rawValue)
+            #expect(language.localized(.customGlossaryLinkDetail) != InterfaceText.customGlossaryLinkDetail.rawValue)
+        }
+        #expect(InterfaceLanguage.simplifiedChinese.localized(.microsoftTerminologyDetail).contains("下载"))
+        #expect(InterfaceLanguage.vietnamese.localized(.iateExportSourceDetail).contains("TXT"))
+    }
+
     @Test func legacySettingsDefaultToEnglishInterface() throws {
         let legacyJSON = #"{"activeProvider":"gemini","apiKey":"test-key","targetLanguageCode":"ja"}"#.data(using: .utf8)!
 
