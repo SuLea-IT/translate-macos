@@ -76,6 +76,20 @@ struct GlossaryImportResult: Equatable {
     }
 }
 
+struct GlossaryImportProgress: Equatable {
+    var fractionCompleted: Double?
+
+    static let indeterminate = GlossaryImportProgress(fractionCompleted: nil)
+
+    init(fractionCompleted: Double?) {
+        if let fractionCompleted {
+            self.fractionCompleted = min(max(fractionCompleted, 0), 1)
+        } else {
+            self.fractionCompleted = nil
+        }
+    }
+}
+
 enum GlossaryImportError: LocalizedError, Equatable {
     case unsupportedURL
     case unsupportedFormat(String)

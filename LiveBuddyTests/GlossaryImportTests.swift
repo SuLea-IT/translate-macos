@@ -3,6 +3,12 @@ import Testing
 @testable import LiveBuddy
 
 struct GlossaryImportTests {
+    @Test func importProgressClampsKnownFractionAndAllowsIndeterminate() {
+        #expect(GlossaryImportProgress(fractionCompleted: -0.5).fractionCompleted == 0)
+        #expect(GlossaryImportProgress(fractionCompleted: 1.5).fractionCompleted == 1)
+        #expect(GlossaryImportProgress.indeterminate.fractionCompleted == nil)
+    }
+
     @Test func tsvImportTrimsTermsAndKeepsCommentNote() throws {
         let data = "  OpenAI  \t  OpenAI  \t company name\n  Gemini Live\tGemini Live API\n".data(using: .utf8)!
         let result = try GlossaryImportParser().parse(

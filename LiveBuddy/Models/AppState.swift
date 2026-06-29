@@ -32,6 +32,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isRunningPreflightTest = false
     @Published private(set) var glossaryImportMessage = ""
     @Published private(set) var isImportingGlossary = false
+    @Published private(set) var glossaryImportProgress: GlossaryImportProgress?
     @Published private(set) var usageSnapshot = LiveUsageSnapshot()
     
     var openWindowAction: OpenWindowAction?
@@ -343,14 +344,23 @@ final class AppState: ObservableObject {
     func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
         guard !isImportingGlossary else { return }
         isImportingGlossary = true
-        defer { isImportingGlossary = false }
+        glossaryImportProgress = .indeterminate
+        defer {
+            isImportingGlossary = false
+            glossaryImportProgress = nil
+        }
 
         do {
             let result = try await glossaryImportService.importRemote(
                 url: url,
                 sourceName: sourceName,
                 existingEntries: settings.glossaryEntries,
-                options: glossaryImportOptions(importLimit: importLimit)
+                options: glossaryImportOptions(importLimit: importLimit),
+                progress: { [weak self] progress in
+                    await MainActor.run {
+                        self?.glossaryImportProgress = progress
+                    }
+                }
             )
             applyGlossaryImportResult(result)
         } catch {
@@ -361,15 +371,24 @@ final class AppState: ObservableObject {
     func importGlossary(fromLocalFile url: URL, sourceName: String, importLimit: Int) async {
         guard !isImportingGlossary else { return }
         isImportingGlossary = true
-        defer { isImportingGlossary = false }
+        glossaryImportProgress = .indeterminate
+        defer {
+            isImportingGlossary = false
+            glossaryImportProgress = nil
+        }
 
         do {
-            let result = try glossaryImportService.importLocalFile(
-                url: url,
-                sourceName: sourceName,
-                existingEntries: settings.glossaryEntries,
-                options: glossaryImportOptions(importLimit: importLimit)
-            )
+            let service = glossaryImportService
+            let existingEntries = settings.glossaryEntries
+            let options = glossaryImportOptions(importLimit: importLimit)
+            let result = try await Task.detached(priority: .userInitiated) {
+                try service.importLocalFile(
+                    url: url,
+                    sourceName: sourceName,
+                    existingEntries: existingEntries,
+                    options: options
+                )
+            }.value
             applyGlossaryImportResult(result)
         } catch {
             handleGlossaryImportFailure(error)

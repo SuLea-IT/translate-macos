@@ -510,12 +510,25 @@ struct SettingsView: View {
                     }
                     .disabled(appState.isImportingGlossary)
 
-                    if appState.isImportingGlossary {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text(appState.t(.importingGlossary))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if let progress = appState.glossaryImportProgress {
+                        HStack(spacing: 6) {
+                            if let fraction = progress.fractionCompleted {
+                                ProgressView(value: fraction, total: 1)
+                                    .progressViewStyle(.linear)
+                                Text("\(Int((fraction * 100).rounded()))%")
+                                    .font(.caption)
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 38, alignment: .trailing)
+                            } else {
+                                ProgressView()
+                                    .progressViewStyle(.linear)
+                                Text(appState.t(.importingGlossary))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(width: 190)
                     }
                 }
 
