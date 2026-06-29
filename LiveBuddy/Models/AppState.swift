@@ -11,6 +11,7 @@ final class AppState: ObservableObject {
             saveSettings()
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolume()
+            updateUsageControlSettings()
         }
     }
     @Published private(set) var captions: [CaptionLine] = []
@@ -31,6 +32,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isRunningPreflightTest = false
     @Published private(set) var glossaryImportMessage = ""
     @Published private(set) var isImportingGlossary = false
+    @Published private(set) var usageSnapshot = LiveUsageSnapshot()
     
     var openWindowAction: OpenWindowAction?
 
@@ -58,6 +60,7 @@ final class AppState: ObservableObject {
 
     private let settingsURL: URL
     private let transcriptsURL: URL
+    private let usageLedgerURL: URL
     private var client: GeminiLiveTranslateClient?
     private var microphoneCapture: MicrophoneCapture?
     private var screenCapture: ScreenAudioCapture?
@@ -71,9 +74,11 @@ final class AppState: ObservableObject {
     private var restartTask: Task<Void, Never>?
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
+    private var usageResumeTask: Task<Void, Never>?
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
     private var currentSessionID: UUID?
+    private var usageEngine: UsageControlEngine
     private var micChunkCount = 0
     private var screenChunkCount = 0
     private var sentChunkCount = 0
@@ -94,6 +99,7 @@ final class AppState: ObservableObject {
             .appendingPathComponent("LiveBuddy", isDirectory: true)
         settingsURL = support.appendingPathComponent("settings.json")
         transcriptsURL = support.appendingPathComponent("transcripts.json")
+        usageLedgerURL = support.appendingPathComponent("usage-ledger.json")
 
         var loadedSettings: AppSettings
         if let data = try? Data(contentsOf: settingsURL),
@@ -118,6 +124,13 @@ final class AppState: ObservableObject {
         }
 
         settings = loadedSettings
+        let now = Date()
+        usageEngine = UsageControlEngine(
+            settings: loadedSettings.usageControls,
+            now: now,
+            ledger: Self.loadUsageLedger(from: usageLedgerURL, now: now)
+        )
+        usageSnapshot = usageEngine.snapshot
         loadTranscriptSessions()
         appendLog("App ready", level: .info)
         if shouldRewriteSettings {
@@ -150,6 +163,8 @@ final class AppState: ObservableObject {
         reconnectAttempts = 0
         reconnectTask?.cancel()
         reconnectTask = nil
+        usageResumeTask?.cancel()
+        usageResumeTask = nil
         detectedSourceLanguageCode = nil
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
 
@@ -158,6 +173,7 @@ final class AppState: ObservableObject {
         originalDraft = ""
         completedOriginalSentences.removeAll()
         resetAudioCounters()
+        resetUsageSession()
         beginTranscriptSession()
         updateStatus("Connecting", level: .connecting, log: true)
 
@@ -181,6 +197,8 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        usageResumeTask?.cancel()
+        usageResumeTask = nil
         reconnectAttempts = 0
         restartTask?.cancel()
         restartTask = nil
@@ -192,6 +210,7 @@ final class AppState: ObservableObject {
         client = nil
         audioPlayer.stop()
         finishTranscriptSession()
+        saveUsageLedger()
         audioLevel = 0.0
         isRunning = false
         updateStatus("Stopped", level: .stopped, log: true)
@@ -657,6 +676,8 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        usageResumeTask?.cancel()
+        usageResumeTask = nil
         reconnectAttempts = 0
         microphoneCapture?.stop()
         microphoneCapture = nil
@@ -666,6 +687,7 @@ final class AppState: ObservableObject {
         client = nil
         audioPlayer.stop()
         finishTranscriptSession()
+        saveUsageLedger()
         audioLevel = 0.0
         isRunning = false
     }
@@ -726,13 +748,41 @@ final class AppState: ObservableObject {
             let level = AppState.calculateRMS(data: data)
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.recordAudioChunk(source: source, level: level)
-                let client = self.client
-                Task {
-                    await client?.sendAudio(data)
-                }
+                self.handleCapturedAudio(data, source: source, level: level)
             }
         }
+    }
+
+    private func handleCapturedAudio(_ data: Data, source: AudioSource, level: Float) {
+        let now = Date()
+        recordAudioChunk(source: source, level: level)
+
+        let chunk = BufferedAudioChunk(data: data, capturedAt: now)
+        let decision = usageEngine.ingest(chunk: chunk, level: level, now: now)
+        usageSnapshot = usageEngine.snapshot
+
+        if let pauseReason = decision.pauseReason {
+            enterUsagePause(reason: pauseReason)
+            updateRunningUsageStatus(now: now, force: true)
+            return
+        }
+
+        if decision.shouldResume {
+            scheduleUsageResume(replayChunks: decision.replayChunks)
+            updateRunningUsageStatus(now: now, force: true)
+            return
+        }
+
+        if decision.shouldSend {
+            sentChunkCount += 1
+            let client = self.client
+            Task {
+                await client?.sendAudio(data)
+            }
+            saveUsageLedger()
+        }
+
+        updateRunningUsageStatus(now: now)
     }
 
     private func recordAudioChunk(source: AudioSource, level: Float) {
@@ -744,15 +794,15 @@ final class AppState: ObservableObject {
         case .both:
             break
         }
-        sentChunkCount += 1
 
         audioLevel = audioLevel * 0.7 + level * 0.3
+    }
 
-        let now = Date()
-        guard now.timeIntervalSince(lastAudioStatusAt) >= 1 else { return }
+    private func updateRunningUsageStatus(now: Date, force: Bool = false) {
+        guard force || now.timeIntervalSince(lastAudioStatusAt) >= 1 else { return }
         lastAudioStatusAt = now
-        statusMessage = "Listening · mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount)"
-        statusLevel = .running
+        statusMessage = runningUsageStatusMessage()
+        statusLevel = usageSnapshot.runtimeState == .resuming ? .connecting : .running
     }
 
     private func resetAudioCounters() {
@@ -761,6 +811,108 @@ final class AppState: ObservableObject {
         sentChunkCount = 0
         lastAudioStatusAt = .distantPast
         audioLevel = 0.0
+    }
+
+    private func resetUsageSession() {
+        let now = Date()
+        usageEngine.resetSession(now: now, ledger: Self.loadUsageLedger(from: usageLedgerURL, now: now))
+        usageSnapshot = usageEngine.snapshot
+    }
+
+    private func updateUsageControlSettings() {
+        usageEngine.updateSettings(settings.usageControls, now: Date())
+        usageSnapshot = usageEngine.snapshot
+    }
+
+    private func enterUsagePause(reason: UsageControlPauseReason) {
+        client?.close()
+        client = nil
+        audioPlayer.stop()
+        saveUsageLedger()
+        appendLog(usagePauseLogMessage(reason), level: .info)
+    }
+
+    private func scheduleUsageResume(replayChunks: [BufferedAudioChunk]) {
+        guard usageResumeTask == nil else { return }
+        usageResumeTask = Task { [weak self] in
+            await self?.resumeFromUsagePause(replayChunks: replayChunks)
+        }
+    }
+
+    private func resumeFromUsagePause(replayChunks: [BufferedAudioChunk]) async {
+        guard isRunning, !userInitiatedStop else {
+            usageResumeTask = nil
+            return
+        }
+
+        updateStatus("Resuming · replaying buffered audio", level: .connecting, log: true)
+        let newClient = makeGeminiClient()
+        do {
+            try await newClient.connect()
+            client = newClient
+            for chunk in replayChunks {
+                await newClient.sendAudio(chunk.data)
+            }
+            sentChunkCount += replayChunks.count
+            usageEngine.markReplaySent(replayChunks)
+            usageEngine.markResumed(now: Date())
+            usageSnapshot = usageEngine.snapshot
+            saveUsageLedger()
+            updateStatus(runningUsageStatusMessage(), level: .running, log: true)
+        } catch {
+            client = nil
+            usageEngine.forcePause(.idle)
+            usageSnapshot = usageEngine.snapshot
+            let diagnostic = DiagnosticClassifier.from(error: error, context: .runtime)
+            setDiagnosticIssue(diagnostic)
+            updateStatus(settings.interfaceLanguage.localized(diagnostic.titleKey), level: .error, log: true)
+        }
+        usageResumeTask = nil
+    }
+
+    private func runningUsageStatusMessage() -> String {
+        let apiTime = Self.formatUsageDuration(usageSnapshot.sessionSentAudioSeconds)
+        let cost = Self.formatUsageCost(usageSnapshot.estimatedSessionCostUSD)
+        let base = "mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount) · API \(apiTime) · \(cost)"
+        switch usageSnapshot.runtimeState {
+        case .active:
+            return "Listening · \(base)"
+        case .idleWarning(let remainingSeconds):
+            return "Idle soon · auto-pause in \(remainingSeconds)s · \(base)"
+        case .paused(let reason):
+            return "\(usagePauseLogMessage(reason)) · \(base)"
+        case .resuming:
+            return "Resuming · replaying buffered audio · \(base)"
+        }
+    }
+
+    private func usagePauseLogMessage(_ reason: UsageControlPauseReason) -> String {
+        switch reason {
+        case .idle:
+            return "API paused · monitoring locally"
+        case .sessionLimit:
+            return "Session usage limit reached · API paused"
+        case .dailyLimit:
+            return "Daily usage limit reached · API paused"
+        }
+    }
+
+    static func formatUsageDuration(_ seconds: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(seconds.rounded()))
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    static func formatUsageCost(_ cost: Double) -> String {
+        if cost < 0.01 {
+            return String(format: "$%.4f", max(0, cost))
+        }
+        return String(format: "$%.2f", max(0, cost))
     }
 
     nonisolated private static func calculateRMS(data: Data) -> Float {
@@ -785,6 +937,8 @@ final class AppState: ObservableObject {
     private func appendOriginalText(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        usageEngine.noteTranscriptActivity(at: Date())
+        usageSnapshot = usageEngine.snapshot
         let pending = originalDraft + (originalDraft.isEmpty ? "" : " ") + trimmed
         let sentences = completedSentences(from: pending)
         for sentence in sentences.completed {
@@ -796,6 +950,8 @@ final class AppState: ObservableObject {
     private func appendCaption(_ text: String, language: String?, kind: CaptionKind) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        usageEngine.noteTranscriptActivity(at: Date())
+        usageSnapshot = usageEngine.snapshot
         var pending = captionDraft + (captionDraft.isEmpty ? "" : " ") + trimmed
         let sentences = completedSentences(from: pending)
         for sentence in sentences.completed {
@@ -884,6 +1040,25 @@ final class AppState: ObservableObject {
             let issue = DiagnosticClassifier.storage(.settingsSaveFailed, underlyingMessage: error.localizedDescription)
             setDiagnosticIssue(issue)
             updateStatus(settings.interfaceLanguage.localized(issue.titleKey), level: .error, log: true)
+        }
+    }
+
+    private static func loadUsageLedger(from url: URL, now: Date) -> UsageLedger {
+        let fallback = UsageLedger.empty(for: now)
+        guard let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode(UsageLedger.self, from: data) else {
+            return fallback
+        }
+        return decoded.dayKey == UsageLedger.dayKey(for: now) ? decoded : fallback
+    }
+
+    private func saveUsageLedger() {
+        do {
+            try FileManager.default.createDirectory(at: usageLedgerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(usageEngine.ledger)
+            try data.write(to: usageLedgerURL, options: [.atomic])
+        } catch {
+            appendLog("Cannot save usage ledger: \(error.localizedDescription)", level: .error)
         }
     }
 

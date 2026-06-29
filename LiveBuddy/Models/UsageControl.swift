@@ -159,7 +159,8 @@ struct UsageControlEngine {
 
         if let pausedReason {
             appendPaused(chunk)
-            if pausedReason == .idle, speechActive {
+            let canResumeFromLimit = pausedReason != .idle && limitReasonIfSending(chunk.duration) == nil
+            if speechActive && (pausedReason == .idle || canResumeFromLimit) {
                 let replay = prerollBuffer + pausedBuffer
                 refreshSnapshot(runtimeState: .resuming)
                 return .resume(replayChunks: replay)
