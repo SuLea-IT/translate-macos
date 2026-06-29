@@ -94,6 +94,20 @@ for context, pattern in [
     elif "restartTranscriptSessionIfRunning()" not in match.group("body"):
         errors.append(f"AppState.{context} must start a fresh transcript session when clearing live history")
 
+start_match = re.search(r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func stop", app_state_text)
+if not start_match:
+    errors.append("AppState.start() not found for transcript startup timing")
+else:
+    body = start_match.group("body")
+    connect_index = body.find("try await client.connect()")
+    capture_index = body.find("try await startCapture()")
+    begin_index = body.find("beginTranscriptSession()")
+    running_index = body.find("isRunning = true")
+    if min(connect_index, capture_index, begin_index, running_index) == -1:
+        errors.append("AppState.start() must connect, start capture, create transcript session, and mark running")
+    elif not (connect_index < capture_index < begin_index < running_index):
+        errors.append("AppState.start() must create transcript sessions only after connection and capture succeed, before isRunning = true")
+
 for token in [
     "TranscriptArchiveExporter",
     "exportAllTranscriptsFromUI()",

@@ -201,7 +201,6 @@ final class AppState: ObservableObject {
         completedOriginalSentences.removeAll()
         resetAudioCounters()
         resetUsageSession()
-        beginTranscriptSession()
         updateStatus("Connecting", level: .connecting, log: true)
 
         let client = makeGeminiClient()
@@ -210,6 +209,7 @@ final class AppState: ObservableObject {
             try await client.connect()
             self.client = client
             try await startCapture()
+            beginTranscriptSession()
             isRunning = true
             updateStatus("Listening", level: .running, log: true)
         } catch {
