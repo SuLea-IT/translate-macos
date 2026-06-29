@@ -74,3 +74,20 @@ struct GlossaryImportTests {
         #expect(GlossaryImportURLValidator.remoteURL(from: "https://example.com/terms.tsv")?.scheme == "https")
     }
 }
+
+struct GlossaryImportServiceTests {
+    @Test func cacheFileNameIsStableAndSanitized() throws {
+        let service = GlossaryImportService(cacheDirectory: URL(fileURLWithPath: "/tmp/GlossaryImports"))
+        let url = URL(string: "https://example.com/path/Microsoft Terms.tbx")!
+        let fileURL = service.cacheURL(for: url, sourceID: "Microsoft Terminology")
+        #expect(fileURL.lastPathComponent.hasPrefix("Microsoft-Terminology-"))
+        #expect(fileURL.pathExtension == "tbx")
+    }
+
+    @Test func mergerAppendsImportedEntriesAndPreservesExisting() throws {
+        let existing = [GlossaryEntry(sourceTerm: "OpenAI", targetTerm: "OpenAI")]
+        let imported = [GlossaryEntry(sourceTerm: "Codex", targetTerm: "Codex")]
+        let merged = GlossaryImportMerger().merge(existing: existing, imported: imported)
+        #expect(merged.map(\.sourceTerm) == ["OpenAI", "Codex"])
+    }
+}

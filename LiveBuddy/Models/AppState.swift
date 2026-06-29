@@ -29,6 +29,8 @@ final class AppState: ObservableObject {
     @Published private(set) var detectedSourceLanguageCode: String?
     @Published private(set) var preflightTestReport: PreflightTestReport = .idle
     @Published private(set) var isRunningPreflightTest = false
+    @Published private(set) var glossaryImportMessage = ""
+    @Published private(set) var isImportingGlossary = false
     
     var openWindowAction: OpenWindowAction?
 
@@ -65,6 +67,7 @@ final class AppState: ObservableObject {
     private let systemSettingsNavigator = SystemSettingsNavigator()
     private let apiKeyStore: APIKeyStore
     private let globalShortcutRegistrar: GlobalShortcutRegistering
+    private let glossaryImportService: GlossaryImportService
     private var restartTask: Task<Void, Never>?
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
@@ -81,10 +84,12 @@ final class AppState: ObservableObject {
 
     init(
         apiKeyStore: APIKeyStore = .liveBuddy,
-        globalShortcutRegistrar: GlobalShortcutRegistering = CarbonGlobalShortcutRegistrar()
+        globalShortcutRegistrar: GlobalShortcutRegistering = CarbonGlobalShortcutRegistrar(),
+        glossaryImportService: GlossaryImportService = GlossaryImportService()
     ) {
         self.apiKeyStore = apiKeyStore
         self.globalShortcutRegistrar = globalShortcutRegistrar
+        self.glossaryImportService = glossaryImportService
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("LiveBuddy", isDirectory: true)
         settingsURL = support.appendingPathComponent("settings.json")
@@ -314,6 +319,62 @@ final class AppState: ObservableObject {
     func deleteGlossaryEntry(_ entry: GlossaryEntry) {
         settings.glossaryEntries = GlossaryEntryEditor().delete(entry, from: settings.glossaryEntries)
         refreshSetupChecklist()
+    }
+
+    func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
+        guard !isImportingGlossary else { return }
+        isImportingGlossary = true
+        defer { isImportingGlossary = false }
+
+        do {
+            let result = try await glossaryImportService.importRemote(
+                url: url,
+                sourceName: sourceName,
+                existingEntries: settings.glossaryEntries,
+                options: glossaryImportOptions(importLimit: importLimit)
+            )
+            applyGlossaryImportResult(result)
+        } catch {
+            handleGlossaryImportFailure(error)
+        }
+    }
+
+    func importGlossary(fromLocalFile url: URL, sourceName: String, importLimit: Int) async {
+        guard !isImportingGlossary else { return }
+        isImportingGlossary = true
+        defer { isImportingGlossary = false }
+
+        do {
+            let result = try glossaryImportService.importLocalFile(
+                url: url,
+                sourceName: sourceName,
+                existingEntries: settings.glossaryEntries,
+                options: glossaryImportOptions(importLimit: importLimit)
+            )
+            applyGlossaryImportResult(result)
+        } catch {
+            handleGlossaryImportFailure(error)
+        }
+    }
+
+    private func glossaryImportOptions(importLimit: Int) -> GlossaryImportOptions {
+        GlossaryImportOptions(
+            sourceLanguageCode: settings.sourceLanguageCode ?? "en",
+            targetLanguageCode: settings.targetLanguageCode,
+            importLimit: importLimit
+        )
+    }
+
+    private func applyGlossaryImportResult(_ result: GlossaryImportResult) {
+        settings.glossaryEntries = GlossaryImportMerger().merge(existing: settings.glossaryEntries, imported: result.entries)
+        glossaryImportMessage = "Imported \(result.added) terms from \(result.sourceName). Skipped duplicates: \(result.skippedDuplicate)."
+        updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
+        refreshSetupChecklist()
+    }
+
+    private func handleGlossaryImportFailure(_ error: Error) {
+        glossaryImportMessage = error.localizedDescription
+        updateStatus(glossaryImportMessage, level: .error, log: true)
     }
 
     func configureGlobalShortcuts() {
