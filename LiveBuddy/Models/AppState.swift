@@ -1135,7 +1135,13 @@ final class AppState: ObservableObject {
         let generation = audioSendGeneration
         let previousTask = audioSendTask
         audioSendTask = Task { [weak self, client, data, previousTask, generation] in
-            await previousTask?.value
+            if let previousTask {
+                await withTaskCancellationHandler {
+                    await previousTask.value
+                } onCancel: {
+                    previousTask.cancel()
+                }
+            }
             defer {
                 Task { @MainActor [weak self] in
                     guard let self else { return }
