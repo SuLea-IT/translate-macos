@@ -6,6 +6,7 @@ import CoreAudio
 
 @MainActor
 final class AppState: ObservableObject {
+    private static let settingsSaveDebounceNanoseconds: UInt64 = 750_000_000
     private static let transcriptSaveDebounceNanoseconds: UInt64 = 750_000_000
 
     private enum RuntimeControlRequest {
@@ -16,7 +17,7 @@ final class AppState: ObservableObject {
 
     @Published private(set) var settings: AppSettings {
         didSet {
-            saveSettings()
+            scheduleSettingsSave()
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
             configureGlobalShortcutsIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolume()
@@ -90,6 +91,7 @@ final class AppState: ObservableObject {
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var audioSendTask: Task<Void, Never>?
+    private var settingsSaveTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
     private var temporaryTestCaptionTask: Task<Void, Never>?
     private var glossaryImportTask: Task<Void, Never>?
@@ -160,7 +162,7 @@ final class AppState: ObservableObject {
         loadTranscriptSessions()
         appendLog("App ready", level: .info)
         if shouldRewriteSettings {
-            saveSettings()
+            saveSettingsImmediately()
         }
         updateAudioPlayerVolume()
         refreshAvailableMicrophones()
@@ -304,6 +306,12 @@ final class AppState: ObservableObject {
         case .stop:
             await stop()
         }
+    }
+
+    func flushPendingStateBeforeTermination() {
+        saveSettingsImmediately()
+        saveTranscriptSessionsImmediately()
+        saveUsageLedger()
     }
 
     func binding<Value>(_ keyPath: WritableKeyPath<AppSettings, Value>) -> Binding<Value> {
@@ -1362,6 +1370,31 @@ final class AppState: ObservableObject {
         return (completed, remainder)
     }
 
+    private func scheduleSettingsSave() {
+        guard settingsSaveTask == nil else { return }
+        settingsSaveTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: Self.settingsSaveDebounceNanoseconds)
+            } catch {
+                self?.settingsSaveTask = nil
+                return
+            }
+            guard !Task.isCancelled else {
+                self?.settingsSaveTask = nil
+                return
+            }
+            guard let self else { return }
+            self.saveSettings()
+            self.settingsSaveTask = nil
+        }
+    }
+
+    private func saveSettingsImmediately() {
+        settingsSaveTask?.cancel()
+        settingsSaveTask = nil
+        saveSettings()
+    }
+
     private func saveSettings() {
         do {
             try FileManager.default.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -1614,6 +1647,8 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         setupChecklistRefreshTask?.cancel()
         audioSendTask?.cancel()
+        settingsSaveTask?.cancel()
+        settingsSaveTask = nil
         preflightTestTask?.cancel()
         temporaryTestCaptionTask?.cancel()
         glossaryImportTask?.cancel()
