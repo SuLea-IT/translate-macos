@@ -135,13 +135,10 @@ struct UsageControlEngine {
         switch pausedReason {
         case .idle:
             guard settings.idleAutoPauseEnabled else {
-                return resumeFromSettingsChange()
+                return resumeReplayIfAllowed()
             }
         case .sessionLimit, .dailyLimit:
-            let replayDuration = replayBufferDuration
-            if limitReasonIfSending(replayDuration) == nil {
-                return resumeFromSettingsChange()
-            }
+            return resumeReplayIfAllowed()
         }
 
         refreshSnapshot(runtimeState: .paused(reason: pausedReason))
@@ -178,11 +175,8 @@ struct UsageControlEngine {
 
         if let pausedReason {
             appendPaused(chunk)
-            let canResumeFromLimit = pausedReason != .idle && limitReasonIfSending(chunk.duration) == nil
-            if speechActive && (pausedReason == .idle || canResumeFromLimit) {
-                let replay = prerollBuffer + pausedBuffer
-                refreshSnapshot(runtimeState: .resuming)
-                return .resume(replayChunks: replay)
+            if speechActive {
+                return resumeReplayIfAllowed()
             }
             refreshSnapshot(runtimeState: .paused(reason: pausedReason))
             return .hold
@@ -249,7 +243,13 @@ struct UsageControlEngine {
         refreshSnapshot(runtimeState: snapshot.runtimeState)
     }
 
-    private mutating func resumeFromSettingsChange() -> UsageControlDecision {
+    private mutating func resumeReplayIfAllowed() -> UsageControlDecision {
+        let replayDuration = replayBufferDuration
+        if let limitReason = limitReasonIfSending(replayDuration) {
+            pausedReason = limitReason
+            refreshSnapshot(runtimeState: .paused(reason: limitReason))
+            return .hold
+        }
         let replay = replayBuffer
         refreshSnapshot(runtimeState: .resuming)
         return .resume(replayChunks: replay)
