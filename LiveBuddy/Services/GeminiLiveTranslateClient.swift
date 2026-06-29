@@ -13,10 +13,14 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     private var isOpen = false
     private var receivedAudioChunks = 0
     private var lastReceiveStatusAt = Date.distantPast
+    private let socketOpenTimeout: TimeInterval
+    private let setupMessageTimeout: TimeInterval
     private lazy var session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
 
-    init(settings: AppSettings) {
+    init(settings: AppSettings, socketOpenTimeout: TimeInterval = 8, setupMessageTimeout: TimeInterval = 8) {
         self.settings = settings
+        self.socketOpenTimeout = socketOpenTimeout
+        self.setupMessageTimeout = setupMessageTimeout
     }
 
     func connect() async throws {
@@ -28,10 +32,15 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
 
         let task = session.webSocketTask(with: url)
         webSocket = task
-        try await waitForSocketOpen(task)
-        try await sendSetup()
-        try await waitForSetupComplete()
-        receiveLoop()
+        do {
+            try await waitForSocketOpen(task)
+            try await sendSetup()
+            try await waitForSetupComplete()
+            receiveLoop()
+        } catch {
+            close()
+            throw error
+        }
     }
 
     func sendAudio(_ data: Data) async {
@@ -52,6 +61,9 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func close() {
+        openContinuation?.resume(throwing: LiveTranslateError.socketClosed("Closed"))
+        openContinuation = nil
+        isOpen = false
         webSocket?.cancel(with: .goingAway, reason: nil)
         webSocket = nil
         session.invalidateAndCancel()
@@ -104,6 +116,12 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         try await withCheckedThrowingContinuation { continuation in
             openContinuation = continuation
             task.resume()
+            DispatchQueue.main.asyncAfter(deadline: .now() + socketOpenTimeout) { [weak self, weak task] in
+                guard let self, let task, self.webSocket === task, !self.isOpen, self.openContinuation != nil else { return }
+                self.openContinuation?.resume(throwing: LiveTranslateError.setupTimedOut)
+                self.openContinuation = nil
+                task.cancel(with: .goingAway, reason: nil)
+            }
         }
     }
 
@@ -138,9 +156,10 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func waitForSetupComplete() async throws {
-        let deadline = Date().addingTimeInterval(8)
+        let deadline = Date().addingTimeInterval(setupMessageTimeout)
         while Date() < deadline {
-            let message = try await receiveMessage()
+            let remaining = max(0.01, deadline.timeIntervalSinceNow)
+            let message = try await receiveMessage(timeout: remaining)
             let root = try decodedObject(from: message)
             if let error = root["error"] as? [String: Any],
                let message = error["message"] as? String {
@@ -161,6 +180,35 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         return try await withCheckedThrowingContinuation { continuation in
             webSocket.receive { result in
                 continuation.resume(with: result)
+            }
+        }
+    }
+
+    private func receiveMessage(timeout: TimeInterval) async throws -> URLSessionWebSocketTask.Message {
+        guard let webSocket else { throw LiveTranslateError.notConnected }
+        return try await withLiveTimeout(seconds: timeout, onTimeout: { [weak webSocket] in
+            webSocket?.cancel(with: .goingAway, reason: nil)
+        }) { complete in
+            webSocket.receive { result in
+                complete(result)
+            }
+        }
+    }
+
+    private func withLiveTimeout<Value>(
+        seconds: TimeInterval,
+        onTimeout: @escaping @Sendable () -> Void = {},
+        start: (@escaping @Sendable (Result<Value, Error>) -> Void) -> Void
+    ) async throws -> Value {
+        try await withCheckedThrowingContinuation { continuation in
+            let completion = LiveTimeoutCompletion(continuation)
+            start { result in
+                completion.resume(with: result)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(seconds, 0)) {
+                if completion.resume(throwing: LiveTranslateError.setupTimedOut) {
+                    onTimeout()
+                }
             }
         }
     }
@@ -245,6 +293,33 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         guard now.timeIntervalSince(lastReceiveStatusAt) >= 1 else { return }
         lastReceiveStatusAt = now
         onStatus?("Receiving translated audio: \(receivedAudioChunks) chunks")
+    }
+}
+
+private final class LiveTimeoutCompletion<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Value, Error>?
+
+    init(_ continuation: CheckedContinuation<Value, Error>) {
+        self.continuation = continuation
+    }
+
+    @discardableResult
+    func resume(with result: Result<Value, Error>) -> Bool {
+        lock.lock()
+        guard let continuation else {
+            lock.unlock()
+            return false
+        }
+        self.continuation = nil
+        lock.unlock()
+        continuation.resume(with: result)
+        return true
+    }
+
+    @discardableResult
+    func resume(throwing error: Error) -> Bool {
+        resume(with: .failure(error))
     }
 }
 

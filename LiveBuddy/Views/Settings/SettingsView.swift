@@ -692,10 +692,12 @@ struct SettingsView: View {
             guard let url = urls.first else { return }
             let didStartAccessing = url.startAccessingSecurityScopedResource()
             Task {
-                await appState.importGlossary(fromLocalFile: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
-                if didStartAccessing {
-                    url.stopAccessingSecurityScopedResource()
+                defer {
+                    if didStartAccessing {
+                        url.stopAccessingSecurityScopedResource()
+                    }
                 }
+                await appState.importGlossary(fromLocalFile: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
             }
         case .failure(let error):
             glossaryImportInputMessage = error.localizedDescription
