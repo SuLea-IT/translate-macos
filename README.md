@@ -93,6 +93,20 @@ LiveBuddy uses a modular architecture combining modern macOS system APIs and Web
 *   **macOS 13.0+** (ScreenCaptureKit requires Ventura or later).
 *   **Xcode 15.0+** to compile the Swift project.
 
+
+### Free macOS Download / 免费安装说明
+
+Prebuilt free macOS packages are published on [GitHub Releases](https://github.com/SuLea-IT/translate-macos/releases). Download the DMG first; use the ZIP only as a fallback.
+
+This project does not require a paid Apple Developer Program membership for free builds. Release artifacts are ad-hoc signed but not Apple-notarized. On first launch macOS may show an “unidentified developer” warning. If that happens:
+
+1. Drag `Live Translate Buddy.app` to Applications.
+2. Right-click `Live Translate Buddy.app`.
+3. Choose **Open**.
+4. Click **Open** again in the confirmation dialog.
+
+Inside the app, open Settings → Updates → **Check for Updates** to jump to the latest GitHub Releases page.
+
 ### Setup Instructions
 
 1.  **Clone the Repository**:
