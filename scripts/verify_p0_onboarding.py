@@ -206,7 +206,7 @@ if settings_view_file.exists():
         errors.append("SettingsView must expose terminology glossary editor")
     if "NavigationItem.test" not in text and "case test" not in text:
         errors.append("SettingsView must expose Test navigation item")
-    if "preflightTestForm" not in text or "runPreflightTest" not in text:
+    if "preflightTestForm" not in text or "startPreflightTest" not in text:
         errors.append("SettingsView must expose preflight test form")
     if "DiagnosticIssueBanner" not in text or "currentDiagnosticIssue" not in text:
         errors.append("SettingsView must render diagnostic guidance banner")

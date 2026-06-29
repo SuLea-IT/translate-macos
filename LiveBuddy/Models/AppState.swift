@@ -78,6 +78,8 @@ final class AppState: ObservableObject {
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var audioSendTask: Task<Void, Never>?
+    private var preflightTestTask: Task<Void, Never>?
+    private var temporaryTestCaptionTask: Task<Void, Never>?
     private var pendingAudioSendChunks = 0
     private let maxPendingAudioSendChunks = 120
     private var audioSendGeneration = UUID()
@@ -152,6 +154,7 @@ final class AppState: ObservableObject {
 
     func start() async {
         guard !isRunning else { return }
+        cancelPreflightTest()
 
         let preflight = await runStartPreflight()
         if case .blocked(let issue) = preflight {
@@ -210,6 +213,7 @@ final class AppState: ObservableObject {
         reconnectAttempts = 0
         restartTask?.cancel()
         restartTask = nil
+        cancelPreflightTest()
         resetAudioSendPipeline()
         microphoneCapture?.stop()
         microphoneCapture = nil
@@ -528,19 +532,45 @@ final class AppState: ObservableObject {
             await self?.showTemporaryTestCaption()
         }
         _ = await runner.run(settings: settings) { [weak self] report in
+            guard !Task.isCancelled else { return }
             self?.preflightTestReport = report
         }
+        guard !Task.isCancelled else { return }
         refreshSetupChecklist()
     }
 
+    func startPreflightTest() {
+        guard preflightTestTask == nil else { return }
+        preflightTestTask = Task { @MainActor [weak self] in
+            await self?.runPreflightTest()
+            guard !Task.isCancelled else { return }
+            self?.preflightTestTask = nil
+        }
+    }
+
     func showTemporaryTestCaption() async {
+        temporaryTestCaptionTask?.cancel()
         let previousDraft = captionDraft
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
         captionDraft = settings.interfaceLanguage.localized(.subtitleTestMessage)
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        if !isRunning {
-            captionDraft = previousDraft
+        temporaryTestCaptionTask = Task { @MainActor [weak self, previousDraft] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard let self else { return }
+            if !isRunning {
+                captionDraft = previousDraft
+            }
+            temporaryTestCaptionTask = nil
         }
+        await temporaryTestCaptionTask?.value
+    }
+
+    private func cancelPreflightTest() {
+        preflightTestTask?.cancel()
+        preflightTestTask = nil
+        temporaryTestCaptionTask?.cancel()
+        temporaryTestCaptionTask = nil
+        isRunningPreflightTest = false
     }
 
     func openMicrophoneSettings() {
@@ -1293,6 +1323,8 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         setupChecklistRefreshTask?.cancel()
         audioSendTask?.cancel()
+        preflightTestTask?.cancel()
+        temporaryTestCaptionTask?.cancel()
         microphoneCapture?.stop()
         if let screenCaptureForDeinit = screenCapture {
             Task {

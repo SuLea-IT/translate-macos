@@ -64,6 +64,8 @@ else:
         "usageResumeTask?.cancel()",
         "setupChecklistRefreshTask?.cancel()",
         "audioSendTask?.cancel()",
+        "preflightTestTask?.cancel()",
+        "temporaryTestCaptionTask?.cancel()",
         "microphoneCapture?.stop()",
         "client?.close()",
         "audioPlayer.stop()",
@@ -152,6 +154,68 @@ for context, pattern in [
         errors.append(f"AppState.{context} not found for audio send cleanup")
     elif "resetAudioSendPipeline()" not in match.group("body"):
         errors.append(f"AppState.{context} must cancel queued audio sends through resetAudioSendPipeline()")
+
+
+for token in [
+    "private var preflightTestTask: Task<Void, Never>?",
+    "private var temporaryTestCaptionTask: Task<Void, Never>?",
+    "func startPreflightTest()",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState must retain and control preflight work through {token}")
+
+settings_preflight_match = re.search(r"Button\(appState.t\(\.runTest\)\) \{(?P<body>[\s\S]*?)\n                \}", settings_text)
+if not settings_preflight_match:
+    errors.append("SettingsView preflight run button not found")
+elif "appState.startPreflightTest()" not in settings_preflight_match.group("body"):
+    errors.append("SettingsView preflight button must call AppState.startPreflightTest() instead of spawning an untracked Task")
+
+start_preflight_match = re.search(r"func startPreflightTest\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_preflight_match:
+    errors.append("AppState.startPreflightTest() not found")
+else:
+    body = start_preflight_match.group("body")
+    for token in ["guard preflightTestTask == nil", "preflightTestTask = Task", "await self?.runPreflightTest()", "preflightTestTask = nil"]:
+        if token not in body:
+            errors.append(f"AppState.startPreflightTest() must manage preflight lifecycle through {token}")
+
+for context, pattern in [
+    ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stop", r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for preflight cleanup")
+    elif "cancelPreflightTest()" not in match.group("body"):
+        errors.append(f"AppState.{context} must cancel preflight work through cancelPreflightTest()")
+
+if "private func cancelPreflightTest()" not in app_state_text:
+    errors.append("AppState must provide cancelPreflightTest() for lifecycle cleanup")
+else:
+    cancel_match = re.search(r"private func cancelPreflightTest\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+    body = cancel_match.group("body") if cancel_match else ""
+    for token in ["preflightTestTask?.cancel()", "preflightTestTask = nil", "temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = nil", "isRunningPreflightTest = false"]:
+        if token not in body:
+            errors.append(f"AppState.cancelPreflightTest() must release preflight resource through {token}")
+
+
+run_preflight_match = re.search(r"func runPreflightTest\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not run_preflight_match:
+    errors.append("AppState.runPreflightTest() not found")
+else:
+    body = run_preflight_match.group("body")
+    for token in ["guard !Task.isCancelled else { return }", "self?.preflightTestReport = report"]:
+        if token not in body:
+            errors.append(f"AppState.runPreflightTest() must ignore cancelled preflight updates through {token}")
+
+show_caption_match = re.search(r"func showTemporaryTestCaption\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not show_caption_match:
+    errors.append("AppState.showTemporaryTestCaption() not found")
+else:
+    body = show_caption_match.group("body")
+    for token in ["temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = Task", "try? await Task.sleep", "guard !Task.isCancelled else { return }", "temporaryTestCaptionTask = nil"]:
+        if token not in body:
+            errors.append(f"AppState.showTemporaryTestCaption() must manage temporary caption restoration through {token}")
 
 mic_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", microphone_text)
 if not mic_deinit_match:

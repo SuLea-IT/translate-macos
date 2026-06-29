@@ -789,7 +789,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
 
                 Button(appState.t(.runTest)) {
-                    Task { await appState.runPreflightTest() }
+                    appState.startPreflightTest()
                 }
                 .disabled(appState.isRunning || appState.isRunningPreflightTest)
             }
