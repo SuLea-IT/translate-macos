@@ -103,6 +103,40 @@ else:
 
 if "private var setupChecklistRefreshTask: Task<Void, Never>?" not in app_state_text:
     errors.append("AppState must retain setup checklist refresh task so stale refresh work can be cancelled")
+
+settings_did_set_match = re.search(r"@Published private\(set\) var settings: AppSettings \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not settings_did_set_match:
+    errors.append("AppState.settings didSet not found")
+else:
+    body = settings_did_set_match.group("body")
+    if "configureGlobalShortcutsIfNeeded(oldValue: oldValue)" not in body:
+        errors.append("AppState.settings didSet must perform diff-aware global shortcut reconfiguration")
+
+shortcut_reconfigure_match = re.search(r"private func configureGlobalShortcutsIfNeeded\(oldValue: AppSettings\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not shortcut_reconfigure_match:
+    errors.append("AppState.configureGlobalShortcutsIfNeeded(oldValue:) not found")
+else:
+    body = shortcut_reconfigure_match.group("body")
+    for token in [
+        "oldValue.globalShortcutsEnabled != settings.globalShortcutsEnabled",
+        "oldValue.globalShortcuts != settings.globalShortcuts",
+        "guard shortcutsChanged else { return }",
+        "configureGlobalShortcuts()",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.configureGlobalShortcutsIfNeeded(oldValue:) must avoid duplicate shortcut registration through {token}")
+
+for shortcut_method in [
+    "updateGlobalShortcutsEnabled",
+    "updateGlobalShortcut",
+    "clearGlobalShortcut",
+    "resetGlobalShortcut",
+    "resetAllGlobalShortcuts",
+]:
+    method_match = re.search(rf"func {shortcut_method}\([^\)]*\)(?: -> [^\{{]+)? \{{(?P<body>[\s\S]*?)\n    \}}", app_state_text)
+    if method_match and "configureGlobalShortcuts()" in method_match.group("body"):
+        errors.append(f"AppState.{shortcut_method} must not manually reconfigure shortcuts because settings didSet already handles it once")
+
 refresh_match = re.search(r"func refreshSetupChecklist\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not refresh_match:
     errors.append("AppState.refreshSetupChecklist() not found")

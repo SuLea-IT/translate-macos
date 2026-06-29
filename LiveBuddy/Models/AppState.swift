@@ -16,6 +16,7 @@ final class AppState: ObservableObject {
         didSet {
             saveSettings()
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
+            configureGlobalShortcutsIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolume()
             updateUsageControlSettings()
         }
@@ -320,7 +321,6 @@ final class AppState: ObservableObject {
 
     func updateGlobalShortcutsEnabled(_ value: Bool) {
         settings.globalShortcutsEnabled = value
-        configureGlobalShortcuts()
         refreshSetupChecklist()
     }
 
@@ -330,7 +330,6 @@ final class AppState: ObservableObject {
         let result = next.update(shortcut)
         guard result == .valid else { return result }
         settings.globalShortcuts = next
-        configureGlobalShortcuts()
         return .valid
     }
 
@@ -338,21 +337,18 @@ final class AppState: ObservableObject {
         var next = settings.globalShortcuts
         next.clear(action)
         settings.globalShortcuts = next
-        configureGlobalShortcuts()
     }
 
     func resetGlobalShortcut(_ action: GlobalShortcutAction) {
         var next = settings.globalShortcuts
         next.reset(action)
         settings.globalShortcuts = next
-        configureGlobalShortcuts()
     }
 
     func resetAllGlobalShortcuts() {
         var next = settings.globalShortcuts
         next.resetAll()
         settings.globalShortcuts = next
-        configureGlobalShortcuts()
     }
 
     func clearDiagnosticIssue() {
@@ -578,6 +574,14 @@ final class AppState: ObservableObject {
                 appendLog("Global shortcut \(result.shortcut.displayText) failed to register: \(code)", level: .error)
             }
         }
+    }
+
+    private func configureGlobalShortcutsIfNeeded(oldValue: AppSettings) {
+        let shortcutsChanged =
+            oldValue.globalShortcutsEnabled != settings.globalShortcutsEnabled ||
+            oldValue.globalShortcuts != settings.globalShortcuts
+        guard shortcutsChanged else { return }
+        configureGlobalShortcuts()
     }
 
     func performGlobalShortcut(_ action: GlobalShortcutAction) {
