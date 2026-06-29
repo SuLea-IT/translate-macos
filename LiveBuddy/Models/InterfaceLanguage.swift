@@ -142,6 +142,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case blackHoleDetected
     case blackHoleNotDetected
     case openBlackHoleDownload
+    case copyBlackHoleBrewCommand
     case openSoundSettings
     case costAndUsageControl
     case thisSessionTranslatedTime
@@ -415,6 +416,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .blackHoleDetected: "Loopback device detected",
         .blackHoleNotDetected: "No BlackHole/loopback input detected",
         .openBlackHoleDownload: "Open BlackHole download",
+        .copyBlackHoleBrewCommand: "Copy Homebrew install command",
         .openSoundSettings: "Open Sound Settings",
         .costAndUsageControl: "Cost & Usage Control",
         .thisSessionTranslatedTime: "This session translated time",
@@ -656,6 +658,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "已检测到回环设备",
             .blackHoleNotDetected: "未检测到 BlackHole/回环输入",
             .openBlackHoleDownload: "打开 BlackHole 下载页",
+            .copyBlackHoleBrewCommand: "复制 Homebrew 安装命令",
             .openSoundSettings: "打开声音设置",
             .costAndUsageControl: "成本和用量控制",
             .thisSessionTranslatedTime: "本次已翻译时长",
@@ -894,6 +897,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "ループバックデバイスを検出しました",
             .blackHoleNotDetected: "BlackHole/ループバック入力が見つかりません",
             .openBlackHoleDownload: "BlackHole ダウンロードを開く",
+            .copyBlackHoleBrewCommand: "Homebrew インストールコマンドをコピー",
             .openSoundSettings: "サウンド設定を開く",
             .costAndUsageControl: "コストと使用量の管理",
             .thisSessionTranslatedTime: "今回の翻訳時間",
@@ -1130,6 +1134,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "루프백 장치 감지됨",
             .blackHoleNotDetected: "BlackHole/루프백 입력을 찾지 못했습니다",
             .openBlackHoleDownload: "BlackHole 다운로드 열기",
+            .copyBlackHoleBrewCommand: "Homebrew 설치 명령 복사",
             .openSoundSettings: "사운드 설정 열기",
             .costAndUsageControl: "비용 및 사용량 제어",
             .thisSessionTranslatedTime: "이번 세션 번역 시간",
@@ -1365,6 +1370,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "Dispositivo loopback detectado",
             .blackHoleNotDetected: "No se detectó entrada BlackHole/loopback",
             .openBlackHoleDownload: "Abrir descarga de BlackHole",
+            .copyBlackHoleBrewCommand: "Copiar comando de instalación Homebrew",
             .openSoundSettings: "Abrir ajustes de sonido",
             .costAndUsageControl: "Control de coste y uso",
             .thisSessionTranslatedTime: "Tiempo traducido en esta sesión",
@@ -1600,6 +1606,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "Périphérique de bouclage détecté",
             .blackHoleNotDetected: "Aucune entrée BlackHole/bouclage détectée",
             .openBlackHoleDownload: "Ouvrir le téléchargement BlackHole",
+            .copyBlackHoleBrewCommand: "Copier la commande d’installation Homebrew",
             .openSoundSettings: "Ouvrir les réglages Son",
             .costAndUsageControl: "Contrôle des coûts et de l’utilisation",
             .thisSessionTranslatedTime: "Temps traduit cette session",
@@ -1835,6 +1842,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "Loopback-Gerät erkannt",
             .blackHoleNotDetected: "Keine BlackHole-/Loopback-Eingabe erkannt",
             .openBlackHoleDownload: "BlackHole-Download öffnen",
+            .copyBlackHoleBrewCommand: "Homebrew-Installationsbefehl kopieren",
             .openSoundSettings: "Toneinstellungen öffnen",
             .costAndUsageControl: "Kosten- und Nutzungskontrolle",
             .thisSessionTranslatedTime: "Übersetzungszeit dieser Sitzung",
@@ -2070,6 +2078,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .blackHoleDetected: "Đã phát hiện thiết bị loopback",
             .blackHoleNotDetected: "Không phát hiện đầu vào BlackHole/loopback",
             .openBlackHoleDownload: "Mở trang tải BlackHole",
+            .copyBlackHoleBrewCommand: "Sao chép lệnh cài đặt Homebrew",
             .openSoundSettings: "Mở cài đặt Âm thanh",
             .costAndUsageControl: "Kiểm soát chi phí và mức dùng",
             .thisSessionTranslatedTime: "Thời lượng dịch phiên này",

@@ -432,15 +432,19 @@ struct SettingsView: View {
 
                 HStack {
                     Button(appState.t(.openBlackHoleDownload)) {
-                        if let url = URL(string: "https://github.com/ExistentialAudio/BlackHole") {
-                            NSWorkspace.shared.open(url)
-                        }
+                        NSWorkspace.shared.open(VirtualAudioIsolationLinks.blackHoleDownloadURL)
+                    }
+
+                    Button(appState.t(.copyBlackHoleBrewCommand)) {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(
+                            VirtualAudioIsolationLinks.homebrewInstallCommand,
+                            forType: .string
+                        )
                     }
 
                     Button(appState.t(.openSoundSettings)) {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.sound") {
-                            NSWorkspace.shared.open(url)
-                        }
+                        NSWorkspace.shared.open(VirtualAudioIsolationLinks.soundSettingsURL)
                     }
                 }
             }

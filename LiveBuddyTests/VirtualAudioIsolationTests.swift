@@ -3,6 +3,11 @@ import Testing
 @testable import LiveBuddy
 
 struct VirtualAudioIsolationTests {
+    @Test func blackHoleDownloadLinkTargetsInstallerPage() {
+        #expect(VirtualAudioIsolationLinks.blackHoleDownloadURL.absoluteString == "https://existential.audio/blackhole/")
+        #expect(VirtualAudioIsolationLinks.homebrewInstallCommand == "brew install --cask blackhole-2ch")
+    }
+
     @Test func legacySettingsDisableVirtualIsolationByDefault() throws {
         let legacyJSON = #"{"activeProvider":"gemini","targetLanguageCode":"ja"}"#.data(using: .utf8)!
 

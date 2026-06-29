@@ -136,12 +136,18 @@ LiveBuddy stores the Gemini API key in macOS Keychain. Existing keys from older 
 
 ### Optional: Hear Only Translated Speech with BlackHole
 
-LiveBuddy cannot directly mute audio played by another macOS app. To avoid hearing the original audio, install a free loopback driver such as [BlackHole](https://github.com/ExistentialAudio/BlackHole), then:
+LiveBuddy cannot directly mute audio played by another macOS app. To avoid hearing the original audio, install a free loopback driver such as [BlackHole](https://existential.audio/blackhole/) (source code: [GitHub](https://github.com/ExistentialAudio/BlackHole)), then:
 
 1. Route the source app or system output to `BlackHole 2ch`.
 2. In LiveBuddy Settings → Caption, enable **Virtual audio isolation**.
 3. Select `BlackHole 2ch` as the virtual input device.
 4. Select your speakers or headphones as **Translated voice output**.
+
+If the download page is blocked or does not open, you can also install the 2-channel driver with Homebrew:
+
+```bash
+brew install --cask blackhole-2ch
+```
 
 With this setup, the original audio is captured silently through BlackHole, while LiveBuddy plays the translated voice through the selected output device.
 
