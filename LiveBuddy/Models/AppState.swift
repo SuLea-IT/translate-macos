@@ -6,6 +6,7 @@ import CoreAudio
 
 @MainActor
 final class AppState: ObservableObject {
+    private static let apiKeySaveDebounceNanoseconds: UInt64 = 750_000_000
     private static let settingsSaveDebounceNanoseconds: UInt64 = 750_000_000
     private static let transcriptSaveDebounceNanoseconds: UInt64 = 750_000_000
     private static let maxTranscriptDraftCharacters = 4_000
@@ -95,6 +96,7 @@ final class AppState: ObservableObject {
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var audioSendTask: Task<Void, Never>?
+    private var apiKeySaveTask: Task<Void, Never>?
     private var settingsSaveTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
     private var temporaryTestCaptionTask: Task<Void, Never>?
@@ -118,6 +120,7 @@ final class AppState: ObservableObject {
     
     private var originalDraft = ""
     private var completedOriginalSentences: [String] = []
+    private var pendingAPIKeyForKeychain: String?
 
     init(
         apiKeyStore: APIKeyStore = .liveBuddy,
@@ -313,6 +316,7 @@ final class AppState: ObservableObject {
     }
 
     func flushPendingStateBeforeTermination() {
+        saveAPIKeyImmediately()
         saveSettingsImmediately()
         saveTranscriptSessionsImmediately()
         saveUsageLedger()
@@ -400,14 +404,47 @@ final class AppState: ObservableObject {
     }
 
     func updateAPIKey(_ apiKey: String) {
+        settings.apiKey = apiKey
+        scheduleAPIKeySave(apiKey)
+    }
+
+    private func scheduleAPIKeySave(_ apiKey: String) {
+        pendingAPIKeyForKeychain = apiKey
+        apiKeySaveTask?.cancel()
+        apiKeySaveTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: Self.apiKeySaveDebounceNanoseconds)
+            } catch {
+                self?.apiKeySaveTask = nil
+                return
+            }
+            guard !Task.isCancelled else {
+                self?.apiKeySaveTask = nil
+                return
+            }
+            guard let self else { return }
+            self.savePendingAPIKeyToKeychain()
+            self.apiKeySaveTask = nil
+        }
+    }
+
+    private func saveAPIKeyImmediately() {
+        pendingAPIKeyForKeychain = settings.apiKey
+        apiKeySaveTask?.cancel()
+        apiKeySaveTask = nil
+        savePendingAPIKeyToKeychain()
+    }
+
+    private func savePendingAPIKeyToKeychain() {
+        guard let apiKey = pendingAPIKeyForKeychain else { return }
         do {
             try apiKeyStore.save(apiKey)
+            pendingAPIKeyForKeychain = nil
         } catch {
             let issue = DiagnosticClassifier.storage(.settingsSaveFailed, underlyingMessage: error.localizedDescription)
             setDiagnosticIssue(issue)
             updateStatus(settings.interfaceLanguage.localized(issue.titleKey), level: .error, log: true)
         }
-        settings.apiKey = apiKey
     }
 
     func updateSetting<Value>(_ keyPath: WritableKeyPath<AppSettings, Value>, to value: Value) {
@@ -1687,6 +1724,8 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         setupChecklistRefreshTask?.cancel()
         audioSendTask?.cancel()
+        apiKeySaveTask?.cancel()
+        apiKeySaveTask = nil
         settingsSaveTask?.cancel()
         settingsSaveTask = nil
         preflightTestTask?.cancel()
