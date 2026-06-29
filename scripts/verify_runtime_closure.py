@@ -21,6 +21,17 @@ screen_audio_text = screen_audio_capture.read_text()
 audio_player_text = audio_player.read_text()
 app_delegate_text = app_delegate.read_text()
 
+public_stop_match = re.search(r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+internal_stop_match = re.search(r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if internal_stop_match:
+    stop_cleanup_body = internal_stop_match.group("body")
+    if not public_stop_match or "await stop(cancelPendingRestart: true)" not in public_stop_match.group("body"):
+        errors.append("AppState.stop() must delegate to stop(cancelPendingRestart: true)")
+else:
+    stop_cleanup_body = public_stop_match.group("body") if public_stop_match else ""
+    if not public_stop_match:
+        errors.append("AppState.stop() not found")
+
 for token in ["socketOpenTimeout", "setupMessageTimeout", "withLiveTimeout", "receiveMessage(timeout:"]:
     if token not in client_text:
         errors.append(f"GeminiLiveTranslateClient must use bounded websocket/setup waits through {token}")
@@ -154,8 +165,9 @@ else:
         if token not in body:
             errors.append(f"AppState.resetAudioSendPipeline() must release send work through {token}")
 
+if "resetAudioSendPipeline()" not in stop_cleanup_body:
+    errors.append("AppState.stop must cancel queued audio sends through resetAudioSendPipeline()")
 for context, pattern in [
-    ("stop", r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("enterUsagePause", r"private func enterUsagePause\(reason: UsageControlPauseReason\) \{(?P<body>[\s\S]*?)\n    \}"),
     ("scheduleReconnect", r"private func scheduleReconnect\(after event: LiveConnectionEvent\) \{(?P<body>[\s\S]*?)\n    \}"),
@@ -194,7 +206,6 @@ if "Task { await stopRuntimeAfterConnectionFailure() }" in app_state_text:
 
 for context, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-    ("stop", r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
 ]:
     match = re.search(pattern, app_state_text)
@@ -202,6 +213,8 @@ for context, pattern in [
         errors.append(f"AppState.{context} not found for connection stop cleanup")
     elif "connectionStopTask?.cancel()" not in match.group("body"):
         errors.append(f"AppState.{context} must cancel stale connection stop work")
+if "connectionStopTask?.cancel()" not in stop_cleanup_body:
+    errors.append("AppState.stop must cancel stale connection stop work")
 
 stop_failure_match = re.search(r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if stop_failure_match:
@@ -210,6 +223,34 @@ if stop_failure_match:
     guard_index = body.find("guard !Task.isCancelled else { return }", stop_index)
     if stop_index == -1 or guard_index == -1:
         errors.append("AppState.stopRuntimeAfterConnectionFailure() must check Task cancellation after awaited screen capture stop before clearing runtime state")
+
+
+if internal_stop_match:
+    if "if cancelPendingRestart" not in stop_cleanup_body or "restartTask?.cancel()" not in stop_cleanup_body:
+        errors.append("AppState.stop(cancelPendingRestart:) must only cancel scheduled restarts when requested")
+if stop_failure_match and "restartTask?.cancel()" not in stop_failure_match.group("body"):
+    errors.append("AppState.stopRuntimeAfterConnectionFailure() must cancel scheduled restart work")
+
+
+restart_match = re.search(r"private func rebuildRunningSessionIfNeeded\(oldValue: AppSettings\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not restart_match:
+    errors.append("AppState.rebuildRunningSessionIfNeeded(oldValue:) not found")
+else:
+    body = restart_match.group("body")
+    for token in [
+        "restartTask?.cancel()",
+        "restartTask = Task",
+        "try await Task.sleep",
+        "guard !Task.isCancelled else { return }",
+        "await self.stop(cancelPendingRestart: false)",
+        "guard !Task.isCancelled else { return }",
+        "await self.start()",
+        "restartTask = nil",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.rebuildRunningSessionIfNeeded(oldValue:) must make delayed restarts cancellable through {token}")
+    if "try? await Task.sleep" in body:
+        errors.append("AppState.rebuildRunningSessionIfNeeded(oldValue:) must not swallow Task.sleep cancellation")
 
 
 for token in [
@@ -289,15 +330,13 @@ else:
         if token not in body:
             errors.append(f"AppState.startPreflightTest() must manage preflight lifecycle through {token}")
 
-for context, pattern in [
-    ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-    ("stop", r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-]:
-    match = re.search(pattern, app_state_text)
-    if not match:
-        errors.append(f"AppState.{context} not found for preflight cleanup")
-    elif "cancelPreflightTest()" not in match.group("body"):
-        errors.append(f"AppState.{context} must cancel preflight work through cancelPreflightTest()")
+start_cleanup_match = re.search(r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_cleanup_match:
+    errors.append("AppState.start not found for preflight cleanup")
+elif "cancelPreflightTest()" not in start_cleanup_match.group("body"):
+    errors.append("AppState.start must cancel preflight work through cancelPreflightTest()")
+if "cancelPreflightTest()" not in stop_cleanup_body:
+    errors.append("AppState.stop must cancel preflight work through cancelPreflightTest()")
 
 if "private func cancelPreflightTest()" not in app_state_text:
     errors.append("AppState must provide cancelPreflightTest() for lifecycle cleanup")

@@ -217,6 +217,10 @@ final class AppState: ObservableObject {
     }
 
     func stop() async {
+        await stop(cancelPendingRestart: true)
+    }
+
+    private func stop(cancelPendingRestart: Bool) async {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
@@ -225,8 +229,10 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
-        restartTask?.cancel()
-        restartTask = nil
+        if cancelPendingRestart {
+            restartTask?.cancel()
+            restartTask = nil
+        }
         cancelPreflightTest()
         resetAudioSendPipeline()
         microphoneCapture?.stop()
@@ -854,6 +860,8 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        restartTask?.cancel()
+        restartTask = nil
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
@@ -1279,10 +1287,19 @@ final class AppState: ObservableObject {
     private func rebuildRunningSessionIfNeeded(oldValue: AppSettings) {
         guard isRunning, settings.requiresSessionRestart(comparedTo: oldValue) else { return }
         restartTask?.cancel()
-        restartTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(350))
-            await self?.stop()
-            await self?.start()
+        restartTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(350))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            await self.stop(cancelPendingRestart: false)
+            guard !Task.isCancelled else { return }
+            await self.start()
+            guard !Task.isCancelled else { return }
+            self.restartTask = nil
         }
     }
 
