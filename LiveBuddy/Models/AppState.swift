@@ -430,6 +430,10 @@ final class AppState: ObservableObject {
     }
 
     private func handleGlossaryImportFailure(_ error: Error) {
+        if error is CancellationError {
+            glossaryImportMessage = ""
+            return
+        }
         if let importError = error as? GlossaryImportError {
             switch importError {
             case .unsupportedURL:
@@ -438,8 +442,10 @@ final class AppState: ObservableObject {
                 glossaryImportMessage = settings.interfaceLanguage.localized(.unsupportedGlossaryFormat)
             case .emptyImport:
                 glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryImportEmpty)
-            case .downloadFailed:
-                glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryDownloadFailed)
+            case .downloadFailed(let message):
+                let baseMessage = settings.interfaceLanguage.localized(.glossaryDownloadFailed)
+                let detail = message.trimmingCharacters(in: .whitespacesAndNewlines)
+                glossaryImportMessage = detail.isEmpty ? baseMessage : "\(baseMessage): \(detail)"
             case .fileTooLarge, .parseFailed:
                 glossaryImportMessage = importError.localizedDescription
             }

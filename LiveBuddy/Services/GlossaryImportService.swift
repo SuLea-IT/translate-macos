@@ -5,12 +5,14 @@ final class GlossaryImportService: @unchecked Sendable {
     private let session: URLSession
     private let parser: GlossaryImportParser
     private let maxDownloadBytes: Int
+    private let downloadTimeout: TimeInterval
 
     init(
         cacheDirectory: URL? = nil,
-        session: URLSession = .shared,
+        session: URLSession? = nil,
         parser: GlossaryImportParser = GlossaryImportParser(),
-        maxDownloadBytes: Int = 250 * 1024 * 1024
+        maxDownloadBytes: Int = 250 * 1024 * 1024,
+        downloadTimeout: TimeInterval = 90
     ) {
         if let cacheDirectory {
             self.cacheDirectory = cacheDirectory
@@ -19,9 +21,17 @@ final class GlossaryImportService: @unchecked Sendable {
                 .appendingPathComponent("LiveBuddy", isDirectory: true)
             self.cacheDirectory = support.appendingPathComponent("GlossaryImports", isDirectory: true)
         }
-        self.session = session
+        self.session = session ?? Self.makeDownloadSession(downloadTimeout: downloadTimeout)
         self.parser = parser
         self.maxDownloadBytes = maxDownloadBytes
+        self.downloadTimeout = downloadTimeout
+    }
+
+    private static func makeDownloadSession(downloadTimeout: TimeInterval) -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = downloadTimeout
+        configuration.timeoutIntervalForResource = downloadTimeout
+        return URLSession(configuration: configuration)
     }
 
     func cacheURL(for url: URL, sourceID: String) -> URL {
@@ -67,15 +77,18 @@ final class GlossaryImportService: @unchecked Sendable {
         url: URL,
         progress: ((GlossaryImportProgress) async -> Void)?
     ) async throws -> (URL, URLResponse) {
+        var temporaryURL: URL?
         do {
             let (bytes, response) = try await session.bytes(from: url)
+            try Task.checkCancellation()
             if let httpResponse = response as? HTTPURLResponse, !(200..<300).contains(httpResponse.statusCode) {
                 return (FileManager.default.temporaryDirectory, httpResponse)
             }
 
-            let temporaryURL = cacheDirectory.appendingPathComponent("download-\(UUID().uuidString).tmp")
-            FileManager.default.createFile(atPath: temporaryURL.path, contents: nil)
-            let handle = try FileHandle(forWritingTo: temporaryURL)
+            let downloadURL = cacheDirectory.appendingPathComponent("download-\(UUID().uuidString).tmp")
+            temporaryURL = downloadURL
+            FileManager.default.createFile(atPath: downloadURL.path, contents: nil)
+            let handle = try FileHandle(forWritingTo: downloadURL)
             defer {
                 try? handle.close()
             }
@@ -88,12 +101,14 @@ final class GlossaryImportService: @unchecked Sendable {
             await progress?(.indeterminate)
 
             for try await byte in bytes {
+                try Task.checkCancellation()
                 buffer.append(byte)
                 downloadedBytes += 1
 
                 if downloadedBytes > maxDownloadBytes {
                     try? handle.close()
-                    try? FileManager.default.removeItem(at: temporaryURL)
+                    try? FileManager.default.removeItem(at: downloadURL)
+                    temporaryURL = nil
                     throw GlossaryImportError.fileTooLarge
                 }
 
@@ -111,10 +126,27 @@ final class GlossaryImportService: @unchecked Sendable {
                 try handle.write(contentsOf: buffer)
             }
             await reportProgress(downloadedBytes: downloadedBytes, expectedBytes: expectedBytes, progress: progress)
-            return (temporaryURL, response)
+            temporaryURL = nil
+            return (downloadURL, response)
         } catch let error as GlossaryImportError {
+            if let temporaryURL {
+                try? FileManager.default.removeItem(at: temporaryURL)
+            }
             throw error
         } catch {
+            if let temporaryURL {
+                try? FileManager.default.removeItem(at: temporaryURL)
+            }
+            if let cancellation = error as? CancellationError {
+                throw cancellation
+            }
+            let nsError = error as NSError
+            if nsError.domain == NSURLErrorDomain, nsError.code == NSURLErrorCancelled {
+                throw CancellationError()
+            }
+            if nsError.domain == NSURLErrorDomain, nsError.code == NSURLErrorTimedOut {
+                throw GlossaryImportError.downloadFailed("Timed out after \(Int(downloadTimeout.rounded())) seconds.")
+            }
             throw GlossaryImportError.downloadFailed(error.localizedDescription)
         }
     }
