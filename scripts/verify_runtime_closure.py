@@ -62,6 +62,7 @@ else:
         "restartTask?.cancel()",
         "reconnectTask?.cancel()",
         "usageResumeTask?.cancel()",
+        "setupChecklistRefreshTask?.cancel()",
         "microphoneCapture?.stop()",
         "client?.close()",
         "audioPlayer.stop()",
@@ -71,6 +72,23 @@ else:
     ]:
         if token not in body:
             errors.append(f"AppState.deinit must release runtime resource through {token}")
+
+
+if "private var setupChecklistRefreshTask: Task<Void, Never>?" not in app_state_text:
+    errors.append("AppState must retain setup checklist refresh task so stale refresh work can be cancelled")
+refresh_match = re.search(r"func refreshSetupChecklist\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not refresh_match:
+    errors.append("AppState.refreshSetupChecklist() not found")
+else:
+    body = refresh_match.group("body")
+    for token in [
+        "setupChecklistRefreshTask?.cancel()",
+        "setupChecklistRefreshTask = Task",
+        "guard !Task.isCancelled else { return }",
+        "setupChecklistRefreshTask = nil",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.refreshSetupChecklist() must manage cancellable refresh work through {token}")
 
 mic_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", microphone_text)
 if not mic_deinit_match:

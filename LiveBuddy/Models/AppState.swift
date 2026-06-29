@@ -76,6 +76,7 @@ final class AppState: ObservableObject {
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
     private var usageResumeTask: Task<Void, Never>?
+    private var setupChecklistRefreshTask: Task<Void, Never>?
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
     private var currentSessionID: UUID?
@@ -472,15 +473,18 @@ final class AppState: ObservableObject {
     }
 
     func refreshSetupChecklist() {
-        Task { [weak self] in
+        setupChecklistRefreshTask?.cancel()
+        setupChecklistRefreshTask = Task { [weak self] in
             guard let self else { return }
             let permissions = await self.permissionStatusService.refreshStatuses()
+            guard !Task.isCancelled else { return }
             self.setupChecklist = SetupChecklistState.derive(
                 audioSource: self.settings.audioSource,
                 apiKey: self.providerHealthStatusForCurrentKey,
                 microphone: permissions.microphone,
                 screenRecording: permissions.screenRecording
             )
+            self.setupChecklistRefreshTask = nil
         }
     }
 
@@ -1232,6 +1236,7 @@ final class AppState: ObservableObject {
         restartTask?.cancel()
         reconnectTask?.cancel()
         usageResumeTask?.cancel()
+        setupChecklistRefreshTask?.cancel()
         microphoneCapture?.stop()
         if let screenCaptureForDeinit = screenCapture {
             Task {
