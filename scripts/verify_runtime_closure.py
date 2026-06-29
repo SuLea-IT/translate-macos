@@ -217,6 +217,40 @@ else:
         if token not in body:
             errors.append(f"AppState.showTemporaryTestCaption() must manage temporary caption restoration through {token}")
 
+
+for token in [
+    "@State private var tokenCheckTask: Task<Void, Never>?",
+    "private func startTokenCheck()",
+    "private func cancelTokenCheck()",
+    ".onDisappear",
+]:
+    if token not in settings_text:
+        errors.append(f"SettingsView must retain/cancel API token check work through {token}")
+
+provider_section_match = re.search(r"Button\(appState.t\(\.check\)\) \{(?P<body>[\s\S]*?)\n                        \}", settings_text)
+if not provider_section_match:
+    errors.append("SettingsView API token check button not found")
+elif "startTokenCheck()" not in provider_section_match.group("body"):
+    errors.append("SettingsView API token check button must call startTokenCheck() instead of spawning an untracked Task")
+
+start_token_match = re.search(r"private func startTokenCheck\(\) \{(?P<body>[\s\S]*?)\n    \}", settings_text)
+if not start_token_match:
+    errors.append("SettingsView.startTokenCheck() not found")
+else:
+    body = start_token_match.group("body")
+    for token in ["tokenCheckTask?.cancel()", "tokenCheckTask = Task", "try await appState.verifyGeminiToken()", "guard !Task.isCancelled else { return }", "tokenCheckTask = nil"]:
+        if token not in body:
+            errors.append(f"SettingsView.startTokenCheck() must manage token check lifecycle through {token}")
+
+cancel_token_match = re.search(r"private func cancelTokenCheck\(\) \{(?P<body>[\s\S]*?)\n    \}", settings_text)
+if not cancel_token_match:
+    errors.append("SettingsView.cancelTokenCheck() not found")
+else:
+    body = cancel_token_match.group("body")
+    for token in ["tokenCheckTask?.cancel()", "tokenCheckTask = nil", "isCheckingToken = false"]:
+        if token not in body:
+            errors.append(f"SettingsView.cancelTokenCheck() must release token check state through {token}")
+
 mic_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", microphone_text)
 if not mic_deinit_match:
     errors.append("MicrophoneCapture.deinit must stop the capture engine")

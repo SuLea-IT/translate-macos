@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var isCheckingToken = false
     @State private var isTokenValid: Bool? = nil
     @State private var tokenCheckError: String? = nil
+    @State private var tokenCheckTask: Task<Void, Never>?
     @State private var newGlossarySourceTerm = ""
     @State private var newGlossaryTargetTerm = ""
     @State private var selectedGlossaryImportSourceID = GlossaryImportSource.microsoftTerminology.id
@@ -141,6 +142,9 @@ struct SettingsView: View {
         .sheet(isPresented: $appState.showSetupSheet) {
             ProviderSetupSheet()
         }
+        .onDisappear {
+            cancelTokenCheck()
+        }
     }
 
     private var providerForm: some View {
@@ -184,19 +188,7 @@ struct SettingsView: View {
                         }
                         
                         Button(appState.t(.check)) {
-                            Task {
-                                isCheckingToken = true
-                                isTokenValid = nil
-                                tokenCheckError = nil
-                                do {
-                                    try await appState.verifyGeminiToken()
-                                    isTokenValid = true
-                                } catch {
-                                    isTokenValid = false
-                                    tokenCheckError = error.localizedDescription
-                                }
-                                isCheckingToken = false
-                            }
+                            startTokenCheck()
                         }
                         .disabled(appState.settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isCheckingToken)
                     }
@@ -705,6 +697,33 @@ struct SettingsView: View {
         case .customURL, .localFile:
             return GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) != nil
         }
+    }
+
+    private func startTokenCheck() {
+        tokenCheckTask?.cancel()
+        isCheckingToken = true
+        isTokenValid = nil
+        tokenCheckError = nil
+        tokenCheckTask = Task { @MainActor in
+            do {
+                try await appState.verifyGeminiToken()
+                guard !Task.isCancelled else { return }
+                isTokenValid = true
+            } catch {
+                guard !Task.isCancelled else { return }
+                isTokenValid = false
+                tokenCheckError = error.localizedDescription
+            }
+            guard !Task.isCancelled else { return }
+            isCheckingToken = false
+            tokenCheckTask = nil
+        }
+    }
+
+    private func cancelTokenCheck() {
+        tokenCheckTask?.cancel()
+        tokenCheckTask = nil
+        isCheckingToken = false
     }
 
     private var glossaryImportContentTypes: [UTType] {
