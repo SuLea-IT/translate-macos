@@ -204,6 +204,34 @@ else:
 if "Task { await stopRuntimeAfterConnectionFailure() }" in app_state_text:
     errors.append("AppState must not spawn untracked connection failure stop tasks")
 
+make_client_match = re.search(r"private func makeGeminiClient\(\) -> GeminiLiveTranslateClient \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not make_client_match:
+    errors.append("AppState.makeGeminiClient() not found")
+else:
+    body = make_client_match.group("body")
+    for token in [
+        "client.onInputTranscript = { [weak self, weak client]",
+        "client.onOutputTranscript = { [weak self, weak client]",
+        "client.onAudioChunk = { [weak self, weak client, audioPlayer]",
+        "client.onStatus = { [weak self, weak client]",
+        "client.onConnectionEvent = { [weak self, weak client]",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.makeGeminiClient() must capture the callback source client weakly through {token}")
+    if body.count("guard let self, let client, self.client === client else { return }") < 5:
+        errors.append("AppState.makeGeminiClient() callbacks must ignore stale client events before mutating UI/audio state")
+    for token in [
+        "appendOriginalText(text)",
+        "appendCaption(text, language: language, kind: .output)",
+        "audioPlayer.playPCM16(data",
+        "handleClientStatus(message)",
+        "handleConnectionEvent(event)",
+    ]:
+        index = body.find(token)
+        guard_index = body.rfind("guard let self, let client, self.client === client else { return }", 0, index)
+        if index == -1 or guard_index == -1:
+            errors.append(f"AppState.makeGeminiClient() must guard stale client callbacks before {token}")
+
 for context, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),

@@ -738,31 +738,38 @@ final class AppState: ObservableObject {
     private func makeGeminiClient() -> GeminiLiveTranslateClient {
         let client = GeminiLiveTranslateClient(settings: settings)
         let audioPlayer = self.audioPlayer
-        client.onInputTranscript = { [weak self] text, language in
-            Task { @MainActor [weak self] in
+        client.onInputTranscript = { [weak self, weak client] text, language in
+            Task { @MainActor [weak self, weak client] in
+                guard let self, let client, self.client === client else { return }
                 if let language, !language.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    self?.detectedSourceLanguageCode = language
+                    self.detectedSourceLanguageCode = language
                 }
-                self?.appendLog("Input\(language.map { " [\($0)]" } ?? ""): \(text)", level: .info)
-                self?.appendOriginalText(text)
+                self.appendLog("Input\(language.map { " [\($0)]" } ?? ""): \(text)", level: .info)
+                self.appendOriginalText(text)
             }
         }
-        client.onOutputTranscript = { [weak self] text, language in
-            Task { @MainActor [weak self] in
-                self?.appendCaption(text, language: language, kind: .output)
+        client.onOutputTranscript = { [weak self, weak client] text, language in
+            Task { @MainActor [weak self, weak client] in
+                guard let self, let client, self.client === client else { return }
+                self.appendCaption(text, language: language, kind: .output)
             }
         }
-        client.onAudioChunk = { data in
-            audioPlayer.playPCM16(data, sampleRate: 24_000)
-        }
-        client.onStatus = { [weak self] message in
-            Task { @MainActor [weak self] in
-                self?.handleClientStatus(message)
+        client.onAudioChunk = { [weak self, weak client, audioPlayer] data in
+            Task { @MainActor [weak self, weak client] in
+                guard let self, let client, self.client === client else { return }
+                audioPlayer.playPCM16(data, sampleRate: 24_000)
             }
         }
-        client.onConnectionEvent = { [weak self] event in
-            Task { @MainActor [weak self] in
-                self?.handleConnectionEvent(event)
+        client.onStatus = { [weak self, weak client] message in
+            Task { @MainActor [weak self, weak client] in
+                guard let self, let client, self.client === client else { return }
+                self.handleClientStatus(message)
+            }
+        }
+        client.onConnectionEvent = { [weak self, weak client] event in
+            Task { @MainActor [weak self, weak client] in
+                guard let self, let client, self.client === client else { return }
+                self.handleConnectionEvent(event)
             }
         }
         return client
