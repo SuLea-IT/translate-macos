@@ -202,13 +202,11 @@ struct UsageControlEngine {
             }
             let remaining = settings.idlePauseDelaySeconds - idleSeconds
             if remaining <= settings.idleWarningSeconds {
-                countSent(chunk.duration)
                 refreshSnapshot(runtimeState: .idleWarning(remainingSeconds: max(0, Int(ceil(remaining)))))
                 return .send
             }
         }
 
-        countSent(chunk.duration)
         refreshSnapshot(runtimeState: .active)
         return .send
     }
@@ -234,6 +232,11 @@ struct UsageControlEngine {
         lastVoiceActivityAt = now
         lastTranscriptActivityAt = now
         refreshSnapshot(runtimeState: .active)
+    }
+
+    mutating func markSent(_ chunk: BufferedAudioChunk) {
+        countSent(chunk.duration)
+        refreshSnapshot(runtimeState: snapshot.runtimeState)
     }
 
     mutating func markReplaySent(_ chunks: [BufferedAudioChunk]) {

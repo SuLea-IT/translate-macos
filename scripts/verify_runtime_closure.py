@@ -202,19 +202,21 @@ for context, pattern in [
     elif "audioCaptureGeneration = UUID()" not in match.group("body"):
         errors.append(f"AppState.{context} must rotate audioCaptureGeneration to reject stale capture callbacks")
 
-enqueue_match = re.search(r"private func enqueueAudioSend\(_ data: Data\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+enqueue_match = re.search(r"private func enqueueAudioSend\(_ data: Data\) -> Bool \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not enqueue_match:
-    errors.append("AppState.enqueueAudioSend(_:) must exist to serialize and bound live audio sends")
+    errors.append("AppState.enqueueAudioSend(_:) must exist to serialize, bound, and report live audio send enqueue status")
 else:
     body = enqueue_match.group("body")
     for token in [
         "pendingAudioSendChunks < maxPendingAudioSendChunks",
+        "return false",
         "pendingAudioSendChunks += 1",
         "let previousTask = audioSendTask",
         "await previousTask?.value",
         "guard !Task.isCancelled else { return }",
         "self.client === client",
         "await client.sendAudio(data)",
+        "return true",
         "Date()",
         "timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5",
         "lastAudioSendBackpressureLogAt = now",

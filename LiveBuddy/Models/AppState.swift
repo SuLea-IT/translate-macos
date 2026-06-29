@@ -1019,9 +1019,12 @@ final class AppState: ObservableObject {
         }
 
         if decision.shouldSend {
-            sentChunkCount += 1
-            enqueueAudioSend(data)
-            saveUsageLedger()
+            if enqueueAudioSend(data) {
+                sentChunkCount += 1
+                usageEngine.markSent(chunk)
+                usageSnapshot = usageEngine.snapshot
+                saveUsageLedger()
+            }
         }
 
         updateRunningUsageStatus(now: now)
@@ -1061,15 +1064,15 @@ final class AppState: ObservableObject {
         usageSnapshot = usageEngine.snapshot
     }
 
-    private func enqueueAudioSend(_ data: Data) {
-        guard !data.isEmpty, let client else { return }
+    private func enqueueAudioSend(_ data: Data) -> Bool {
+        guard !data.isEmpty, let client else { return false }
         guard pendingAudioSendChunks < maxPendingAudioSendChunks else {
             let now = Date()
             if now.timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5 {
                 lastAudioSendBackpressureLogAt = now
                 appendLog("Audio send queue is full; dropping live audio chunks to keep latency bounded", level: .error)
             }
-            return
+            return false
         }
 
         pendingAudioSendChunks += 1
@@ -1094,6 +1097,7 @@ final class AppState: ObservableObject {
             guard shouldSend else { return }
             await client.sendAudio(data)
         }
+        return true
     }
 
     private func resetAudioSendPipeline() {
