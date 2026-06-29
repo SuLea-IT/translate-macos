@@ -30,11 +30,16 @@ struct PreflightTestRunner {
     func run(settings: AppSettings, update: @escaping ReportUpdate) async -> PreflightTestReport {
         var report = PreflightTestReport(startedAt: Date(), finishedAt: nil)
         await update(report)
+        guard !Task.isCancelled else { return report }
 
         report = await runProvider(report: report, update: update)
+        guard !Task.isCancelled else { return report }
         report = await runPermissions(settings: settings, report: report, update: update)
+        guard !Task.isCancelled else { return report }
         report = await runAudioIfNeeded(settings: settings, report: report, update: update)
+        guard !Task.isCancelled else { return report }
         report = await runSubtitle(report: report, update: update)
+        guard !Task.isCancelled else { return report }
         report.finishedAt = Date()
         await update(report)
         return report
@@ -44,6 +49,7 @@ struct PreflightTestRunner {
         var report = report.updating(.apiKey, state: .running, message: "Checking API key")
         await update(report)
         let status = await providerCheck()
+        guard !Task.isCancelled else { return report }
         switch status {
         case .valid:
             report = report.updating(.apiKey, state: .passed, message: "API key is valid")
@@ -62,6 +68,7 @@ struct PreflightTestRunner {
         var report = report.updating(.permissions, state: .running, message: "Checking permissions")
         await update(report)
         let permissions = await permissionCheck()
+        guard !Task.isCancelled else { return report }
         let checklist = SetupChecklistState.derive(
             audioSource: settings.audioSource,
             apiKey: settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .missing : .valid(checkedAt: Date()),
@@ -79,12 +86,14 @@ struct PreflightTestRunner {
 
     private func runAudioIfNeeded(settings: AppSettings, report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
         var report = report
+        guard !Task.isCancelled else { return report }
         if settings.audioSource == .microphone || settings.audioSource == .both {
             report = await runAudioStep(.microphoneAudio, sampler: microphoneSampler, report: report, update: update)
         } else {
             report = report.updating(.microphoneAudio, state: .passed, message: "Not needed for selected audio source")
             await update(report)
         }
+        guard !Task.isCancelled else { return report }
 
         if settings.audioSource == .screen || settings.audioSource == .both {
             report = await runAudioStep(.screenAudio, sampler: screenSampler, report: report, update: update)
@@ -92,6 +101,7 @@ struct PreflightTestRunner {
             report = report.updating(.screenAudio, state: .passed, message: "Not needed for selected audio source")
             await update(report)
         }
+        guard !Task.isCancelled else { return report }
         return report
     }
 
@@ -103,9 +113,11 @@ struct PreflightTestRunner {
     ) async -> PreflightTestReport {
         var report = report.updating(id, state: .running, message: "Sampling audio")
         await update(report)
+        guard !Task.isCancelled else { return report }
         var analyzer = AudioLevelAnalyzer()
         do {
             try await sampler(&analyzer)
+            guard !Task.isCancelled else { return report }
             let summary = analyzer.summary()
             if summary.totalSampleCount == 0 {
                 report = report.updating(id, state: .failed, message: "No audio samples were captured", audio: summary)
@@ -116,9 +128,12 @@ struct PreflightTestRunner {
             } else {
                 report = report.updating(id, state: .passed, message: "Audio detected", audio: summary)
             }
+        } catch is CancellationError {
+            return report
         } catch {
             report = report.updating(id, state: .failed, message: error.localizedDescription)
         }
+        guard !Task.isCancelled else { return report }
         await update(report)
         return report
     }
@@ -126,7 +141,9 @@ struct PreflightTestRunner {
     private func runSubtitle(report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
         var report = report.updating(.subtitleWindow, state: .running, message: "Showing subtitle test")
         await update(report)
+        guard !Task.isCancelled else { return report }
         await subtitleCheck()
+        guard !Task.isCancelled else { return report }
         report = report.updating(.subtitleWindow, state: .passed, message: "Subtitle window test shown")
         await update(report)
         return report
@@ -159,12 +176,14 @@ extension PreflightTestRunner {
     }
 
     private static func sampleMicrophone(settings: AppSettings, duration: TimeInterval, analyzer: inout AudioLevelAnalyzer) async throws {
+        try Task.checkCancellation()
         let box = AudioLevelAnalyzerBox(analyzer)
         let capture = MicrophoneCapture { data in
             box.process(data)
         }
-        try await capture.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
         do {
+            try await capture.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
+            try Task.checkCancellation()
             try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
         } catch {
             capture.stop()
@@ -175,12 +194,14 @@ extension PreflightTestRunner {
     }
 
     private static func sampleScreen(duration: TimeInterval, analyzer: inout AudioLevelAnalyzer) async throws {
+        try Task.checkCancellation()
         let box = AudioLevelAnalyzerBox(analyzer)
         let capture = ScreenAudioCapture { data in
             box.process(data)
         }
-        try await capture.start()
         do {
+            try await capture.start()
+            try Task.checkCancellation()
             try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
         } catch {
             await capture.stop()
