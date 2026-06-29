@@ -572,6 +572,10 @@ else:
 
 for token in [
     "private var terminationTask: Task<Void, Never>?",
+    "private static let terminationStopTimeoutNanoseconds",
+    "private var terminationStopTask: Task<Void, Never>?",
+    "private var terminationTimeoutTask: Task<Void, Never>?",
+    "private func waitForRuntimeStopBeforeTermination(_ appState: AppState) async -> TerminationStopResult",
     "func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply",
 ]:
     if token not in app_delegate_text:
@@ -585,12 +589,14 @@ else:
     for token in [
         ".terminateLater",
         "terminationTask = Task",
-        "await appState?.stop()",
+        "await self.waitForRuntimeStopBeforeTermination(appState)",
         "NSApp.reply(toApplicationShouldTerminate: true)",
         "terminationTask = nil",
     ]:
         if token not in body:
             errors.append(f"AppDelegate.applicationShouldTerminate(_:) must wait for runtime stop through {token}")
+    if "await appState?.stop()" in body or "await appState.stop()" in body:
+        errors.append("AppDelegate.applicationShouldTerminate(_:) must not directly await AppState.stop() without a timeout race")
 
 will_terminate_match = re.search(r"func applicationWillTerminate\(_ notification: Notification\) \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
 if will_terminate_match and "Task { await appState?.stop() }" in will_terminate_match.group("body"):
@@ -599,6 +605,22 @@ if will_terminate_match and "Task { await appState?.stop() }" in will_terminate_
 delegate_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
 if delegate_deinit_match and "terminationTask?.cancel()" not in delegate_deinit_match.group("body"):
     errors.append("AppDelegate.deinit must cancel terminationTask")
+if delegate_deinit_match and "clearTerminationStopTasks()" not in delegate_deinit_match.group("body"):
+    errors.append("AppDelegate.deinit must cancel termination stop helper tasks")
+
+clear_termination_match = re.search(r"private func clearTerminationStopTasks\(\) \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
+if not clear_termination_match:
+    errors.append("AppDelegate.clearTerminationStopTasks() not found")
+else:
+    body = clear_termination_match.group("body")
+    for token in [
+        "terminationStopTask?.cancel()",
+        "terminationStopTask = nil",
+        "terminationTimeoutTask?.cancel()",
+        "terminationTimeoutTask = nil",
+    ]:
+        if token not in body:
+            errors.append(f"AppDelegate.clearTerminationStopTasks() must release termination helper task through {token}")
 
 unregister_shortcuts_match = re.search(r"func unregisterAll\(\) \{(?P<body>[\s\S]*?)\n    \}", global_shortcut_text)
 if not unregister_shortcuts_match:
