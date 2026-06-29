@@ -37,6 +37,7 @@ https://github.com/user-attachments/assets/a5f94b11-80bf-4043-bbfc-63426b781863
     *   Detailed statistics: Duration, line count, word count, audio source, and translation language.
     *   Search transcript contents or copy full transcripts/individual lines directly to the clipboard.
     *   Export transcripts as SRT, WebVTT, Markdown, or plain text for subtitle editors, web players, notes, and sharing.
+    *   Generate local meeting notes from saved transcripts, including summary, key points, action items, and timeline, with copy/export support.
 *   **Diagnostics & Runtime Logs**: Embedded log view monitoring connection status, audio capture format detection, and WebSocket status in real time.
 *   **Preflight Test Page**: Run a one-click diagnostic for API key, permissions, selected audio input, and subtitle window rendering before starting a real translation session.
 *   **Actionable Diagnostics**: Translates provider, network, permission, capture, and storage failures into clear messages with next-step recovery actions.
@@ -148,6 +149,7 @@ The app provides deep customization parameters through **Settings**:
 | **Translation** | Echo target language | Toggles voice playback of the translated translation output. |
 | **Translation** | Translation volume | Control or mute the translation playback speaker output. |
 | **Transcripts** | Export formats | Save a transcript as SRT, WebVTT, Markdown, or TXT from the transcript detail view. |
+| **Transcripts** | Meeting notes | Generate local extractive meeting notes with summary, key points, action items, and timeline from saved transcript detail views. |
 | **Diagnostics** | Preflight test | Checks API key, permissions, microphone/screen audio levels, and subtitle window rendering without starting Gemini or saving transcripts. |
 | **Diagnostics** | Actionable error guidance | Shows the latest issue with a clear explanation, recovery hint, and one-click action where available. |
 | **Global Shortcuts** | Custom shortcuts | Toggle macOS-wide shortcuts, record custom bindings for each action, clear conflicts, or restore defaults. |
