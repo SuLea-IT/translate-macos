@@ -10,8 +10,11 @@ struct TranscriptsView: View {
     @State private var exportFileName = "LiveBuddy-Transcript"
     @State private var exportContentType: UTType = .plainText
     @State private var exportErrorMessage: String?
+    @State private var generatedMeetingNotes: MeetingNotes?
+    @State private var meetingNotesSessionID: UUID?
 
     private let transcriptExporter = TranscriptExporter()
+    private let meetingNotesGenerator = MeetingNotesGenerator()
 
     private var filteredSessions: [TranscriptSession] {
         if searchText.isEmpty {
@@ -207,6 +210,18 @@ struct TranscriptsView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
 
+                    Button {
+                        toggleMeetingNotes(for: session)
+                    } label: {
+                        Label(
+                            isShowingMeetingNotes(for: session) ? appState.t(.hideMeetingNotes) : appState.t(.generateMeetingNotes),
+                            systemImage: "list.bullet.clipboard"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(session.lines.isEmpty)
+
                     Menu {
                         ForEach(TranscriptExportFormat.allCases) { format in
                             Button(format.localizedTitle(language: appState.settings.interfaceLanguage)) {
@@ -225,6 +240,10 @@ struct TranscriptsView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if let generatedMeetingNotes, meetingNotesSessionID == session.id {
+                    meetingNotesPanel(notes: generatedMeetingNotes, session: session)
                 }
             }
             .padding(.horizontal, 20)
@@ -294,6 +313,100 @@ struct TranscriptsView: View {
         exportContentType = format.contentType
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
         exportErrorMessage = nil
+    }
+
+    private func toggleMeetingNotes(for session: TranscriptSession) {
+        if isShowingMeetingNotes(for: session) {
+            generatedMeetingNotes = nil
+            meetingNotesSessionID = nil
+            return
+        }
+        generatedMeetingNotes = meetingNotesGenerator.generate(from: session, mode: viewMode)
+        meetingNotesSessionID = session.id
+    }
+
+    private func isShowingMeetingNotes(for session: TranscriptSession) -> Bool {
+        generatedMeetingNotes != nil && meetingNotesSessionID == session.id
+    }
+
+    private func copyMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(meetingNotesGenerator.markdown(for: notes, session: session), forType: .string)
+    }
+
+    private func exportMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
+        let contentType = UTType(filenameExtension: "md") ?? .plainText
+        exportDocument = TranscriptExportDocument(text: meetingNotesGenerator.markdown(for: notes, session: session), contentType: contentType)
+        exportContentType = contentType
+        exportFileName = meetingNotesGenerator.defaultFileName(session: session)
+        exportErrorMessage = nil
+    }
+
+    private func meetingNotesPanel(notes: MeetingNotes, session: TranscriptSession) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(appState.t(.meetingNotes), systemImage: "list.bullet.clipboard")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    copyMeetingNotes(notes, session: session)
+                } label: {
+                    Label(appState.t(.copyMeetingNotes), systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button {
+                    exportMeetingNotes(notes, session: session)
+                } label: {
+                    Label(appState.t(.exportMeetingNotes), systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+
+            meetingNotesSection(title: appState.t(.meetingSummary), bullets: notes.summary, includeTime: false)
+            meetingNotesSection(title: appState.t(.meetingKeyPoints), bullets: notes.keyPoints, includeTime: false)
+            meetingNotesSection(title: appState.t(.meetingActionItems), bullets: notes.actionItems, includeTime: true, emptyText: appState.t(.noActionItemsFound))
+            meetingNotesSection(title: appState.t(.meetingTimeline), bullets: notes.timeline, includeTime: true)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+        )
+    }
+
+    private func meetingNotesSection(title: String, bullets: [MeetingNoteBullet], includeTime: Bool, emptyText: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+            if bullets.isEmpty {
+                Text(emptyText ?? "—")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(bullets) { bullet in
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("•")
+                            .foregroundStyle(.secondary)
+                        if includeTime {
+                            Text("[\(bullet.readableOffset)]")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                        }
+                        Text(bullet.text)
+                            .font(.caption)
+                            .foregroundStyle(.primary)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+        }
     }
 }
 
