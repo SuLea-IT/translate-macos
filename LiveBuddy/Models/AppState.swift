@@ -6,6 +6,8 @@ import CoreAudio
 
 @MainActor
 final class AppState: ObservableObject {
+    private static let transcriptSaveDebounceNanoseconds: UInt64 = 750_000_000
+
     private enum RuntimeControlRequest {
         case toggle
         case start
@@ -91,6 +93,7 @@ final class AppState: ObservableObject {
     private var preflightTestTask: Task<Void, Never>?
     private var temporaryTestCaptionTask: Task<Void, Never>?
     private var glossaryImportTask: Task<Void, Never>?
+    private var transcriptSaveTask: Task<Void, Never>?
     private var glossaryImportGeneration = UUID()
     private var pendingAudioSendChunks = 0
     private let maxPendingAudioSendChunks = 120
@@ -1297,7 +1300,7 @@ final class AppState: ObservableObject {
         if let sessionID = currentSessionID,
            let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) {
             transcriptSessions[index].lines = currentTranscriptLines
-            saveTranscriptSessions()
+            scheduleTranscriptSave()
         }
     }
 
@@ -1460,7 +1463,7 @@ final class AppState: ObservableObject {
         )
         currentSessionID = session.id
         transcriptSessions.insert(session, at: 0)
-        saveTranscriptSessions()
+        saveTranscriptSessionsImmediately()
     }
 
     private func finishTranscriptSession() {
@@ -1493,7 +1496,7 @@ final class AppState: ObservableObject {
         transcriptSessions[index] = session
         currentSessionID = nil
         currentTranscriptLines.removeAll()
-        saveTranscriptSessions()
+        saveTranscriptSessionsImmediately()
     }
 
     func deleteTranscriptSession(_ session: TranscriptSession) {
@@ -1505,14 +1508,14 @@ final class AppState: ObservableObject {
         if wasActiveSession {
             restartTranscriptSessionIfRunning()
         }
-        saveTranscriptSessions()
+        saveTranscriptSessionsImmediately()
     }
 
     func deleteAllTranscriptSessions() {
         clearActiveTranscriptState()
         transcriptSessions.removeAll()
         restartTranscriptSessionIfRunning()
-        saveTranscriptSessions()
+        saveTranscriptSessionsImmediately()
     }
 
     private func restartTranscriptSessionIfRunning() {
@@ -1531,6 +1534,31 @@ final class AppState: ObservableObject {
         originalDraft = ""
         completedOriginalSentences.removeAll()
         currentTranscriptLines.removeAll()
+    }
+
+    private func scheduleTranscriptSave() {
+        guard transcriptSaveTask == nil else { return }
+        transcriptSaveTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: Self.transcriptSaveDebounceNanoseconds)
+            } catch {
+                self?.transcriptSaveTask = nil
+                return
+            }
+            guard !Task.isCancelled else {
+                self?.transcriptSaveTask = nil
+                return
+            }
+            guard let self else { return }
+            self.saveTranscriptSessions()
+            self.transcriptSaveTask = nil
+        }
+    }
+
+    private func saveTranscriptSessionsImmediately() {
+        transcriptSaveTask?.cancel()
+        transcriptSaveTask = nil
+        saveTranscriptSessions()
     }
 
     private func saveTranscriptSessions() {
@@ -1589,6 +1617,8 @@ final class AppState: ObservableObject {
         preflightTestTask?.cancel()
         temporaryTestCaptionTask?.cancel()
         glossaryImportTask?.cancel()
+        transcriptSaveTask?.cancel()
+        transcriptSaveTask = nil
         microphoneCapture?.stop()
         if let screenCaptureForDeinit = screenCapture {
             Task {

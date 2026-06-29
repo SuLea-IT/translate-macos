@@ -25,7 +25,7 @@ else:
         "if let sessionID = currentSessionID",
         "transcriptSessions.firstIndex(where: { $0.id == sessionID })",
         "transcriptSessions[index].lines = currentTranscriptLines",
-        "saveTranscriptSessions()",
+        "scheduleTranscriptSave()",
     ]
     for token in required_tokens:
         if token not in body:
@@ -33,16 +33,18 @@ else:
 
     append_index = body.find("currentTranscriptLines.append(transcriptLine)")
     sync_index = body.find("transcriptSessions[index].lines = currentTranscriptLines")
-    save_index = body.find("saveTranscriptSessions()")
+    save_index = body.find("scheduleTranscriptSave()")
     if min(append_index, sync_index, save_index) != -1 and not (append_index < sync_index < save_index):
-        errors.append("appendCurrentTranscriptLine must append, sync the active session, then save in that order")
+        errors.append("appendCurrentTranscriptLine must append, sync the active session, then schedule persistence in that order")
+    if "saveTranscriptSessions()" in body:
+        errors.append("appendCurrentTranscriptLine must coalesce disk writes instead of synchronously saving every sentence")
 
 begin_match = re.search(r"private func beginTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func finishTranscriptSession", text)
 if not begin_match:
     errors.append("AppState.beginTranscriptSession() not found")
 else:
     body = begin_match.group("body")
-    if "saveTranscriptSessions()" not in body:
+    if "saveTranscriptSessionsImmediately()" not in body:
         errors.append("beginTranscriptSession must persist the empty live session immediately so it survives app termination")
 
 if errors:

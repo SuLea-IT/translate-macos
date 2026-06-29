@@ -138,10 +138,12 @@ else:
         "if let sessionID = currentSessionID",
         "transcriptSessions.firstIndex(where: { $0.id == sessionID })",
         "transcriptSessions[index].lines = currentTranscriptLines",
-        "saveTranscriptSessions()",
+        "scheduleTranscriptSave()",
     ]:
         if token not in body:
-            errors.append(f"AppState.appendCurrentTranscriptLine must keep running transcript detail and disk state current through {token}")
+            errors.append(f"AppState.appendCurrentTranscriptLine must keep running transcript detail current and schedule disk persistence through {token}")
+    if "saveTranscriptSessions()" in body:
+        errors.append("AppState.appendCurrentTranscriptLine must coalesce transcript disk writes instead of saving every sentence")
 
 finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", app_state_text)
 if finish_match:

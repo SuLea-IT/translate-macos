@@ -55,7 +55,7 @@ else:
         "clearActiveTranscriptState()",
         "transcriptSessions.removeAll()",
         "restartTranscriptSessionIfRunning()",
-        "saveTranscriptSessions()",
+        "saveTranscriptSessionsImmediately()",
     ]:
         if token not in body:
             errors.append(f"deleteAllTranscriptSessions must continue recording after clearing history through {token}")
