@@ -6,6 +6,12 @@ import CoreAudio
 
 @MainActor
 final class AppState: ObservableObject {
+    private enum RuntimeControlRequest {
+        case toggle
+        case start
+        case stop
+    }
+
     @Published private(set) var settings: AppSettings {
         didSet {
             saveSettings()
@@ -72,6 +78,7 @@ final class AppState: ObservableObject {
     private let apiKeyStore: APIKeyStore
     private let globalShortcutRegistrar: GlobalShortcutRegistering
     private let glossaryImportService: GlossaryImportService
+    private var runtimeControlTask: Task<Void, Never>?
     private var restartTask: Task<Void, Never>?
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
@@ -236,9 +243,36 @@ final class AppState: ObservableObject {
         updateStatus("Stopped", level: .stopped, log: true)
     }
 
+    func requestStart() {
+        scheduleRuntimeControl(.start)
+    }
+
+    func requestStop() {
+        scheduleRuntimeControl(.stop)
+    }
+
     func toggle() {
-        Task {
-            isRunning ? await stop() : await start()
+        scheduleRuntimeControl(.toggle)
+    }
+
+    private func scheduleRuntimeControl(_ request: RuntimeControlRequest) {
+        guard runtimeControlTask == nil else { return }
+        runtimeControlTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            switch request {
+            case .toggle:
+                if self.isRunning {
+                    await self.stop()
+                } else {
+                    await self.start()
+                }
+            case .start:
+                await self.start()
+            case .stop:
+                await self.stop()
+            }
+            guard !Task.isCancelled else { return }
+            self.runtimeControlTask = nil
         }
     }
 
@@ -325,7 +359,7 @@ final class AppState: ObservableObject {
         case .openScreenRecordingSettings:
             openScreenRecordingSettings()
         case .retry:
-            Task { await start() }
+            requestStart()
         }
     }
 
@@ -1389,6 +1423,7 @@ final class AppState: ObservableObject {
     }
 
     deinit {
+        runtimeControlTask?.cancel()
         restartTask?.cancel()
         reconnectTask?.cancel()
         connectionStopTask?.cancel()

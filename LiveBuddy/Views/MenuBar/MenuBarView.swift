@@ -41,7 +41,6 @@ struct MenuBarView: View {
                     .help(appState.t(.settings))
                     
                     Button {
-                        Task { await appState.stop() }
                         NSApp.terminate(nil)
                     } label: {
                         Image(systemName: "power")

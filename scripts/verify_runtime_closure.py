@@ -213,6 +213,60 @@ if stop_failure_match:
 
 
 for token in [
+    "private var runtimeControlTask: Task<Void, Never>?",
+    "private enum RuntimeControlRequest",
+    "func requestStart()",
+    "func requestStop()",
+    "private func scheduleRuntimeControl(_ request: RuntimeControlRequest)",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState must serialize user-driven runtime controls through {token}")
+
+toggle_match = re.search(r"func toggle\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not toggle_match:
+    errors.append("AppState.toggle() not found")
+elif "scheduleRuntimeControl(.toggle)" not in toggle_match.group("body") or "Task {" in toggle_match.group("body"):
+    errors.append("AppState.toggle() must schedule serialized runtime control instead of spawning an untracked Task")
+
+recovery_match = re.search(r"func performDiagnosticRecoveryAction\(_ action: DiagnosticRecoveryAction\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not recovery_match:
+    errors.append("AppState.performDiagnosticRecoveryAction(_:) not found")
+elif "requestStart()" not in recovery_match.group("body") or "Task { await start() }" in recovery_match.group("body"):
+    errors.append("Diagnostic retry must reuse AppState.requestStart() instead of spawning an untracked start Task")
+
+schedule_runtime_match = re.search(r"private func scheduleRuntimeControl\(_ request: RuntimeControlRequest\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not schedule_runtime_match:
+    errors.append("AppState.scheduleRuntimeControl(_:) not found")
+else:
+    body = schedule_runtime_match.group("body")
+    for token in [
+        "guard runtimeControlTask == nil",
+        "runtimeControlTask = Task",
+        "case .toggle",
+        "case .start",
+        "case .stop",
+        "await self.start()",
+        "await self.stop()",
+        "guard !Task.isCancelled else { return }",
+        "runtimeControlTask = nil",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.scheduleRuntimeControl(_:) must serialize runtime controls through {token}")
+
+if deinit_match and "runtimeControlTask?.cancel()" not in deinit_match.group("body"):
+    errors.append("AppState.deinit must cancel runtimeControlTask")
+
+menu_bar_text = (root / "LiveBuddy" / "Views" / "MenuBar" / "MenuBarView.swift").read_text()
+caption_panel_text = (root / "LiveBuddy" / "Views" / "Caption" / "CaptionPanelController.swift").read_text()
+if "Task { await appState.stop() }" in menu_bar_text:
+    errors.append("MenuBarView quit action must not spawn an untracked stop Task before termination")
+if "NSApp.terminate(nil)" not in menu_bar_text:
+    errors.append("MenuBarView quit action must request normal app termination")
+if "appState?.requestStop()" not in caption_panel_text or "await appState?.stop()" in caption_panel_text:
+    errors.append("Caption panel close must use AppState.requestStop() instead of an untracked stop Task")
+
+
+for token in [
     "private var preflightTestTask: Task<Void, Never>?",
     "private var temporaryTestCaptionTask: Task<Void, Never>?",
     "func startPreflightTest()",
@@ -407,6 +461,36 @@ else:
         if token not in body:
             errors.append(f"ScreenAudioCapture.deinit must release capture resource through {token}")
 
+
+for token in [
+    "private var terminationTask: Task<Void, Never>?",
+    "func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply",
+]:
+    if token not in app_delegate_text:
+        errors.append(f"AppDelegate must support graceful async termination through {token}")
+
+should_terminate_match = re.search(r"func applicationShouldTerminate\(_ sender: NSApplication\) -> NSApplication.TerminateReply \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
+if not should_terminate_match:
+    errors.append("AppDelegate.applicationShouldTerminate(_:) not found")
+else:
+    body = should_terminate_match.group("body")
+    for token in [
+        ".terminateLater",
+        "terminationTask = Task",
+        "await appState?.stop()",
+        "NSApp.reply(toApplicationShouldTerminate: true)",
+        "terminationTask = nil",
+    ]:
+        if token not in body:
+            errors.append(f"AppDelegate.applicationShouldTerminate(_:) must wait for runtime stop through {token}")
+
+will_terminate_match = re.search(r"func applicationWillTerminate\(_ notification: Notification\) \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
+if will_terminate_match and "Task { await appState?.stop() }" in will_terminate_match.group("body"):
+    errors.append("AppDelegate.applicationWillTerminate must not spawn an untracked stop Task after termination has started")
+
+delegate_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
+if delegate_deinit_match and "terminationTask?.cancel()" not in delegate_deinit_match.group("body"):
+    errors.append("AppDelegate.deinit must cancel terminationTask")
 
 if "private func removeShowCaptionObserver()" not in app_delegate_text:
     errors.append("AppDelegate must centralize showCaptionObserver cleanup")

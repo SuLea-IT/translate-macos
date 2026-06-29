@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var captionPanel: CaptionPanelController?
     private weak var appState: AppState?
     private var showCaptionObserver: NSObjectProtocol?
+    private var terminationTask: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -38,13 +39,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard terminationTask == nil else { return .terminateLater }
+        guard let appState else {
+            removeShowCaptionObserver()
+            return .terminateNow
+        }
+
+        terminationTask = Task { @MainActor [weak self, weak appState] in
+            await appState?.stop()
+            guard !Task.isCancelled else { return }
+            self?.terminationTask = nil
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
-        Task { await appState?.stop() }
         removeShowCaptionObserver()
     }
 
     deinit {
         MainActor.assumeIsolated {
+            terminationTask?.cancel()
             removeShowCaptionObserver()
         }
     }

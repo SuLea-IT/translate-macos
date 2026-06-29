@@ -35,9 +35,7 @@ final class CaptionPanelController: NSObject, NSWindowDelegate {
         panel.delegate = self
         panel.contentView = NSHostingView(
             rootView: CaptionView(onClose: { [weak panel, weak appState] in
-                Task { @MainActor in
-                    await appState?.stop()
-                }
+                appState?.requestStop()
                 panel?.orderOut(nil)
             })
             .environmentObject(appState)
