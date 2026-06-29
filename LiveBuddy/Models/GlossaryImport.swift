@@ -157,7 +157,7 @@ struct GlossaryImportMerger {
 struct GlossaryImportParser {
     private let maxDataBytes: Int
 
-    init(maxDataBytes: Int = 25 * 1024 * 1024) {
+    init(maxDataBytes: Int = 80 * 1024 * 1024) {
         self.maxDataBytes = maxDataBytes
     }
 
@@ -267,7 +267,7 @@ struct GlossaryImportParser {
         let delegate = TBXTermParserDelegate(options: options)
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        guard parser.parse() else {
+        guard parser.parse() || delegate.stoppedAfterCandidateLimit else {
             throw GlossaryImportError.parseFailed(parser.parserError?.localizedDescription ?? "Invalid XML")
         }
         return delegate.candidates
@@ -280,7 +280,7 @@ struct GlossaryImportParser {
         options: GlossaryImportOptions
     ) throws -> GlossaryImportResult {
         let archive = ZIPGlossaryArchive(fileURL: fileURL, maxEntryBytes: maxDataBytes)
-        let entries = try archive.supportedEntries()
+        let entries = ZIPGlossaryEntryPrioritizer(options: options).prioritized(try archive.supportedEntries())
         var aggregate = GlossaryImportResult.empty(sourceName: sourceName)
         var existing = existingEntries
 
@@ -449,13 +449,16 @@ private struct CSVRowParser {
 private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
     let options: GlossaryImportOptions
     private(set) var candidates: [GlossaryImportCandidate] = []
+    private(set) var stoppedAfterCandidateLimit = false
     private var currentConcept: [String: [String]] = [:]
     private var currentLanguage: String?
     private var isInsideTerm = false
     private var termBuffer = ""
+    private let candidateLimit: Int
 
     init(options: GlossaryImportOptions) {
         self.options = options
+        self.candidateLimit = min(max(options.sanitizedImportLimit * 3, options.sanitizedImportLimit), 10_000)
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
@@ -490,6 +493,9 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
         } else if name == "termentry" {
             appendCandidatesForCurrentConcept()
             currentConcept = [:]
+            if stoppedAfterCandidateLimit {
+                parser.abortParsing()
+            }
         }
     }
 
@@ -506,14 +512,18 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
 
     private func appendCandidatesForCurrentConcept() {
         guard !currentConcept.isEmpty else { return }
-        let sourceTerms = terms(matching: options.sourceLanguageCode) ?? fallbackTerms(at: 0)
-        let targetTerms = terms(matching: options.targetLanguageCode) ?? fallbackTerms(at: 1)
+        let sourceTerms = terms(matching: options.sourceLanguageCode)
+        let targetTerms = terms(matching: options.targetLanguageCode)
         guard let sourceTerms, let targetTerms else { return }
 
         for source in sourceTerms {
             for target in targetTerms {
                 guard source != target else { continue }
                 candidates.append(GlossaryImportCandidate(source: source, target: target, note: "TBX", unsupported: false))
+                if candidates.count >= candidateLimit {
+                    stoppedAfterCandidateLimit = true
+                    return
+                }
             }
         }
     }
@@ -530,11 +540,6 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
         }?.value
     }
 
-    private func fallbackTerms(at index: Int) -> [String]? {
-        let keys = currentConcept.keys.sorted()
-        guard keys.indices.contains(index) else { return nil }
-        return currentConcept[keys[index]]
-    }
 }
 
 private struct ZIPGlossaryArchive {
@@ -564,25 +569,179 @@ private struct ZIPGlossaryArchive {
         guard !entry.contains("../"), !entry.hasPrefix("/") else {
             throw GlossaryImportError.unsupportedFormat(entry)
         }
-        let output = try runUnzip(arguments: ["-p", fileURL.path, entry])
-        return Data(output.utf8)
+        return try runUnzipData(arguments: ["-p", fileURL.path, entry])
     }
 
     private func runUnzip(arguments: [String]) throws -> String {
+        let output = try runUnzipData(arguments: arguments)
+        return String(decoding: output, as: UTF8.self)
+    }
+
+    private func runUnzipData(arguments: [String]) throws -> Data {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LiveBuddyUnzip-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let stdoutURL = temporaryDirectory.appendingPathComponent("stdout")
+        let stderrURL = temporaryDirectory.appendingPathComponent("stderr")
+        FileManager.default.createFile(atPath: stdoutURL.path, contents: nil)
+        FileManager.default.createFile(atPath: stderrURL.path, contents: nil)
+
+        let stdout = try FileHandle(forWritingTo: stdoutURL)
+        let stderr = try FileHandle(forWritingTo: stderrURL)
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
         process.arguments = arguments
-        let pipe = Pipe()
-        let errorPipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = errorPipe
+        process.standardOutput = stdout
+        process.standardError = stderr
         try process.run()
         process.waitUntilExit()
-        let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        try? stdout.close()
+        try? stderr.close()
+
+        let output = try Data(contentsOf: stdoutURL)
         if process.terminationStatus != 0 {
-            let error = String(decoding: errorPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            let error = String(decoding: (try? Data(contentsOf: stderrURL)) ?? Data(), as: UTF8.self)
             throw GlossaryImportError.parseFailed(error.isEmpty ? "unzip failed" : error)
         }
         return output
+    }
+}
+
+private struct ZIPGlossaryEntryPrioritizer {
+    let options: GlossaryImportOptions
+
+    func prioritized(_ entries: [String]) -> [String] {
+        entries.sorted { lhs, rhs in
+            let lhsRank = rank(lhs)
+            let rhsRank = rank(rhs)
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+            return lhs.localizedCaseInsensitiveCompare(rhs) == .orderedAscending
+        }
+    }
+
+    private func rank(_ entry: String) -> Int {
+        let normalizedName = normalizedEntryName(entry)
+        if matches(languageCode: options.targetLanguageCode, normalizedName: normalizedName) {
+            return 0
+        }
+        if matches(languageCode: options.sourceLanguageCode, normalizedName: normalizedName) {
+            return 1
+        }
+        return 2
+    }
+
+    private func normalizedEntryName(_ entry: String) -> String {
+        URL(fileURLWithPath: entry)
+            .deletingPathExtension()
+            .lastPathComponent
+            .lowercased()
+            .replacingOccurrences(of: "_", with: " ")
+            .replacingOccurrences(of: "-", with: " ")
+    }
+
+    private func matches(languageCode: String, normalizedName: String) -> Bool {
+        let components = normalizedName
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+        return languageTokens(for: languageCode).contains { token in
+            if token.count <= 3 {
+                return components.contains(token)
+            }
+            return normalizedName.contains(token)
+        }
+    }
+
+    private func languageTokens(for code: String) -> [String] {
+        let normalizedCode = code.lowercased().replacingOccurrences(of: "_", with: "-")
+        let base = normalizedCode.split(separator: "-").first.map(String.init) ?? normalizedCode
+        let aliases: [String: [String]] = [
+            "af": ["afrikaans"],
+            "sq": ["albanian"],
+            "am": ["amharic"],
+            "ar": ["arabic"],
+            "hy": ["armenian"],
+            "az": ["azerbaijani"],
+            "eu": ["basque"],
+            "be": ["belarusian"],
+            "bn": ["bengali", "bangla"],
+            "bs": ["bosnian"],
+            "bg": ["bulgarian"],
+            "ca": ["catalan"],
+            "zh": ["chinese", "chinese simplified", "chinese traditional", "simplified chinese", "traditional chinese"],
+            "hr": ["croatian"],
+            "cs": ["czech"],
+            "da": ["danish"],
+            "nl": ["dutch"],
+            "en": ["english"],
+            "et": ["estonian"],
+            "fi": ["finnish"],
+            "fr": ["french"],
+            "gl": ["galician"],
+            "ka": ["georgian"],
+            "de": ["german"],
+            "el": ["greek"],
+            "gu": ["gujarati"],
+            "ha": ["hausa"],
+            "he": ["hebrew"],
+            "hi": ["hindi"],
+            "hu": ["hungarian"],
+            "is": ["icelandic"],
+            "id": ["indonesian"],
+            "ga": ["irish"],
+            "it": ["italian"],
+            "ja": ["japanese"],
+            "kn": ["kannada"],
+            "kk": ["kazakh"],
+            "km": ["khmer"],
+            "ko": ["korean"],
+            "ku": ["kurdish"],
+            "ky": ["kyrgyz"],
+            "lo": ["lao"],
+            "lv": ["latvian"],
+            "lt": ["lithuanian"],
+            "mk": ["macedonian"],
+            "ms": ["malay"],
+            "ml": ["malayalam"],
+            "mt": ["maltese"],
+            "mi": ["maori"],
+            "mr": ["marathi"],
+            "mn": ["mongolian"],
+            "my": ["myanmar", "burmese"],
+            "ne": ["nepali"],
+            "no": ["norwegian"],
+            "fa": ["persian", "farsi"],
+            "pl": ["polish"],
+            "pt": ["portuguese"],
+            "pa": ["punjabi"],
+            "ro": ["romanian"],
+            "ru": ["russian"],
+            "sr": ["serbian"],
+            "si": ["sinhala"],
+            "sk": ["slovak"],
+            "sl": ["slovenian"],
+            "so": ["somali"],
+            "es": ["spanish"],
+            "sw": ["swahili"],
+            "sv": ["swedish"],
+            "tl": ["tagalog", "filipino"],
+            "ta": ["tamil"],
+            "te": ["telugu"],
+            "th": ["thai"],
+            "tr": ["turkish"],
+            "uk": ["ukrainian"],
+            "ur": ["urdu"],
+            "uz": ["uzbek"],
+            "vi": ["vietnamese"],
+            "cy": ["welsh"],
+            "xh": ["xhosa"],
+            "yo": ["yoruba"],
+            "zu": ["zulu"]
+        ]
+        return Array(Set([normalizedCode, base] + (aliases[base] ?? []))).map { $0.lowercased() }
     }
 }

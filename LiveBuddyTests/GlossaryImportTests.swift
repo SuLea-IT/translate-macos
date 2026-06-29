@@ -76,6 +76,27 @@ struct GlossaryImportTests {
         #expect(result.entries[0].targetTerm == "屏幕录制")
     }
 
+    @Test func tbxImportSkipsConceptsWithoutSelectedTargetLanguage() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <tbx><text><body>
+          <termEntry id="c1">
+            <langSet xml:lang="en"><tig><term>screen recording</term></tig></langSet>
+            <langSet xml:lang="ja"><tig><term>画面収録</term></tig></langSet>
+          </termEntry>
+        </body></text></tbx>
+        """
+        let result = try GlossaryImportParser().parse(
+            data: Data(xml.utf8),
+            fileName: "japanese.tbx",
+            sourceName: "TBX",
+            existingEntries: [],
+            options: GlossaryImportOptions(sourceLanguageCode: "en", targetLanguageCode: "zh-CN", importLimit: 500)
+        )
+        #expect(result.added == 0)
+        #expect(result.entries.isEmpty)
+    }
+
     @Test func urlValidatorRejectsHttpAndAcceptsHttps() {
         #expect(GlossaryImportURLValidator.remoteURL(from: "http://example.com/terms.tsv") == nil)
         #expect(GlossaryImportURLValidator.remoteURL(from: "https://example.com/terms.tsv")?.scheme == "https")
@@ -113,6 +134,72 @@ struct GlossaryImportTests {
 
         #expect(result.added == 1)
         #expect(result.entries[0].sourceTerm == "Codex")
+    }
+
+    @Test func zipImportPrioritizesTargetLanguageEntriesBeforeGenericFiles() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlossaryImportZipPriorityTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try "generic first\t通用优先\n".write(to: root.appendingPathComponent("terms.tsv"), atomically: true, encoding: .utf8)
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <tbx><text><body>
+          <termEntry id="c1">
+            <langSet xml:lang="en"><tig><term>screen recording</term></tig></langSet>
+            <langSet xml:lang="zh-CN"><tig><term>屏幕录制</term></tig></langSet>
+          </termEntry>
+        </body></text></tbx>
+        """.write(to: root.appendingPathComponent("CHINESE (SIMPLIFIED).tbx"), atomically: true, encoding: .utf8)
+
+        let archiveURL = try makeArchive(
+            root: root,
+            name: "priority.zip",
+            files: ["terms.tsv", "CHINESE (SIMPLIFIED).tbx"]
+        )
+        let result = try GlossaryImportParser().parse(
+            fileURL: archiveURL,
+            sourceName: "ZIP",
+            existingEntries: [],
+            options: GlossaryImportOptions(sourceLanguageCode: "en", targetLanguageCode: "zh-CN", importLimit: 1)
+        )
+
+        #expect(result.added == 1)
+        #expect(result.entries.map(\.sourceTerm) == ["screen recording"])
+    }
+
+    @Test func zipImportReadsEntriesLargerThanPipeBuffer() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlossaryImportZipLargePipeTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let largeTerm = String(repeating: "A", count: 256 * 1024)
+        try "\(largeTerm)\tlarge target\nsmall\t小\n".write(to: root.appendingPathComponent("large.tsv"), atomically: true, encoding: .utf8)
+
+        let archiveURL = try makeArchive(root: root, name: "large.zip", files: ["large.tsv"])
+        let result = try GlossaryImportParser().parse(
+            fileURL: archiveURL,
+            sourceName: "ZIP",
+            existingEntries: [],
+            options: GlossaryImportOptions(sourceLanguageCode: "en", targetLanguageCode: "zh-CN", importLimit: 1)
+        )
+
+        #expect(result.added == 1)
+        #expect(result.entries[0].targetTerm == "large target")
+    }
+
+    private func makeArchive(root: URL, name: String, files: [String]) throws -> URL {
+        let archiveURL = root.appendingPathComponent(name)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        process.currentDirectoryURL = root
+        process.arguments = ["-qr", archiveURL.path] + files
+        try process.run()
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0)
+        return archiveURL
     }
 }
 
