@@ -15,6 +15,7 @@ struct TranscriptsView: View {
     @State private var isShowingClearTranscriptsConfirmation = false
 
     private let transcriptExporter = TranscriptExporter()
+    private let transcriptArchiveExporter = TranscriptArchiveExporter()
     private let meetingNotesGenerator = MeetingNotesGenerator()
 
     private var filteredSessions: [TranscriptSession] {
@@ -28,10 +29,34 @@ struct TranscriptsView: View {
     }
 
     var body: some View {
-        if let session = selectedSession {
-            detailContent(session)
-        } else {
-            listView
+        Group {
+            if let session = selectedSession {
+                detailContent(session)
+            } else {
+                listView
+            }
+        }
+        .fileExporter(
+            isPresented: Binding(
+                get: { exportDocument != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        exportDocument = nil
+                    }
+                }
+            ),
+            document: exportDocument,
+            contentType: exportContentType,
+            defaultFilename: exportFileName
+        ) { result in
+            switch result {
+            case .success:
+                exportDocument = nil
+                exportErrorMessage = nil
+            case .failure(let error):
+                exportDocument = nil
+                exportErrorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -59,6 +84,12 @@ struct TranscriptsView: View {
                 .font(.headline)
             Spacer()
             if !appState.transcriptSessions.isEmpty {
+                Button {
+                    exportAllTranscriptsFromUI()
+                } label: {
+                    Label(appState.t(.exportAllTranscripts), systemImage: "square.and.arrow.down")
+                }
+
                 Button(role: .destructive) {
                     isShowingClearTranscriptsConfirmation = true
                 } label: {
@@ -295,28 +326,6 @@ struct TranscriptsView: View {
                 }
             }
         }
-        .fileExporter(
-            isPresented: Binding(
-                get: { exportDocument != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        exportDocument = nil
-                    }
-                }
-            ),
-            document: exportDocument,
-            contentType: exportContentType,
-            defaultFilename: exportFileName
-        ) { result in
-            switch result {
-            case .success:
-                exportDocument = nil
-                exportErrorMessage = nil
-            case .failure(let error):
-                exportDocument = nil
-                exportErrorMessage = error.localizedDescription
-            }
-        }
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
@@ -324,6 +333,15 @@ struct TranscriptsView: View {
         exportDocument = TranscriptExportDocument(text: text, contentType: format.contentType)
         exportContentType = format.contentType
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
+        exportErrorMessage = nil
+    }
+
+    private func exportAllTranscriptsFromUI() {
+        let archiveText = transcriptArchiveExporter.export(sessions: appState.transcriptSessions, mode: viewMode)
+        let contentType = UTType(filenameExtension: "md") ?? .plainText
+        exportDocument = TranscriptExportDocument(text: archiveText, contentType: contentType)
+        exportContentType = contentType
+        exportFileName = transcriptArchiveExporter.defaultFileName()
         exportErrorMessage = nil
     }
 

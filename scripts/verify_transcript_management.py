@@ -5,10 +5,12 @@ import sys
 root = Path(__file__).resolve().parents[1]
 transcripts_view = root / "LiveBuddy" / "Views" / "Settings" / "TranscriptsView.swift"
 interface_file = root / "LiveBuddy" / "Models" / "InterfaceLanguage.swift"
+export_model = root / "LiveBuddy" / "Models" / "TranscriptExport.swift"
 errors: list[str] = []
 
 view_text = transcripts_view.read_text()
 interface_text = interface_file.read_text()
+export_text = export_model.read_text()
 
 for token in [
     "isShowingClearTranscriptsConfirmation",
@@ -23,7 +25,23 @@ for token in [
 if "appState.deleteAllTranscriptSessions()" not in view_text:
     errors.append("TranscriptsView must still call AppState.deleteAllTranscriptSessions() after confirmation")
 
-for key in ["clearTranscriptsConfirmationTitle", "clearTranscriptsConfirmationMessage"]:
+for token in [
+    "TranscriptArchiveExporter",
+    "exportAllTranscriptsFromUI()",
+    ".exportAllTranscripts",
+    "TranscriptExportDocument(text: archiveText",
+]:
+    if token not in view_text:
+        errors.append(f"TranscriptsView must expose bulk transcript export through {token}")
+
+if "struct TranscriptArchiveExporter" not in export_text:
+    errors.append("TranscriptExport.swift must provide TranscriptArchiveExporter for bulk backup")
+if "LiveBuddy Transcript Archive" not in export_text:
+    errors.append("Bulk transcript export must use a stable Markdown archive header")
+if "func defaultFileName(date:" not in export_text:
+    errors.append("Bulk transcript export must provide a deterministic default file name")
+
+for key in ["clearTranscriptsConfirmationTitle", "clearTranscriptsConfirmationMessage", "exportAllTranscripts"]:
     if f"case {key}" not in interface_text:
         errors.append(f"missing InterfaceText.{key}")
     if interface_text.count(f".{key}:") < 8:

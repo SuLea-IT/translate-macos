@@ -61,6 +61,7 @@ else:
         "clearTranscriptsConfirmationMessage",
         "exportGlossary",
         "exportTranscript",
+        "exportAllTranscripts",
         "exportAsSRT",
         "exportAsWebVTT",
         "exportAsMarkdown",

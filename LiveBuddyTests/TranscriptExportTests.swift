@@ -89,4 +89,37 @@ struct TranscriptExportTests {
         #expect(fileName.contains(":") == false)
         #expect(fileName.contains("both"))
     }
+
+    @Test func archiveExporterCombinesAllSessionsAsMarkdownBackup() {
+        let session = sampleSession()
+        let second = TranscriptSession(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+            startedAt: start.addingTimeInterval(120),
+            endedAt: start.addingTimeInterval(180),
+            targetLanguage: "Japanese",
+            audioSource: "Microphone",
+            lines: [
+                TranscriptLine(text: "Second session", originalText: "第二个会话", languageCode: "en", timestamp: start.addingTimeInterval(121))
+            ]
+        )
+
+        let archive = TranscriptArchiveExporter().export(sessions: [session, second], mode: .both)
+
+        #expect(archive.hasPrefix("# LiveBuddy Transcript Archive"))
+        #expect(archive.contains("- Sessions: 2"))
+        #expect(archive.contains("## 1. "))
+        #expect(archive.contains("## 2. "))
+        #expect(archive.contains("- Target Language: English"))
+        #expect(archive.contains("你好 世界\nHello world"))
+        #expect(archive.contains("第二个会话\nSecond session"))
+    }
+
+    @Test func archiveExporterDefaultFileNameIsExtensionSafe() {
+        let fileName = TranscriptArchiveExporter().defaultFileName(date: start)
+
+        #expect(fileName.hasPrefix("LiveBuddy-Transcript-Archive-"))
+        #expect(fileName.hasSuffix(".md"))
+        #expect(fileName.contains("/") == false)
+        #expect(fileName.contains(":") == false)
+    }
 }

@@ -240,3 +240,38 @@ struct TranscriptExporter {
         return parts.isEmpty ? fallback : parts
     }
 }
+
+struct TranscriptArchiveExporter {
+    private let transcriptExporter = TranscriptExporter()
+
+    func export(sessions: [TranscriptSession], mode: TranscriptViewMode) -> String {
+        var sections = [
+            "# LiveBuddy Transcript Archive",
+            "",
+            "- Sessions: \(sessions.count)",
+            "- Mode: \(mode.rawValue)",
+            "",
+            "---",
+            ""
+        ]
+
+        for (index, session) in sessions.enumerated() {
+            sections.append("## \(index + 1). \(session.displayTitle)")
+            sections.append("")
+            sections.append(transcriptExporter.export(session: session, mode: mode, format: .markdown).trimmingCharacters(in: .whitespacesAndNewlines))
+            sections.append("")
+            sections.append("---")
+            sections.append("")
+        }
+
+        return sections.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
+    }
+
+    func defaultFileName(date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "LiveBuddy-Transcript-Archive-\(formatter.string(from: date)).md"
+    }
+}

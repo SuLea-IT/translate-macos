@@ -207,6 +207,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case share
     case exportGlossary
     case exportTranscript
+    case exportAllTranscripts
     case exportAsSRT
     case exportAsWebVTT
     case exportAsMarkdown
@@ -479,6 +480,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .share: "Share",
         .exportGlossary: "Export Glossary",
         .exportTranscript: "Export",
+        .exportAllTranscripts: "Export All",
         .exportAsSRT: "Export as SRT",
         .exportAsWebVTT: "Export as WebVTT",
         .exportAsMarkdown: "Export as Markdown",
@@ -719,6 +721,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "分享",
             .exportGlossary: "导出术语库",
             .exportTranscript: "导出",
+            .exportAllTranscripts: "全部导出",
             .exportAsSRT: "导出为 SRT",
             .exportAsWebVTT: "导出为 WebVTT",
             .exportAsMarkdown: "导出为 Markdown",
@@ -956,6 +959,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "共有",
             .exportGlossary: "用語集を書き出す",
             .exportTranscript: "書き出し",
+            .exportAllTranscripts: "すべて書き出し",
             .exportAsSRT: "SRT として書き出し",
             .exportAsWebVTT: "WebVTT として書き出し",
             .exportAsMarkdown: "Markdown として書き出し",
@@ -1191,6 +1195,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "공유",
             .exportGlossary: "용어집 내보내기",
             .exportTranscript: "내보내기",
+            .exportAllTranscripts: "모두 내보내기",
             .exportAsSRT: "SRT로 내보내기",
             .exportAsWebVTT: "WebVTT로 내보내기",
             .exportAsMarkdown: "Markdown으로 내보내기",
@@ -1425,6 +1430,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "Compartir",
             .exportGlossary: "Exportar glosario",
             .exportTranscript: "Exportar",
+            .exportAllTranscripts: "Exportar todo",
             .exportAsSRT: "Exportar como SRT",
             .exportAsWebVTT: "Exportar como WebVTT",
             .exportAsMarkdown: "Exportar como Markdown",
@@ -1659,6 +1665,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "Partager",
             .exportGlossary: "Exporter le glossaire",
             .exportTranscript: "Exporter",
+            .exportAllTranscripts: "Tout exporter",
             .exportAsSRT: "Exporter en SRT",
             .exportAsWebVTT: "Exporter en WebVTT",
             .exportAsMarkdown: "Exporter en Markdown",
@@ -1893,6 +1900,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "Teilen",
             .exportGlossary: "Glossar exportieren",
             .exportTranscript: "Exportieren",
+            .exportAllTranscripts: "Alle exportieren",
             .exportAsSRT: "Als SRT exportieren",
             .exportAsWebVTT: "Als WebVTT exportieren",
             .exportAsMarkdown: "Als Markdown exportieren",
@@ -2127,6 +2135,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .share: "Chia sẻ",
             .exportGlossary: "Xuất bảng thuật ngữ",
             .exportTranscript: "Xuất",
+            .exportAllTranscripts: "Xuất tất cả",
             .exportAsSRT: "Xuất dạng SRT",
             .exportAsWebVTT: "Xuất dạng WebVTT",
             .exportAsMarkdown: "Xuất dạng Markdown",
