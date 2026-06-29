@@ -8,9 +8,8 @@ struct UsageControlTests {
         return BufferedAudioChunk(data: Data(repeating: byte, count: byteCount), capturedAt: date)
     }
 
-    @Test func sentAudioDurationAndCostAreCountedFromPCMBytes() {
-        var settings = LiveUsageSettings()
-        settings.estimatedCostPerMinuteUSD = 0.12
+    @Test func sentAudioDurationIsCountedFromPCMBytes() {
+        let settings = LiveUsageSettings()
         let start = Date(timeIntervalSince1970: 1_000)
         var engine = UsageControlEngine(
             settings: settings,
@@ -23,8 +22,6 @@ struct UsageControlTests {
         #expect(decision.shouldSend)
         #expect(engine.snapshot.sessionSentAudioSeconds == 2)
         #expect(engine.snapshot.todaySentAudioSeconds == 32)
-        #expect(abs(engine.snapshot.estimatedSessionCostUSD - 0.004) < 0.000_001)
-        #expect(abs(engine.snapshot.estimatedTodayCostUSD - 0.064) < 0.000_001)
     }
 
     @Test func quietAudioEntersIdleWarningBeforePause() {
@@ -130,7 +127,19 @@ extension UsageControlTests {
 
         #expect(settings.usageControls.idleAutoPauseEnabled)
         #expect(settings.usageControls.idlePauseDelaySeconds == 60)
-        #expect(settings.usageControls.estimatedCostPerMinuteUSD == 0.0368)
+    }
+
+
+    @Test func legacyEstimatedCostSettingIsIgnoredWhenEncodingUsageControls() throws {
+        let legacyJSON = #"{"activeProvider":"gemini","targetLanguageCode":"ja","usageControls":{"idleAutoPauseEnabled":true,"idlePauseDelaySeconds":60,"idleWarningSeconds":10,"prerollSeconds":3,"resumeBufferLimitSeconds":15,"speechStartThreshold":0.02,"speechEndThreshold":0.012,"estimatedCostPerMinuteUSD":0.99,"perSessionLimitMinutes":15,"dailyLimitMinutes":45}}"#.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: legacyJSON)
+        let encoded = try JSONEncoder().encode(settings)
+        let encodedString = try #require(String(data: encoded, encoding: .utf8))
+
+        #expect(settings.usageControls.perSessionLimitMinutes == 15)
+        #expect(settings.usageControls.dailyLimitMinutes == 45)
+        #expect(!encodedString.contains("estimatedCostPerMinuteUSD"))
     }
 
     @Test func usageControlSettingsRoundTripThroughCodable() throws {
@@ -138,7 +147,6 @@ extension UsageControlTests {
         settings.usageControls.idleAutoPauseEnabled = false
         settings.usageControls.perSessionLimitMinutes = 15
         settings.usageControls.dailyLimitMinutes = 45
-        settings.usageControls.estimatedCostPerMinuteUSD = 0.05
 
         let data = try JSONEncoder().encode(settings)
         let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
@@ -146,6 +154,5 @@ extension UsageControlTests {
         #expect(decoded.usageControls.idleAutoPauseEnabled == false)
         #expect(decoded.usageControls.perSessionLimitMinutes == 15)
         #expect(decoded.usageControls.dailyLimitMinutes == 45)
-        #expect(decoded.usageControls.estimatedCostPerMinuteUSD == 0.05)
     }
 }

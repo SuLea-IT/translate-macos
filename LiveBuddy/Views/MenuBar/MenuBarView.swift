@@ -234,7 +234,7 @@ struct MenuBarView: View {
 
     private var usageCompactView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(appState.t(.costAndUsageControl))
+            Text(appState.t(.usageControl))
                 .font(.headline)
 
             HStack {
@@ -246,9 +246,9 @@ struct MenuBarView: View {
             }
 
             HStack {
-                Text(appState.t(.estimatedCost))
+                Text(appState.t(.todayTranslatedTime))
                 Spacer()
-                Text(AppState.formatUsageCost(appState.usageSnapshot.estimatedSessionCostUSD))
+                Text(AppState.formatUsageDuration(appState.usageSnapshot.todaySentAudioSeconds))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }

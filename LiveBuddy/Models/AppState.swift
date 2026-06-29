@@ -872,8 +872,7 @@ final class AppState: ObservableObject {
 
     private func runningUsageStatusMessage() -> String {
         let apiTime = Self.formatUsageDuration(usageSnapshot.sessionSentAudioSeconds)
-        let cost = Self.formatUsageCost(usageSnapshot.estimatedSessionCostUSD)
-        let base = "mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount) · API \(apiTime) · \(cost)"
+        let base = "mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount) · API \(apiTime)"
         switch usageSnapshot.runtimeState {
         case .active:
             return "Listening · \(base)"
@@ -906,13 +905,6 @@ final class AppState: ObservableObject {
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
         }
         return String(format: "%02d:%02d", minutes, seconds)
-    }
-
-    static func formatUsageCost(_ cost: Double) -> String {
-        if cost < 0.01 {
-            return String(format: "$%.4f", max(0, cost))
-        }
-        return String(format: "$%.2f", max(0, cost))
     }
 
     nonisolated private static func calculateRMS(data: Data) -> Float {

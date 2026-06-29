@@ -8,7 +8,6 @@ struct LiveUsageSettings: Codable, Equatable {
     var resumeBufferLimitSeconds = 15.0
     var speechStartThreshold = 0.020
     var speechEndThreshold = 0.012
-    var estimatedCostPerMinuteUSD = 0.0368
     var perSessionLimitMinutes = 0.0
     var dailyLimitMinutes = 0.0
 
@@ -20,7 +19,6 @@ struct LiveUsageSettings: Codable, Equatable {
         copy.resumeBufferLimitSeconds = min(max(copy.prerollSeconds, copy.resumeBufferLimitSeconds), 60)
         copy.speechStartThreshold = min(max(0.001, copy.speechStartThreshold), 1)
         copy.speechEndThreshold = min(max(0.0005, copy.speechEndThreshold), copy.speechStartThreshold)
-        copy.estimatedCostPerMinuteUSD = max(0, copy.estimatedCostPerMinuteUSD)
         copy.perSessionLimitMinutes = max(0, copy.perSessionLimitMinutes)
         copy.dailyLimitMinutes = max(0, copy.dailyLimitMinutes)
         return copy
@@ -43,8 +41,6 @@ enum UsageControlRuntimeState: Equatable {
 struct LiveUsageSnapshot: Equatable {
     var sessionSentAudioSeconds: TimeInterval = 0
     var todaySentAudioSeconds: TimeInterval = 0
-    var estimatedSessionCostUSD: Double = 0
-    var estimatedTodayCostUSD: Double = 0
     var runtimeState: UsageControlRuntimeState = .active
     var resumeBufferOverflowed = false
 }
@@ -282,8 +278,6 @@ struct UsageControlEngine {
         snapshot = LiveUsageSnapshot(
             sessionSentAudioSeconds: sessionSentAudioSeconds,
             todaySentAudioSeconds: ledger.sentAudioSeconds,
-            estimatedSessionCostUSD: sessionSentAudioSeconds / 60.0 * settings.estimatedCostPerMinuteUSD,
-            estimatedTodayCostUSD: ledger.sentAudioSeconds / 60.0 * settings.estimatedCostPerMinuteUSD,
             runtimeState: runtimeState,
             resumeBufferOverflowed: didOverflowPausedBuffer
         )

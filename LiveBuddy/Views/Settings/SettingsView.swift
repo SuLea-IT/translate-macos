@@ -396,7 +396,7 @@ struct SettingsView: View {
     }
 
     private var usageControlSection: some View {
-        Section(appState.t(.costAndUsageControl)) {
+        Section(appState.t(.usageControl)) {
             usageMetricRow(
                 title: appState.t(.thisSessionTranslatedTime),
                 value: AppState.formatUsageDuration(appState.usageSnapshot.sessionSentAudioSeconds)
@@ -405,11 +405,6 @@ struct SettingsView: View {
                 title: appState.t(.todayTranslatedTime),
                 value: AppState.formatUsageDuration(appState.usageSnapshot.todaySentAudioSeconds)
             )
-            usageMetricRow(
-                title: appState.t(.estimatedCost),
-                value: "\(AppState.formatUsageCost(appState.usageSnapshot.estimatedSessionCostUSD)) / \(AppState.formatUsageCost(appState.usageSnapshot.estimatedTodayCostUSD))"
-            )
-
             Toggle(appState.t(.idleAutoPause), isOn: appState.binding(\.usageControls.idleAutoPauseEnabled))
 
             HStack {
@@ -448,22 +443,6 @@ struct SettingsView: View {
                 )
                 .frame(width: 140)
             }
-
-            HStack {
-                Text(appState.t(.estimatedPricePerMinute))
-                Spacer()
-                Stepper(
-                    String(format: "$%.4f/min", appState.settings.usageControls.estimatedCostPerMinuteUSD),
-                    value: appState.binding(\.usageControls.estimatedCostPerMinuteUSD),
-                    in: 0...1,
-                    step: 0.001
-                )
-                .frame(width: 160)
-            }
-
-            Text(appState.t(.pricingEstimateNote))
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
