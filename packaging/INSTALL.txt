@@ -1,0 +1,16 @@
+Live Translate Buddy - Free macOS Build
+
+This build is ad-hoc signed and free to distribute. It is not Apple-notarized because the project does not use a paid Apple Developer ID certificate.
+
+Install:
+1. Drag "Live Translate Buddy.app" into the Applications folder.
+2. Open Applications.
+3. If macOS says the app is from an unidentified developer, Right-click the app and choose Open.
+4. Click Open again in the confirmation dialog. You only need to do this the first time.
+
+Why this happens:
+macOS Gatekeeper warns for apps that are not notarized by Apple. The app is still code-signed ad-hoc so the bundle integrity can be verified locally, but Apple cannot verify the developer identity without a paid Developer ID certificate.
+
+Update:
+Use Settings > Check for Updates in the app, or visit:
+https://github.com/SuLea-IT/translate-macos/releases
