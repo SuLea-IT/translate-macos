@@ -349,10 +349,12 @@ else:
 
 for token in [
     "private var runtimeControlTask: Task<Void, Never>?",
+    "private var pendingRuntimeControlRequest: RuntimeControlRequest?",
     "private enum RuntimeControlRequest",
     "func requestStart()",
     "func requestStop()",
     "private func scheduleRuntimeControl(_ request: RuntimeControlRequest)",
+    "private func performRuntimeControl(_ request: RuntimeControlRequest) async",
 ]:
     if token not in app_state_text:
         errors.append(f"AppState must serialize user-driven runtime controls through {token}")
@@ -375,21 +377,33 @@ if not schedule_runtime_match:
 else:
     body = schedule_runtime_match.group("body")
     for token in [
-        "guard runtimeControlTask == nil",
+        "if runtimeControlTask != nil",
+        "pendingRuntimeControlRequest = request",
         "runtimeControlTask = Task",
-        "case .toggle",
-        "case .start",
-        "case .stop",
-        "await self.start()",
-        "await self.stop()",
+        "await self.performRuntimeControl(currentRequest)",
+        "while let pendingRequest = self.pendingRuntimeControlRequest",
+        "self.pendingRuntimeControlRequest = nil",
         "guard !Task.isCancelled else { return }",
         "runtimeControlTask = nil",
     ]:
         if token not in body:
-            errors.append(f"AppState.scheduleRuntimeControl(_:) must serialize runtime controls through {token}")
+            errors.append(f"AppState.scheduleRuntimeControl(_:) must serialize and preserve runtime controls through {token}")
+    if "guard runtimeControlTask == nil else { return }" in body:
+        errors.append("AppState.scheduleRuntimeControl(_:) must not drop busy-time runtime control requests")
+
+perform_runtime_match = re.search(r"private func performRuntimeControl\(_ request: RuntimeControlRequest\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not perform_runtime_match:
+    errors.append("AppState.performRuntimeControl(_:) not found")
+else:
+    body = perform_runtime_match.group("body")
+    for token in ["case .toggle", "case .start", "case .stop", "await start()", "await stop()"]:
+        if token not in body:
+            errors.append(f"AppState.performRuntimeControl(_:) must preserve runtime action behavior through {token}")
 
 if deinit_match and "runtimeControlTask?.cancel()" not in deinit_match.group("body"):
     errors.append("AppState.deinit must cancel runtimeControlTask")
+if deinit_match and "pendingRuntimeControlRequest = nil" not in deinit_match.group("body"):
+    errors.append("AppState.deinit must clear pendingRuntimeControlRequest")
 
 menu_bar_text = (root / "LiveBuddy" / "Views" / "MenuBar" / "MenuBarView.swift").read_text()
 caption_panel_text = (root / "LiveBuddy" / "Views" / "Caption" / "CaptionPanelController.swift").read_text()

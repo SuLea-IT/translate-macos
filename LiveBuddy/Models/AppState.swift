@@ -80,6 +80,7 @@ final class AppState: ObservableObject {
     private let globalShortcutRegistrar: GlobalShortcutRegistering
     private let glossaryImportService: GlossaryImportService
     private var runtimeControlTask: Task<Void, Never>?
+    private var pendingRuntimeControlRequest: RuntimeControlRequest?
     private var restartTask: Task<Void, Never>?
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
@@ -266,23 +267,37 @@ final class AppState: ObservableObject {
     }
 
     private func scheduleRuntimeControl(_ request: RuntimeControlRequest) {
-        guard runtimeControlTask == nil else { return }
+        if runtimeControlTask != nil {
+            pendingRuntimeControlRequest = request
+            return
+        }
         runtimeControlTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            switch request {
-            case .toggle:
-                if self.isRunning {
-                    await self.stop()
-                } else {
-                    await self.start()
-                }
-            case .start:
-                await self.start()
-            case .stop:
-                await self.stop()
-            }
+            var currentRequest = request
+            await self.performRuntimeControl(currentRequest)
             guard !Task.isCancelled else { return }
+            while let pendingRequest = self.pendingRuntimeControlRequest {
+                self.pendingRuntimeControlRequest = nil
+                currentRequest = pendingRequest
+                await self.performRuntimeControl(currentRequest)
+                guard !Task.isCancelled else { return }
+            }
             self.runtimeControlTask = nil
+        }
+    }
+
+    private func performRuntimeControl(_ request: RuntimeControlRequest) async {
+        switch request {
+        case .toggle:
+            if isRunning {
+                await stop()
+            } else {
+                await start()
+            }
+        case .start:
+            await start()
+        case .stop:
+            await stop()
         }
     }
 
@@ -1458,6 +1473,7 @@ final class AppState: ObservableObject {
 
     deinit {
         runtimeControlTask?.cancel()
+        pendingRuntimeControlRequest = nil
         restartTask?.cancel()
         reconnectTask?.cancel()
         connectionStopTask?.cancel()
