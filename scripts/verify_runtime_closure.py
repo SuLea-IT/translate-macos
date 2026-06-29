@@ -10,6 +10,7 @@ app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
 microphone_capture = root / "LiveBuddy" / "Services" / "MicrophoneCapture.swift"
 screen_audio_capture = root / "LiveBuddy" / "Services" / "ScreenAudioCapture.swift"
 audio_player = root / "LiveBuddy" / "Utilities" / "PCM16AudioPlayer.swift"
+app_delegate = root / "LiveBuddy" / "App" / "AppDelegate.swift"
 errors: list[str] = []
 
 client_text = client.read_text()
@@ -18,6 +19,7 @@ app_state_text = app_state.read_text()
 microphone_text = microphone_capture.read_text()
 screen_audio_text = screen_audio_capture.read_text()
 audio_player_text = audio_player.read_text()
+app_delegate_text = app_delegate.read_text()
 
 for token in ["socketOpenTimeout", "setupMessageTimeout", "withLiveTimeout", "receiveMessage(timeout:"]:
     if token not in client_text:
@@ -95,6 +97,20 @@ else:
     for token in ["chunker.reset()", "screenStreamForDeinit", "try? await screenStreamForDeinit.stopCapture()"]:
         if token not in body:
             errors.append(f"ScreenAudioCapture.deinit must release capture resource through {token}")
+
+
+if "private func removeShowCaptionObserver()" not in app_delegate_text:
+    errors.append("AppDelegate must centralize showCaptionObserver cleanup")
+for context, pattern in [
+    ("configure(with:)", r"func configure\(with appState: AppState\) \{(?P<body>[\s\S]*?)\n    \}"),
+    ("applicationWillTerminate", r"func applicationWillTerminate\(_ notification: Notification\) \{(?P<body>[\s\S]*?)\n    \}"),
+    ("deinit", r"deinit \{(?P<body>[\s\S]*?)\n    \}"),
+]:
+    match = re.search(pattern, app_delegate_text)
+    if not match:
+        errors.append(f"AppDelegate.{context} must exist for observer cleanup")
+    elif "removeShowCaptionObserver()" not in match.group("body"):
+        errors.append(f"AppDelegate.{context} must remove showCaptionObserver through removeShowCaptionObserver()")
 
 if errors:
     print("Runtime closure verification failed:")

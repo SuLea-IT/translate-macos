@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func configure(with appState: AppState) {
         guard self.appState !== appState else { return }
+        removeShowCaptionObserver()
         self.appState = appState
         let panel = CaptionPanelController(appState: appState)
         captionPanel = panel
@@ -39,8 +40,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         Task { await appState?.stop() }
+        removeShowCaptionObserver()
+    }
+
+    deinit {
+        MainActor.assumeIsolated {
+            removeShowCaptionObserver()
+        }
+    }
+
+    private func removeShowCaptionObserver() {
         if let showCaptionObserver {
             NotificationCenter.default.removeObserver(showCaptionObserver)
+            self.showCaptionObserver = nil
         }
     }
 }
