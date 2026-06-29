@@ -178,6 +178,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case runtimeLogs
     case exportLogs
     case copyLogs
+    case clearLogsConfirmationTitle
+    case clearLogsConfirmationMessage
     case clear
     case welcomeToLiveBuddy
     case configureProviderPrompt
@@ -453,6 +455,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .runtimeLogs: "Runtime Logs",
         .exportLogs: "Export Logs",
         .copyLogs: "Copy Logs",
+        .clearLogsConfirmationTitle: "Clear logs?",
+        .clearLogsConfirmationMessage: "This will remove all %d runtime log entries. Export a backup first if needed.",
         .clear: "Clear",
         .welcomeToLiveBuddy: "Welcome to LiveBuddy",
         .configureProviderPrompt: "Please configure your AI Provider to start using LiveBuddy for real-time translation.",
@@ -696,6 +700,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "运行日志",
             .exportLogs: "导出日志",
             .copyLogs: "复制日志",
+            .clearLogsConfirmationTitle: "清空日志？",
+            .clearLogsConfirmationMessage: "这将删除全部 %d 条运行日志。如有需要，请先导出备份。",
             .clear: "清除",
             .welcomeToLiveBuddy: "欢迎使用 LiveBuddy",
             .configureProviderPrompt: "请配置 AI 提供商以开始使用 LiveBuddy 实时翻译。",
@@ -936,6 +942,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "実行ログ",
             .exportLogs: "ログを書き出し",
             .copyLogs: "ログをコピー",
+            .clearLogsConfirmationTitle: "ログを消去しますか？",
+            .clearLogsConfirmationMessage: "すべての %d 件の実行ログを削除します。必要な場合は先にバックアップを書き出してください。",
             .clear: "消去",
             .welcomeToLiveBuddy: "LiveBuddy へようこそ",
             .configureProviderPrompt: "LiveBuddy のリアルタイム翻訳を開始するには AI プロバイダーを設定してください。",
@@ -1174,6 +1182,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "런타임 로그",
             .exportLogs: "로그 내보내기",
             .copyLogs: "로그 복사",
+            .clearLogsConfirmationTitle: "로그를 지울까요?",
+            .clearLogsConfirmationMessage: "런타임 로그 %d개가 모두 삭제됩니다. 필요하면 먼저 백업을 내보내세요.",
             .clear: "지우기",
             .welcomeToLiveBuddy: "LiveBuddy에 오신 것을 환영합니다",
             .configureProviderPrompt: "실시간 번역을 시작하려면 AI 제공업체를 설정하세요.",
@@ -1411,6 +1421,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "Registros de ejecución",
             .exportLogs: "Exportar registros",
             .copyLogs: "Copiar registros",
+            .clearLogsConfirmationTitle: "¿Limpiar registros?",
+            .clearLogsConfirmationMessage: "Esto eliminará las %d entradas de registro de ejecución. Exporta una copia antes si la necesitas.",
             .clear: "Limpiar",
             .welcomeToLiveBuddy: "Bienvenido a LiveBuddy",
             .configureProviderPrompt: "Configura tu proveedor de IA para empezar a usar la traducción en tiempo real de LiveBuddy.",
@@ -1648,6 +1660,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "Journaux d’exécution",
             .exportLogs: "Exporter les journaux",
             .copyLogs: "Copier les journaux",
+            .clearLogsConfirmationTitle: "Effacer les journaux ?",
+            .clearLogsConfirmationMessage: "Cela supprimera les %d entrées du journal d’exécution. Exportez une sauvegarde d’abord si nécessaire.",
             .clear: "Effacer",
             .welcomeToLiveBuddy: "Bienvenue dans LiveBuddy",
             .configureProviderPrompt: "Configurez votre fournisseur d’IA pour commencer la traduction en temps réel avec LiveBuddy.",
@@ -1885,6 +1899,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "Laufzeitprotokolle",
             .exportLogs: "Logs exportieren",
             .copyLogs: "Logs kopieren",
+            .clearLogsConfirmationTitle: "Logs löschen?",
+            .clearLogsConfirmationMessage: "Dadurch werden alle %d Laufzeitprotokolleinträge entfernt. Exportieren Sie bei Bedarf zuerst eine Sicherung.",
             .clear: "Löschen",
             .welcomeToLiveBuddy: "Willkommen bei LiveBuddy",
             .configureProviderPrompt: "Konfigurieren Sie Ihren KI-Anbieter, um LiveBuddy für Echtzeitübersetzung zu verwenden.",
@@ -2122,6 +2138,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .runtimeLogs: "Nhật ký chạy",
             .exportLogs: "Xuất nhật ký",
             .copyLogs: "Sao chép nhật ký",
+            .clearLogsConfirmationTitle: "Xóa nhật ký?",
+            .clearLogsConfirmationMessage: "Thao tác này sẽ xóa tất cả %d mục nhật ký chạy. Hãy xuất bản sao lưu trước nếu cần.",
             .clear: "Xóa",
             .welcomeToLiveBuddy: "Chào mừng đến với LiveBuddy",
             .configureProviderPrompt: "Vui lòng cấu hình nhà cung cấp AI để bắt đầu dùng LiveBuddy cho dịch thời gian thực.",

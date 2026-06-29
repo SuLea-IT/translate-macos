@@ -23,13 +23,26 @@ for token in [
     if token not in view_text:
         errors.append(f"Logs view must expose diagnostic log sharing through {token}")
 
+for token in [
+    "isShowingClearLogsConfirmation",
+    ".confirmationDialog(",
+    ".clearLogsConfirmationTitle",
+    ".clearLogsConfirmationMessage",
+    "clearLogsFromUI()",
+]:
+    if token not in view_text:
+        errors.append(f"Logs view must confirm destructive log clearing through {token}")
+
+if "appState.clearLogs()" in view_text and "private func clearLogsFromUI()" not in view_text:
+    errors.append("Logs clear action must route through a UI helper used by the confirmation dialog")
+
 if "struct LogExporter" not in app_state_text:
     errors.append("AppState.swift must provide LogExporter for reusable log formatting")
 for token in ["func export(entries:", "func defaultFileName(date:", "Runtime Logs", "ERROR", "INFO"]:
     if token not in app_state_text:
         errors.append(f"LogExporter must include {token}")
 
-for key in ["exportLogs", "copyLogs"]:
+for key in ["exportLogs", "copyLogs", "clearLogsConfirmationTitle", "clearLogsConfirmationMessage"]:
     if f"case {key}" not in interface_text:
         errors.append(f"missing InterfaceText.{key}")
     if interface_text.count(f".{key}:") < 8:

@@ -35,6 +35,7 @@ struct SettingsView: View {
     @State private var logExportDocument: TranscriptExportDocument?
     @State private var logExportFileName = "LiveBuddy-Logs.txt"
     @State private var logExportErrorMessage: String?
+    @State private var isShowingClearLogsConfirmation = false
 
     var body: some View {
         NavigationSplitView {
@@ -839,11 +840,12 @@ struct SettingsView: View {
                 }
                 .disabled(appState.logs.isEmpty)
 
-                Button {
-                    appState.clearLogs()
+                Button(role: .destructive) {
+                    isShowingClearLogsConfirmation = true
                 } label: {
                     Label(appState.t(.clear), systemImage: "trash")
                 }
+                .disabled(appState.logs.isEmpty)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
@@ -898,6 +900,18 @@ struct SettingsView: View {
                 logExportErrorMessage = error.localizedDescription
             }
         }
+        .confirmationDialog(
+            appState.t(.clearLogsConfirmationTitle),
+            isPresented: $isShowingClearLogsConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(appState.t(.clear), role: .destructive) {
+                clearLogsFromUI()
+            }
+            Button(appState.t(.cancel), role: .cancel) {}
+        } message: {
+            Text(appState.t(.clearLogsConfirmationMessage, appState.logs.count))
+        }
     }
 
     private func copyLogsFromUI() {
@@ -912,6 +926,11 @@ struct SettingsView: View {
         let logText = exporter.export(entries: appState.logs)
         logExportDocument = TranscriptExportDocument(text: logText, contentType: .plainText)
         logExportFileName = exporter.defaultFileName()
+        logExportErrorMessage = nil
+    }
+
+    private func clearLogsFromUI() {
+        appState.clearLogs()
         logExportErrorMessage = nil
     }
 }
