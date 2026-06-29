@@ -12,12 +12,12 @@ struct GlossaryImportSource: Identifiable, Equatable {
     var detail: String
     var kind: Kind
 
-    static let microsoftTerminologyURL = URL(string: "https://download.microsoft.com/download/E/B/A/EBABD7D1-D746-4F5D-8C1B-23634D038BC8/MicrosoftTermCollection.tbx.zip")!
+    static let microsoftTerminologyURL = URL(string: "https://download.microsoft.com/download/b/2/d/b2db7a7c-8d33-47f3-b2c1-ee5e6445cf45/MicrosoftTermCollection.zip")!
 
     static let microsoftTerminology = GlossaryImportSource(
         id: "microsoft-terminology",
         displayName: "Microsoft Terminology",
-        detail: "Download Microsoft software terminology TBX package from Microsoft Download Center.",
+        detail: "Download Microsoft software terminology package from Microsoft Download Center.",
         kind: .builtIn(microsoftTerminologyURL)
     )
 
@@ -261,7 +261,7 @@ struct GlossaryImportParser {
         existingEntries: [GlossaryEntry],
         options: GlossaryImportOptions
     ) throws -> GlossaryImportResult {
-        let archive = ZIPGlossaryArchive(fileURL: fileURL)
+        let archive = ZIPGlossaryArchive(fileURL: fileURL, maxEntryBytes: maxDataBytes)
         let entries = try archive.supportedEntries()
         var aggregate = GlossaryImportResult.empty(sourceName: sourceName)
         var existing = existingEntries
@@ -521,18 +521,25 @@ private final class TBXTermParserDelegate: NSObject, XMLParserDelegate {
 
 private struct ZIPGlossaryArchive {
     let fileURL: URL
+    let maxEntryBytes: Int
 
     func supportedEntries() throws -> [String] {
-        let output = try runUnzip(arguments: ["-Z1", fileURL.path])
+        let output = try runUnzip(arguments: ["-l", fileURL.path])
         return output
             .split(whereSeparator: \.isNewline)
-            .map(String.init)
-            .filter { entry in
+            .compactMap { line -> (name: String, size: Int)? in
+                let parts = line.split(maxSplits: 3, omittingEmptySubsequences: true, whereSeparator: \.isWhitespace)
+                guard parts.count == 4, let size = Int(parts[0]) else { return nil }
+                return (String(parts[3]).trimmingCharacters(in: .whitespacesAndNewlines), size)
+            }
+            .filter { entry, size in
+                guard size <= maxEntryBytes else { return false }
                 guard !entry.hasSuffix("/") else { return false }
                 guard !entry.hasPrefix("__MACOSX/"), !entry.contains("/._"), !entry.hasPrefix("._") else { return false }
                 let ext = URL(fileURLWithPath: entry).pathExtension.lowercased()
                 return ["csv", "tsv", "txt", "tbx", "xml"].contains(ext)
             }
+            .map(\.name)
     }
 
     func data(for entry: String) throws -> Data {

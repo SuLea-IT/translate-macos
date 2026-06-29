@@ -10,7 +10,7 @@ final class GlossaryImportService {
         cacheDirectory: URL? = nil,
         session: URLSession = .shared,
         parser: GlossaryImportParser = GlossaryImportParser(),
-        maxDownloadBytes: Int = 25 * 1024 * 1024
+        maxDownloadBytes: Int = 250 * 1024 * 1024
     ) {
         if let cacheDirectory {
             self.cacheDirectory = cacheDirectory

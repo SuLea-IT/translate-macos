@@ -73,6 +73,40 @@ struct GlossaryImportTests {
         #expect(GlossaryImportURLValidator.remoteURL(from: "http://example.com/terms.tsv") == nil)
         #expect(GlossaryImportURLValidator.remoteURL(from: "https://example.com/terms.tsv")?.scheme == "https")
     }
+
+    @Test func zipImportSkipsHiddenAndUnsupportedFiles() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlossaryImportZipTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let termsURL = root.appendingPathComponent("terms.tsv")
+        let hiddenDirectory = root.appendingPathComponent("__MACOSX", isDirectory: true)
+        let unsupportedURL = root.appendingPathComponent("notes.md")
+        try FileManager.default.createDirectory(at: hiddenDirectory, withIntermediateDirectories: true)
+        try "Codex\tCodex\n".write(to: termsURL, atomically: true, encoding: .utf8)
+        try "hidden\t隐藏\n".write(to: hiddenDirectory.appendingPathComponent("._terms.tsv"), atomically: true, encoding: .utf8)
+        try "not glossary".write(to: unsupportedURL, atomically: true, encoding: .utf8)
+
+        let archiveURL = root.appendingPathComponent("terms.zip")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        process.currentDirectoryURL = root
+        process.arguments = ["-qr", archiveURL.path, "terms.tsv", "__MACOSX", "notes.md"]
+        try process.run()
+        process.waitUntilExit()
+        #expect(process.terminationStatus == 0)
+
+        let result = try GlossaryImportParser().parse(
+            fileURL: archiveURL,
+            sourceName: "ZIP",
+            existingEntries: [],
+            options: .default
+        )
+
+        #expect(result.added == 1)
+        #expect(result.entries[0].sourceTerm == "Codex")
+    }
 }
 
 struct GlossaryImportServiceTests {

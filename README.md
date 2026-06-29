@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/a5f94b11-80bf-4043-bbfc-63426b781863
 
 *   **Real-time Speech-to-Speech & Speech-to-Text Translation**: Leverages Google Gemini's live translation capability (`models/gemini-3.5-live-translate-preview`) via low-latency bidirectional WebSockets.
 *   **Source Language Awareness**: Defaults to automatic source-language detection, shows detected input language in the HUD, and lets users choose a source-language hint when needed.
-*   **Terminology Glossary**: Add source terms and preferred translations to preserve names, product names, and technical terms. Leave the preferred translation empty to preserve the original term.
+*   **Terminology Glossary**: Add source terms and preferred translations to preserve names, product names, and technical terms. Leave the preferred translation empty to preserve the original term. Import public terminology sources such as Microsoft Terminology, paste custom HTTPS glossary links, or import local CSV/TSV/TBX/XML/TXT/ZIP files with bounded parsing and duplicate skipping.
 *   **Dual-Source Audio Capture**:
     *   **Screen Audio**: Captures system/app output audio directly.
     *   **Microphone**: Captures local voice input.
