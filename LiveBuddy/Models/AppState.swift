@@ -11,6 +11,7 @@ final class AppState: ObservableObject {
             saveSettings()
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolume()
+            updateAudioPlayerOutputDevice()
             updateUsageControlSettings()
         }
     }
@@ -23,6 +24,7 @@ final class AppState: ObservableObject {
     @Published private(set) var logs: [LogEntry] = []
     @Published var showSetupSheet = false
     @Published private(set) var availableMicrophones: [AudioDevice] = []
+    @Published private(set) var availableOutputDevices: [AudioDevice] = []
     @Published private(set) var audioLevel: Float = 0.0
     @Published private(set) var setupChecklist: SetupChecklistState = .initial
     @Published private(set) var currentUserFacingError: UserFacingError?
@@ -137,7 +139,9 @@ final class AppState: ObservableObject {
             saveSettings()
         }
         updateAudioPlayerVolume()
+        updateAudioPlayerOutputDevice()
         refreshAvailableMicrophones()
+        refreshAvailableOutputDevices()
         refreshSetupChecklist()
         startListeningForDeviceChanges()
         configureGlobalShortcuts()
@@ -721,6 +725,22 @@ final class AppState: ObservableObject {
     }
 
     private func startCapture() async throws {
+        if settings.virtualAudioIsolationEnabled {
+            let devices = availableMicrophones.isEmpty ? AudioDeviceManager.getInputDevices() : availableMicrophones
+            guard let virtualInput = AudioDeviceManager.preferredVirtualInputDevice(
+                from: devices,
+                selectedUID: settings.virtualAudioInputDeviceUID
+            ) else {
+                updateStatus("Virtual audio isolation needs BlackHole or another loopback input device.", level: .error, log: true)
+                throw VirtualAudioIsolationError.inputDeviceUnavailable
+            }
+            let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone))
+            try await mic.start(selectedDeviceUID: virtualInput.uid)
+            microphoneCapture = mic
+            updateStatus("Virtual audio isolation capture started: \(virtualInput.name)", level: .connecting, log: true)
+            return
+        }
+
         if settings.audioSource == .microphone || settings.audioSource == .both {
             let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone))
             try await mic.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
@@ -1077,6 +1097,10 @@ final class AppState: ObservableObject {
         audioPlayer.setVolume(Float(volume))
     }
 
+    private func updateAudioPlayerOutputDevice() {
+        audioPlayer.setOutputDeviceUID(settings.translatedAudioOutputDeviceUID)
+    }
+
     private func handleClientStatus(_ message: String) {
         let lowered = message.lowercased()
         if lowered.contains("error") || lowered.contains("failed") || lowered.contains("closed") || lowered.contains("disconnected") {
@@ -1185,6 +1209,10 @@ final class AppState: ObservableObject {
         availableMicrophones = AudioDeviceManager.getInputDevices()
     }
 
+    func refreshAvailableOutputDevices() {
+        availableOutputDevices = AudioDeviceManager.getOutputDevices()
+    }
+
     private func startListeningForDeviceChanges() {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
@@ -1195,6 +1223,7 @@ final class AppState: ObservableObject {
         let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor in
                 self?.refreshAvailableMicrophones()
+                self?.refreshAvailableOutputDevices()
             }
         }
         
@@ -1235,6 +1264,17 @@ enum LiveStatusLevel {
 enum LogLevel {
     case info
     case error
+}
+
+enum VirtualAudioIsolationError: LocalizedError {
+    case inputDeviceUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .inputDeviceUnavailable:
+            return "BlackHole or another loopback input device is required for virtual audio isolation."
+        }
+    }
 }
 
 struct LogEntry: Identifiable, Equatable {

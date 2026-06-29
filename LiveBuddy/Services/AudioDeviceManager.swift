@@ -16,6 +16,14 @@ struct AudioDevice: Identifiable, Hashable, Codable {
 
 final class AudioDeviceManager {
     static func getInputDevices() -> [AudioDevice] {
+        getDevices(scope: kAudioDevicePropertyScopeInput)
+    }
+
+    static func getOutputDevices() -> [AudioDevice] {
+        getDevices(scope: kAudioDevicePropertyScopeOutput)
+    }
+
+    private static func getDevices(scope: AudioObjectPropertyScope) -> [AudioDevice] {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -47,13 +55,13 @@ final class AudioDeviceManager {
         
         guard status == noErr else { return [] }
         
-        var inputDevices: [AudioDevice] = []
+        var devices: [AudioDevice] = []
         
         for deviceID in deviceIDs {
-            // Check if the device has input channels/streams
+            // Check if the device has streams in the requested scope.
             var streamAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyStreams,
-                mScope: kAudioDevicePropertyScopeInput,
+                mScope: scope,
                 mElement: kAudioObjectPropertyElementMain
             )
             
@@ -71,7 +79,7 @@ final class AudioDeviceManager {
             // Get device name
             var nameAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceNameCFString,
-                mScope: kAudioObjectPropertyScopeInput,
+                mScope: scope,
                 mElement: kAudioObjectPropertyElementMain
             )
             
@@ -93,7 +101,7 @@ final class AudioDeviceManager {
             // Get UID
             var uidAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceUID,
-                mScope: kAudioObjectPropertyScopeInput,
+                mScope: scope,
                 mElement: kAudioObjectPropertyElementMain
             )
             var uid: CFString = "" as CFString
@@ -111,14 +119,18 @@ final class AudioDeviceManager {
             
             let deviceUID = (status == noErr) ? (uid as String) : ""
             
-            inputDevices.append(AudioDevice(deviceID: deviceID, uid: deviceUID, name: deviceName))
+            devices.append(AudioDevice(deviceID: deviceID, uid: deviceUID, name: deviceName))
         }
         
-        return inputDevices
+        return devices
     }
 
     static func getDeviceID(for uid: String) -> AudioDeviceID? {
         getInputDevices().first { $0.uid == uid }?.deviceID
+    }
+
+    static func getOutputDeviceID(for uid: String) -> AudioDeviceID? {
+        getOutputDevices().first { $0.uid == uid }?.deviceID
     }
 
     static func preferredVirtualInputDevice(from devices: [AudioDevice], selectedUID: String?) -> AudioDevice? {
