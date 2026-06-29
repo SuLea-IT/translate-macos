@@ -101,4 +101,31 @@ struct GlossaryTests {
         #expect(noMatch.visibleEntries.isEmpty)
         #expect(sourceMatch.hiddenCount == 0)
     }
+
+    @Test func glossaryExporterWritesCSVHeaderAndEscapesValues() {
+        let entries = [
+            GlossaryEntry(
+                sourceTerm: "Gemini, Live",
+                targetTerm: "Gemini \"Live\" API",
+                note: "line\nbreak",
+                isEnabled: false
+            ),
+            GlossaryEntry(sourceTerm: "Codex", targetTerm: "", note: "", isEnabled: true)
+        ]
+
+        let csv = GlossaryExporter().export(entries: entries)
+
+        #expect(csv.hasPrefix("source,target,note,isEnabled\n"))
+        #expect(csv.contains("\"Gemini, Live\",\"Gemini \"\"Live\"\" API\",\"line\nbreak\",false\n"))
+        #expect(csv.contains("Codex,,,true\n"))
+    }
+
+    @Test func glossaryExporterDefaultFileNameIsExtensionSafe() {
+        let fileName = GlossaryExporter().defaultFileName(date: Date(timeIntervalSince1970: 1_700_000_000))
+
+        #expect(fileName.hasPrefix("LiveBuddy-Glossary-"))
+        #expect(fileName.hasSuffix(".csv"))
+        #expect(fileName.contains("/") == false)
+        #expect(fileName.contains(":") == false)
+    }
 }

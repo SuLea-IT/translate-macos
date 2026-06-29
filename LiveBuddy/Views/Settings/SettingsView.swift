@@ -27,6 +27,9 @@ struct SettingsView: View {
     @State private var glossaryImportInputMessage = ""
     @State private var isGlossaryListExpanded = false
     @State private var glossarySearchText = ""
+    @State private var glossaryExportDocument: GlossaryExportDocument?
+    @State private var glossaryExportFileName = "LiveBuddy-Glossary.csv"
+    @State private var glossaryExportErrorMessage: String?
 
     var body: some View {
         NavigationSplitView {
@@ -480,6 +483,28 @@ struct SettingsView: View {
         ) { result in
             handleGlossaryFileImporterResult(result)
         }
+        .fileExporter(
+            isPresented: Binding(
+                get: { glossaryExportDocument != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        glossaryExportDocument = nil
+                    }
+                }
+            ),
+            document: glossaryExportDocument,
+            contentType: .commaSeparatedText,
+            defaultFilename: glossaryExportFileName
+        ) { result in
+            switch result {
+            case .success:
+                glossaryExportDocument = nil
+                glossaryExportErrorMessage = nil
+            case .failure(let error):
+                glossaryExportDocument = nil
+                glossaryExportErrorMessage = error.localizedDescription
+            }
+        }
     }
 
     private var glossaryEditorSection: some View {
@@ -581,8 +606,23 @@ struct SettingsView: View {
         )
 
         return Section {
-            TextField(appState.t(.searchGlossaryTerms), text: $glossarySearchText)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 8) {
+                TextField(appState.t(.searchGlossaryTerms), text: $glossarySearchText)
+                    .textFieldStyle(.roundedBorder)
+
+                Button {
+                    prepareGlossaryExport()
+                } label: {
+                    Label(appState.t(.exportGlossary), systemImage: "square.and.arrow.down")
+                }
+                .disabled(appState.settings.glossaryEntries.isEmpty)
+            }
+
+            if let glossaryExportErrorMessage {
+                Text(appState.t(.exportFailed, glossaryExportErrorMessage))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
 
             HStack {
                 Text(appState.t(.glossaryEntrySummary, display.visibleEntries.count, display.matchingEntries.count))
@@ -654,6 +694,13 @@ struct SettingsView: View {
             UTType(filenameExtension: "tbx"),
             UTType(filenameExtension: "zip")
         ].compactMap { $0 }
+    }
+
+    private func prepareGlossaryExport() {
+        let exporter = GlossaryExporter()
+        glossaryExportDocument = GlossaryExportDocument(csvText: exporter.export(entries: appState.settings.glossaryEntries))
+        glossaryExportFileName = exporter.defaultFileName()
+        glossaryExportErrorMessage = nil
     }
 
     private func localizedGlossarySourceName(_ source: GlossaryImportSource) -> String {

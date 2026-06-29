@@ -35,6 +35,19 @@ if "glossarySearchText" not in text or ".searchGlossaryTerms" not in text:
     errors.append("Glossary page must provide a search field for large imported glossaries")
 if "query: glossarySearchText" not in text:
     errors.append("GlossaryListDisplay must filter entries by the glossary search text")
+if "GlossaryExportDocument" not in text:
+    errors.append("Glossary page must prepare a FileDocument for CSV export")
+if "prepareGlossaryExport()" not in text:
+    errors.append("Glossary page must expose an export action")
+if ".exportGlossary" not in text:
+    errors.append("Glossary export button must use localized text")
+
+glossary_model = root / "LiveBuddy" / "Models" / "Glossary.swift"
+model_text = glossary_model.read_text()
+if "struct GlossaryExporter" not in model_text:
+    errors.append("Glossary model must include a CSV exporter")
+if "source,target,note,isEnabled" not in model_text:
+    errors.append("Glossary exporter must include a stable CSV header")
 
 if errors:
     print("Glossary navigation verification failed:")

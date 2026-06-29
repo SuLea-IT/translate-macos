@@ -53,6 +53,7 @@ else:
         "transcripts",
         "runtimeLogs",
         "subtitleDisplayMode",
+        "exportGlossary",
         "exportTranscript",
         "exportAsSRT",
         "exportAsWebVTT",

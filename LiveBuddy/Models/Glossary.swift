@@ -79,6 +79,38 @@ struct GlossaryEntryEditor {
     }
 }
 
+struct GlossaryExporter {
+    func export(entries: [GlossaryEntry]) -> String {
+        let header = "source,target,note,isEnabled"
+        let rows = entries.map { entry in
+            [
+                csvField(entry.sourceTerm),
+                csvField(entry.targetTerm),
+                csvField(entry.note),
+                entry.isEnabled ? "true" : "false"
+            ].joined(separator: ",")
+        }
+        return ([header] + rows).joined(separator: "\n") + "\n"
+    }
+
+    func defaultFileName(date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "LiveBuddy-Glossary-\(formatter.string(from: date)).csv"
+    }
+
+    private func csvField(_ value: String) -> String {
+        let needsQuotes = value.contains(",")
+            || value.contains("\"")
+            || value.contains("\n")
+            || value.contains("\r")
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return needsQuotes ? "\"\(escaped)\"" : escaped
+    }
+}
+
 struct GlossaryListDisplay {
     var entries: [GlossaryEntry]
     var query: String
