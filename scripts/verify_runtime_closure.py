@@ -8,6 +8,7 @@ client = root / "LiveBuddy" / "Services" / "GeminiLiveTranslateClient.swift"
 settings = root / "LiveBuddy" / "Views" / "Settings" / "SettingsView.swift"
 app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
 microphone_capture = root / "LiveBuddy" / "Services" / "MicrophoneCapture.swift"
+screen_audio_capture = root / "LiveBuddy" / "Services" / "ScreenAudioCapture.swift"
 audio_player = root / "LiveBuddy" / "Utilities" / "PCM16AudioPlayer.swift"
 errors: list[str] = []
 
@@ -15,6 +16,7 @@ client_text = client.read_text()
 settings_text = settings.read_text()
 app_state_text = app_state.read_text()
 microphone_text = microphone_capture.read_text()
+screen_audio_text = screen_audio_capture.read_text()
 audio_player_text = audio_player.read_text()
 
 for token in ["socketOpenTimeout", "setupMessageTimeout", "withLiveTimeout", "receiveMessage(timeout:"]:
@@ -84,6 +86,15 @@ else:
     for token in ["player.stop()", "engine.stop()", "isPrepared = false"]:
         if token not in body:
             errors.append(f"PCM16AudioPlayer.deinit must release playback resource through {token}")
+
+screen_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", screen_audio_text)
+if not screen_deinit_match:
+    errors.append("ScreenAudioCapture.deinit must stop the ScreenCaptureKit stream")
+else:
+    body = screen_deinit_match.group("body")
+    for token in ["chunker.reset()", "screenStreamForDeinit", "try? await screenStreamForDeinit.stopCapture()"]:
+        if token not in body:
+            errors.append(f"ScreenAudioCapture.deinit must release capture resource through {token}")
 
 if errors:
     print("Runtime closure verification failed:")

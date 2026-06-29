@@ -16,6 +16,15 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         chunker = PCM16Chunker(onChunk: onAudioChunk)
     }
 
+    deinit {
+        chunker.reset()
+        if let screenStreamForDeinit = stream {
+            Task {
+                try? await screenStreamForDeinit.stopCapture()
+            }
+        }
+    }
+
     func start() async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first else {
