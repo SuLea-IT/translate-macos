@@ -558,7 +558,7 @@ struct SettingsView: View {
 
                 HStack {
                     Button(appState.t(.downloadAndImport)) {
-                        Task { await importSelectedGlossarySource() }
+                        importSelectedGlossarySource()
                     }
                     .disabled(appState.isImportingGlossary || !canImportSelectedGlossarySource)
 
@@ -566,6 +566,12 @@ struct SettingsView: View {
                         showingGlossaryFileImporter = true
                     }
                     .disabled(appState.isImportingGlossary)
+
+                    if appState.isImportingGlossary {
+                        Button(appState.t(.cancel)) {
+                            appState.cancelGlossaryImport()
+                        }
+                    }
 
                     if let progress = appState.glossaryImportProgress {
                         HStack(spacing: 6) {
@@ -765,19 +771,18 @@ struct SettingsView: View {
         }
     }
 
-    @MainActor
-    private func importSelectedGlossarySource() async {
+    private func importSelectedGlossarySource() {
         glossaryImportInputMessage = ""
         let source = selectedGlossaryImportSource
         switch source.kind {
         case .builtIn(let url):
-            await appState.importGlossary(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
+            appState.startGlossaryImport(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
         case .customURL, .localFile:
             guard let url = GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) else {
                 glossaryImportInputMessage = appState.t(.httpsLinksOnly)
                 return
             }
-            await appState.importGlossary(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
+            appState.startGlossaryImport(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
         }
     }
 
@@ -786,15 +791,7 @@ struct SettingsView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            let didStartAccessing = url.startAccessingSecurityScopedResource()
-            Task {
-                defer {
-                    if didStartAccessing {
-                        url.stopAccessingSecurityScopedResource()
-                    }
-                }
-                await appState.importGlossary(fromLocalFile: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
-            }
+            appState.startGlossaryImportFromLocalFile(url: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
         case .failure(let error):
             glossaryImportInputMessage = error.localizedDescription
         }

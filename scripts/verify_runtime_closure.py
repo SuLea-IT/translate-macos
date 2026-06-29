@@ -50,8 +50,17 @@ if not file_import_match:
     errors.append("SettingsView.handleGlossaryFileImporterResult success branch not found")
 else:
     body = file_import_match.group("body")
-    if "defer" not in body or "stopAccessingSecurityScopedResource" not in body:
-        errors.append("Local glossary import must release security-scoped resources via defer inside the import task")
+    if "appState.startGlossaryImportFromLocalFile(url:" not in body:
+        errors.append("SettingsView local glossary importer must delegate security-scoped work to AppState.startGlossaryImportFromLocalFile")
+
+file_import_lifecycle_match = re.search(r"func startGlossaryImportFromLocalFile\(url: URL, sourceName: String, importLimit: Int\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not file_import_lifecycle_match:
+    errors.append("AppState.startGlossaryImportFromLocalFile(url:) not found for security-scoped cleanup")
+else:
+    body = file_import_lifecycle_match.group("body")
+    for token in ["startAccessingSecurityScopedResource()", "defer", "stopAccessingSecurityScopedResource()"]:
+        if token not in body:
+            errors.append(f"Local glossary import must release security-scoped resources via {token} inside the AppState import task")
 
 deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not deinit_match:
@@ -66,6 +75,7 @@ else:
         "audioSendTask?.cancel()",
         "preflightTestTask?.cancel()",
         "temporaryTestCaptionTask?.cancel()",
+        "glossaryImportTask?.cancel()",
         "microphoneCapture?.stop()",
         "client?.close()",
         "audioPlayer.stop()",
@@ -217,6 +227,80 @@ else:
         if token not in body:
             errors.append(f"AppState.showTemporaryTestCaption() must manage temporary caption restoration through {token}")
 
+
+
+for token in [
+    "private var glossaryImportTask: Task<Void, Never>?",
+    "func startGlossaryImport(from url: URL, sourceName: String, importLimit: Int)",
+    "func startGlossaryImportFromLocalFile(url: URL, sourceName: String, importLimit: Int)",
+    "func cancelGlossaryImport()",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState must retain/cancel glossary import work through {token}")
+
+start_remote_import_match = re.search(r"func startGlossaryImport\(from url: URL, sourceName: String, importLimit: Int\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_remote_import_match:
+    errors.append("AppState.startGlossaryImport(from:) not found")
+else:
+    body = start_remote_import_match.group("body")
+    for token in ["guard glossaryImportTask == nil", "glossaryImportTask = Task", "await self?.importGlossary(from: url", "glossaryImportTask = nil"]:
+        if token not in body:
+            errors.append(f"AppState.startGlossaryImport(from:) must manage remote import lifecycle through {token}")
+
+start_file_import_match = re.search(r"func startGlossaryImportFromLocalFile\(url: URL, sourceName: String, importLimit: Int\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_file_import_match:
+    errors.append("AppState.startGlossaryImportFromLocalFile(url:) not found")
+else:
+    body = start_file_import_match.group("body")
+    for token in ["guard glossaryImportTask == nil", "glossaryImportTask = Task", "await self?.importGlossary(fromLocalFile: url", "glossaryImportTask = nil"]:
+        if token not in body:
+            errors.append(f"AppState.startGlossaryImportFromLocalFile(url:) must manage file import lifecycle through {token}")
+
+cancel_import_match = re.search(r"func cancelGlossaryImport\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not cancel_import_match:
+    errors.append("AppState.cancelGlossaryImport() not found")
+else:
+    body = cancel_import_match.group("body")
+    for token in ["glossaryImportTask?.cancel()", "glossaryImportTask = nil", "isImportingGlossary = false", "glossaryImportProgress = nil"]:
+        if token not in body:
+            errors.append(f"AppState.cancelGlossaryImport() must release import state through {token}")
+
+for token in [
+    "appState.startGlossaryImport(from:",
+    "appState.startGlossaryImportFromLocalFile(url:",
+    "appState.cancelGlossaryImport()",
+    "Button(appState.t(.cancel))",
+]:
+    if token not in settings_text:
+        errors.append(f"SettingsView must start/cancel glossary imports through {token}")
+
+if "Task { await importSelectedGlossarySource() }" in settings_text:
+    errors.append("SettingsView must not spawn an untracked remote glossary import Task")
+if "Task {" in settings_text and "importGlossary(fromLocalFile" in settings_text:
+    errors.append("SettingsView must not spawn an untracked file glossary import Task")
+
+
+for token in [
+    "private var glossaryImportGeneration = UUID()",
+    "glossaryImportGeneration = UUID()",
+    "glossaryImportGeneration == generation",
+    "guard !Task.isCancelled else { return }",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState glossary import lifecycle must guard stale import results through {token}")
+
+for context, pattern in [
+    ("importGlossary(from:)", r"func importGlossary\(from url: URL, sourceName: String, importLimit: Int\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("importGlossary(fromLocalFile:)", r"func importGlossary\(fromLocalFile url: URL, sourceName: String, importLimit: Int\) async \{(?P<body>[\s\S]*?)\n    \}"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for stale import guard")
+    else:
+        body = match.group("body")
+        for token in ["let generation = glossaryImportGeneration", "glossaryImportGeneration == generation", "guard !Task.isCancelled else { return }"]:
+            if token not in body:
+                errors.append(f"AppState.{context} must ignore stale/cancelled import results through {token}")
 
 for token in [
     "@State private var tokenCheckTask: Task<Void, Never>?",

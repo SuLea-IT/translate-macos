@@ -80,6 +80,8 @@ final class AppState: ObservableObject {
     private var audioSendTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
     private var temporaryTestCaptionTask: Task<Void, Never>?
+    private var glossaryImportTask: Task<Void, Never>?
+    private var glossaryImportGeneration = UUID()
     private var pendingAudioSendChunks = 0
     private let maxPendingAudioSendChunks = 120
     private var audioSendGeneration = UUID()
@@ -361,13 +363,50 @@ final class AppState: ObservableObject {
         refreshSetupChecklist()
     }
 
+    func startGlossaryImport(from url: URL, sourceName: String, importLimit: Int) {
+        guard glossaryImportTask == nil else { return }
+        glossaryImportGeneration = UUID()
+        glossaryImportTask = Task { @MainActor [weak self] in
+            await self?.importGlossary(from: url, sourceName: sourceName, importLimit: importLimit)
+            guard !Task.isCancelled else { return }
+            self?.glossaryImportTask = nil
+        }
+    }
+
+    func startGlossaryImportFromLocalFile(url: URL, sourceName: String, importLimit: Int) {
+        guard glossaryImportTask == nil else { return }
+        glossaryImportGeneration = UUID()
+        glossaryImportTask = Task { @MainActor [weak self] in
+            let didStartAccessing = url.startAccessingSecurityScopedResource()
+            defer {
+                if didStartAccessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            await self?.importGlossary(fromLocalFile: url, sourceName: sourceName, importLimit: importLimit)
+            guard !Task.isCancelled else { return }
+            self?.glossaryImportTask = nil
+        }
+    }
+
+    func cancelGlossaryImport() {
+        glossaryImportGeneration = UUID()
+        glossaryImportTask?.cancel()
+        glossaryImportTask = nil
+        isImportingGlossary = false
+        glossaryImportProgress = nil
+    }
+
     func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
         guard !isImportingGlossary else { return }
+        let generation = glossaryImportGeneration
         isImportingGlossary = true
         glossaryImportProgress = .indeterminate
         defer {
-            isImportingGlossary = false
-            glossaryImportProgress = nil
+            if glossaryImportGeneration == generation {
+                isImportingGlossary = false
+                glossaryImportProgress = nil
+            }
         }
 
         do {
@@ -378,39 +417,54 @@ final class AppState: ObservableObject {
                 options: glossaryImportOptions(importLimit: importLimit),
                 progress: { [weak self] progress in
                     await MainActor.run {
+                        guard self?.glossaryImportGeneration == generation else { return }
                         self?.glossaryImportProgress = progress
                     }
                 }
             )
+            guard !Task.isCancelled else { return }
+            guard glossaryImportGeneration == generation else { return }
             applyGlossaryImportResult(result)
         } catch {
+            guard glossaryImportGeneration == generation else { return }
             handleGlossaryImportFailure(error)
         }
     }
 
     func importGlossary(fromLocalFile url: URL, sourceName: String, importLimit: Int) async {
         guard !isImportingGlossary else { return }
+        let generation = glossaryImportGeneration
         isImportingGlossary = true
         glossaryImportProgress = .indeterminate
         defer {
-            isImportingGlossary = false
-            glossaryImportProgress = nil
+            if glossaryImportGeneration == generation {
+                isImportingGlossary = false
+                glossaryImportProgress = nil
+            }
         }
 
         do {
             let service = glossaryImportService
             let existingEntries = settings.glossaryEntries
             let options = glossaryImportOptions(importLimit: importLimit)
-            let result = try await Task.detached(priority: .userInitiated) {
+            let importTask = Task.detached(priority: .userInitiated) {
                 try service.importLocalFile(
                     url: url,
                     sourceName: sourceName,
                     existingEntries: existingEntries,
                     options: options
                 )
-            }.value
+            }
+            let result = try await withTaskCancellationHandler {
+                try await importTask.value
+            } onCancel: {
+                importTask.cancel()
+            }
+            guard !Task.isCancelled else { return }
+            guard glossaryImportGeneration == generation else { return }
             applyGlossaryImportResult(result)
         } catch {
+            guard glossaryImportGeneration == generation else { return }
             handleGlossaryImportFailure(error)
         }
     }
@@ -1325,6 +1379,7 @@ final class AppState: ObservableObject {
         audioSendTask?.cancel()
         preflightTestTask?.cancel()
         temporaryTestCaptionTask?.cancel()
+        glossaryImportTask?.cancel()
         microphoneCapture?.stop()
         if let screenCaptureForDeinit = screenCapture {
             Task {
