@@ -13,6 +13,8 @@ struct TranscriptsView: View {
     @State private var generatedMeetingNotes: MeetingNotes?
     @State private var meetingNotesSessionID: UUID?
     @State private var isShowingClearTranscriptsConfirmation = false
+    @State private var pendingDeleteSession: TranscriptSession?
+    @State private var isShowingDeleteTranscriptConfirmation = false
 
     private let transcriptExporter = TranscriptExporter()
     private let transcriptArchiveExporter = TranscriptArchiveExporter()
@@ -57,6 +59,20 @@ struct TranscriptsView: View {
                 exportDocument = nil
                 exportErrorMessage = error.localizedDescription
             }
+        }
+        .confirmationDialog(
+            appState.t(.deleteTranscriptConfirmationTitle),
+            isPresented: $isShowingDeleteTranscriptConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(appState.t(.delete), role: .destructive) {
+                deletePendingTranscriptSessionFromUI()
+            }
+            Button(appState.t(.cancel), role: .cancel) {
+                pendingDeleteSession = nil
+            }
+        } message: {
+            Text(appState.t(.deleteTranscriptConfirmationMessage, pendingDeleteSession?.displayTitle ?? ""))
         }
     }
 
@@ -151,10 +167,7 @@ struct TranscriptsView: View {
                             }
                             Divider()
                             Button(appState.t(.delete), role: .destructive) {
-                                appState.deleteTranscriptSession(session)
-                                if selectedSession?.id == session.id {
-                                    selectedSession = nil
-                                }
+                                requestDeleteTranscriptSession(session)
                             }
                         }
                 }
@@ -349,8 +362,29 @@ struct TranscriptsView: View {
         appState.deleteAllTranscriptSessions()
         selectedSession = nil
         searchText = ""
+        pendingDeleteSession = nil
+        isShowingDeleteTranscriptConfirmation = false
         generatedMeetingNotes = nil
         meetingNotesSessionID = nil
+        exportErrorMessage = nil
+    }
+
+    private func requestDeleteTranscriptSession(_ session: TranscriptSession) {
+        pendingDeleteSession = session
+        isShowingDeleteTranscriptConfirmation = true
+    }
+
+    private func deletePendingTranscriptSessionFromUI() {
+        guard let session = pendingDeleteSession else { return }
+        appState.deleteTranscriptSession(session)
+        if selectedSession?.id == session.id {
+            selectedSession = nil
+        }
+        if meetingNotesSessionID == session.id {
+            generatedMeetingNotes = nil
+            meetingNotesSessionID = nil
+        }
+        pendingDeleteSession = nil
         exportErrorMessage = nil
     }
 

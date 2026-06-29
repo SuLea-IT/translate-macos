@@ -199,6 +199,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case clearAll
     case clearTranscriptsConfirmationTitle
     case clearTranscriptsConfirmationMessage
+    case deleteTranscriptConfirmationTitle
+    case deleteTranscriptConfirmationMessage
     case copyTranscript
     case delete
     case noResultsForSearch
@@ -476,6 +478,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .clearAll: "Clear All",
         .clearTranscriptsConfirmationTitle: "Clear all transcripts?",
         .clearTranscriptsConfirmationMessage: "This will permanently delete all %d transcript sessions.",
+        .deleteTranscriptConfirmationTitle: "Delete transcript?",
+        .deleteTranscriptConfirmationMessage: "This will permanently delete the transcript session %@.",
         .copyTranscript: "Copy Transcript",
         .delete: "Delete",
         .noResultsForSearch: "No results for \"%@\"",
@@ -721,6 +725,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "全部清除",
             .clearTranscriptsConfirmationTitle: "清空所有转录记录？",
             .clearTranscriptsConfirmationMessage: "将永久删除全部 %d 个转录会话。",
+            .deleteTranscriptConfirmationTitle: "删除转录？",
+            .deleteTranscriptConfirmationMessage: "这将永久删除转录会话“%@”。",
             .copyTranscript: "复制转录",
             .delete: "删除",
             .noResultsForSearch: "未找到“%@”的结果",
@@ -963,6 +969,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "すべて消去",
             .clearTranscriptsConfirmationTitle: "すべての文字起こしを削除しますか？",
             .clearTranscriptsConfirmationMessage: "%d 件の文字起こしセッションを完全に削除します。",
+            .deleteTranscriptConfirmationTitle: "文字起こしを削除しますか？",
+            .deleteTranscriptConfirmationMessage: "文字起こしセッション「%@」を完全に削除します。",
             .copyTranscript: "文字起こしをコピー",
             .delete: "削除",
             .noResultsForSearch: "「%@」の結果はありません",
@@ -1203,6 +1211,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "모두 지우기",
             .clearTranscriptsConfirmationTitle: "모든 전사 기록을 지울까요?",
             .clearTranscriptsConfirmationMessage: "전사 세션 %d개를 영구 삭제합니다.",
+            .deleteTranscriptConfirmationTitle: "전사 기록을 삭제할까요?",
+            .deleteTranscriptConfirmationMessage: "전사 세션 %@을 영구 삭제합니다.",
             .copyTranscript: "전사 복사",
             .delete: "삭제",
             .noResultsForSearch: "\"%@\"에 대한 결과가 없습니다",
@@ -1442,6 +1452,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "Borrar todo",
             .clearTranscriptsConfirmationTitle: "¿Borrar todas las transcripciones?",
             .clearTranscriptsConfirmationMessage: "Se eliminarán permanentemente las %d sesiones de transcripción.",
+            .deleteTranscriptConfirmationTitle: "¿Eliminar transcripción?",
+            .deleteTranscriptConfirmationMessage: "Se eliminará permanentemente la sesión de transcripción %@.",
             .copyTranscript: "Copiar transcripción",
             .delete: "Eliminar",
             .noResultsForSearch: "Sin resultados para \"%@\"",
@@ -1681,6 +1693,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "Tout effacer",
             .clearTranscriptsConfirmationTitle: "Effacer toutes les transcriptions ?",
             .clearTranscriptsConfirmationMessage: "Les %d sessions de transcription seront supprimées définitivement.",
+            .deleteTranscriptConfirmationTitle: "Supprimer la transcription ?",
+            .deleteTranscriptConfirmationMessage: "La session de transcription « %@ » sera supprimée définitivement.",
             .copyTranscript: "Copier la transcription",
             .delete: "Supprimer",
             .noResultsForSearch: "Aucun résultat pour « %@ »",
@@ -1920,6 +1934,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "Alle löschen",
             .clearTranscriptsConfirmationTitle: "Alle Transkripte löschen?",
             .clearTranscriptsConfirmationMessage: "Alle %d Transkript-Sitzungen werden dauerhaft gelöscht.",
+            .deleteTranscriptConfirmationTitle: "Transkript löschen?",
+            .deleteTranscriptConfirmationMessage: "Die Transkript-Sitzung %@ wird dauerhaft gelöscht.",
             .copyTranscript: "Transkript kopieren",
             .delete: "Löschen",
             .noResultsForSearch: "Keine Ergebnisse für \"%@\"",
@@ -2159,6 +2175,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .clearAll: "Xóa tất cả",
             .clearTranscriptsConfirmationTitle: "Xóa tất cả bản chép lời?",
             .clearTranscriptsConfirmationMessage: "Thao tác này sẽ xóa vĩnh viễn tất cả %d phiên chép lời.",
+            .deleteTranscriptConfirmationTitle: "Xóa bản chép lời?",
+            .deleteTranscriptConfirmationMessage: "Thao tác này sẽ xóa vĩnh viễn phiên chép lời %@.",
             .copyTranscript: "Sao chép bản ghi",
             .delete: "Xóa",
             .noResultsForSearch: "Không có kết quả cho \"%@\"",

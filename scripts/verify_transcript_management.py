@@ -22,8 +22,26 @@ for token in [
     if token not in view_text:
         errors.append(f"TranscriptsView must protect bulk transcript deletion through {token}")
 
+for token in [
+    "pendingDeleteSession",
+    "isShowingDeleteTranscriptConfirmation",
+    ".deleteTranscriptConfirmationTitle",
+    ".deleteTranscriptConfirmationMessage",
+    "requestDeleteTranscriptSession(session)",
+    "deletePendingTranscriptSessionFromUI()",
+]:
+    if token not in view_text:
+        errors.append(f"TranscriptsView must protect single transcript deletion through {token}")
+
 if "appState.deleteAllTranscriptSessions()" not in view_text:
     errors.append("TranscriptsView must still call AppState.deleteAllTranscriptSessions() after confirmation")
+if "appState.deleteTranscriptSession(session)" not in view_text:
+    errors.append("TranscriptsView must still delete the pending transcript after confirmation")
+context_menu_start = view_text.find(".contextMenu {")
+context_menu_end = view_text.find("if filteredSessions.isEmpty", context_menu_start)
+context_menu_body = view_text[context_menu_start:context_menu_end] if context_menu_start != -1 and context_menu_end != -1 else ""
+if "appState.deleteTranscriptSession(session)" in context_menu_body:
+    errors.append("TranscriptsView must not delete a single transcript directly from the context menu")
 
 for token in [
     "TranscriptArchiveExporter",
@@ -41,7 +59,7 @@ if "LiveBuddy Transcript Archive" not in export_text:
 if "func defaultFileName(date:" not in export_text:
     errors.append("Bulk transcript export must provide a deterministic default file name")
 
-for key in ["clearTranscriptsConfirmationTitle", "clearTranscriptsConfirmationMessage", "exportAllTranscripts"]:
+for key in ["clearTranscriptsConfirmationTitle", "clearTranscriptsConfirmationMessage", "deleteTranscriptConfirmationTitle", "deleteTranscriptConfirmationMessage", "exportAllTranscripts"]:
     if f"case {key}" not in interface_text:
         errors.append(f"missing InterfaceText.{key}")
     if interface_text.count(f".{key}:") < 8:
