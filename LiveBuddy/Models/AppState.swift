@@ -1104,8 +1104,14 @@ final class AppState: ObservableObject {
     }
 
     private func updateUsageControlSettings() {
-        usageEngine.updateSettings(settings.usageControls, now: Date())
+        let now = Date()
+        usageEngine.updateSettings(settings.usageControls, now: now)
+        let decision = usageEngine.reevaluatePauseAfterSettingsChange(now: now)
         usageSnapshot = usageEngine.snapshot
+        if isRunning, decision.shouldResume {
+            scheduleUsageResume(replayChunks: decision.replayChunks)
+            updateRunningUsageStatus(now: now, force: true)
+        }
     }
 
     private func enterUsagePause(reason: UsageControlPauseReason) {

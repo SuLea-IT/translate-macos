@@ -125,6 +125,29 @@ struct UsageControlEngine {
         refreshSnapshot(runtimeState: snapshot.runtimeState)
     }
 
+    mutating func reevaluatePauseAfterSettingsChange(now: Date) -> UsageControlDecision {
+        resetLedgerIfNeeded(now: now)
+        guard let pausedReason else {
+            refreshSnapshot(runtimeState: snapshot.runtimeState)
+            return .hold
+        }
+
+        switch pausedReason {
+        case .idle:
+            guard settings.idleAutoPauseEnabled else {
+                return resumeFromSettingsChange()
+            }
+        case .sessionLimit, .dailyLimit:
+            let nextBufferedDuration = pausedBuffer.first?.duration ?? 0
+            if limitReasonIfSending(nextBufferedDuration) == nil {
+                return resumeFromSettingsChange()
+            }
+        }
+
+        refreshSnapshot(runtimeState: .paused(reason: pausedReason))
+        return .hold
+    }
+
     mutating func resetSession(now: Date, ledger: UsageLedger? = nil) {
         if let ledger {
             self.ledger = ledger.dayKey == UsageLedger.dayKey(for: now) ? ledger : .empty(for: now)
@@ -224,6 +247,12 @@ struct UsageControlEngine {
             countSent(chunk.duration)
         }
         refreshSnapshot(runtimeState: snapshot.runtimeState)
+    }
+
+    private mutating func resumeFromSettingsChange() -> UsageControlDecision {
+        let replay = prerollBuffer + pausedBuffer
+        refreshSnapshot(runtimeState: .resuming)
+        return .resume(replayChunks: replay)
     }
 
     private mutating func updateSpeechState(level: Float, now: Date) {
