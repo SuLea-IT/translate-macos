@@ -93,6 +93,7 @@ final class AppState: ObservableObject {
     private var pendingAudioSendChunks = 0
     private let maxPendingAudioSendChunks = 120
     private var audioSendGeneration = UUID()
+    private var audioCaptureGeneration = UUID()
     private var lastAudioSendBackpressureLogAt = Date.distantPast
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
@@ -188,6 +189,7 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         usageResumeTask = nil
         resetAudioSendPipeline()
+        audioCaptureGeneration = UUID()
         detectedSourceLanguageCode = nil
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
 
@@ -235,6 +237,7 @@ final class AppState: ObservableObject {
         }
         cancelPreflightTest()
         resetAudioSendPipeline()
+        audioCaptureGeneration = UUID()
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
@@ -873,6 +876,7 @@ final class AppState: ObservableObject {
         usageResumeTask = nil
         reconnectAttempts = 0
         resetAudioSendPipeline()
+        audioCaptureGeneration = UUID()
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
@@ -918,8 +922,9 @@ final class AppState: ObservableObject {
     }
 
     private func startCapture() async throws {
+        let generation = audioCaptureGeneration
         if settings.audioSource == .microphone || settings.audioSource == .both {
-            let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone))
+            let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone, generation: generation))
             try await mic.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
             microphoneCapture = mic
             updateStatus("Microphone capture started", level: .connecting, log: true)
@@ -927,9 +932,10 @@ final class AppState: ObservableObject {
 
         if settings.audioSource == .screen || settings.audioSource == .both {
             let screen = ScreenAudioCapture(
-                onAudioChunk: audioSink(source: .screen),
+                onAudioChunk: audioSink(source: .screen, generation: generation),
                 onStatus: { [weak self] message in
                     Task { @MainActor [weak self] in
+                        guard self?.audioCaptureGeneration == generation else { return }
                         self?.updateStatus(message, level: .error, log: true)
                     }
                 }
@@ -940,11 +946,11 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func audioSink(source: AudioSource) -> @Sendable (Data) -> Void {
+    private func audioSink(source: AudioSource, generation: UUID) -> @Sendable (Data) -> Void {
         { [weak self] data in
-            let level = AppState.calculateRMS(data: data)
             Task { @MainActor [weak self] in
-                guard let self else { return }
+                guard let self, self.audioCaptureGeneration == generation else { return }
+                let level = AppState.calculateRMS(data: data)
                 self.handleCapturedAudio(data, source: source, level: level)
             }
         }

@@ -121,10 +121,29 @@ for token in [
     "private var pendingAudioSendChunks = 0",
     "private let maxPendingAudioSendChunks",
     "private var audioSendGeneration = UUID()",
+    "private var audioCaptureGeneration = UUID()",
     "private var lastAudioSendBackpressureLogAt = Date.distantPast",
 ]:
     if token not in app_state_text:
-        errors.append(f"AppState must bound and retain audio send work through {token}")
+        errors.append(f"AppState must bound and retain audio send/capture work through {token}")
+
+start_capture_match = re.search(r"private func startCapture\(\) async throws \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_capture_match:
+    errors.append("AppState.startCapture() not found")
+else:
+    body = start_capture_match.group("body")
+    for token in ["let generation = audioCaptureGeneration", "audioSink(source: .microphone, generation: generation)", "audioSink(source: .screen, generation: generation)", "guard self?.audioCaptureGeneration == generation"]:
+        if token not in body:
+            errors.append(f"AppState.startCapture() must bind capture callbacks to the current capture generation through {token}")
+
+audio_sink_match = re.search(r"private func audioSink\(source: AudioSource, generation: UUID\) -> @Sendable \(Data\) -> Void \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not audio_sink_match:
+    errors.append("AppState.audioSink(source:generation:) must exist to tag capture callbacks")
+else:
+    body = audio_sink_match.group("body")
+    for token in ["guard let self, self.audioCaptureGeneration == generation else { return }", "handleCapturedAudio(data, source: source, level: level)"]:
+        if token not in body:
+            errors.append(f"AppState.audioSink(source:generation:) must ignore stale capture callbacks through {token}")
 
 handle_audio_match = re.search(r"private func handleCapturedAudio\(_ data: Data, source: AudioSource, level: Float\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not handle_audio_match:
@@ -135,6 +154,17 @@ else:
         errors.append("AppState.handleCapturedAudio() must not spawn one detached send task per audio chunk")
     if "enqueueAudioSend(data)" not in body:
         errors.append("AppState.handleCapturedAudio() must send audio through bounded enqueueAudioSend(data)")
+
+for context, pattern in [
+    ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stop(cancelPendingRestart:)", r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for audio capture generation cleanup")
+    elif "audioCaptureGeneration = UUID()" not in match.group("body"):
+        errors.append(f"AppState.{context} must rotate audioCaptureGeneration to reject stale capture callbacks")
 
 enqueue_match = re.search(r"private func enqueueAudioSend\(_ data: Data\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not enqueue_match:
