@@ -127,6 +127,22 @@ else:
     if body.find("appendCurrentTranscriptLine(from: line)") > body.find("captions.removeFirst(captions.count - 80)"):
         errors.append("AppState.appendCaption must store full transcript history before trimming caption display cache")
 
+append_history_match = re.search(r"private func appendCurrentTranscriptLine\(from line: CaptionLine\) \{(?P<body>[\s\S]*?)\n    \}\n\n    var subtitleLines", app_state_text)
+if not append_history_match:
+    errors.append("AppState.appendCurrentTranscriptLine(from:) not found for live transcript persistence")
+else:
+    body = append_history_match.group("body")
+    for token in [
+        "let transcriptLine = TranscriptLine(",
+        "currentTranscriptLines.append(transcriptLine)",
+        "if let sessionID = currentSessionID",
+        "transcriptSessions.firstIndex(where: { $0.id == sessionID })",
+        "transcriptSessions[index].lines = currentTranscriptLines",
+        "saveTranscriptSessions()",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.appendCurrentTranscriptLine must keep running transcript detail and disk state current through {token}")
+
 finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", app_state_text)
 if finish_match:
     body = finish_match.group("body")

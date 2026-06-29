@@ -1233,13 +1233,19 @@ final class AppState: ObservableObject {
 
     private func appendCurrentTranscriptLine(from line: CaptionLine) {
         guard line.kind == .output else { return }
-        currentTranscriptLines.append(TranscriptLine(
+        let transcriptLine = TranscriptLine(
             id: line.id,
             text: line.text,
             originalText: line.originalText,
             languageCode: line.languageCode,
             timestamp: line.timestamp
-        ))
+        )
+        currentTranscriptLines.append(transcriptLine)
+        if let sessionID = currentSessionID,
+           let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) {
+            transcriptSessions[index].lines = currentTranscriptLines
+            saveTranscriptSessions()
+        }
     }
 
     var subtitleLines: [SubtitleDisplayLine] {
@@ -1401,6 +1407,7 @@ final class AppState: ObservableObject {
         )
         currentSessionID = session.id
         transcriptSessions.insert(session, at: 0)
+        saveTranscriptSessions()
     }
 
     private func finishTranscriptSession() {

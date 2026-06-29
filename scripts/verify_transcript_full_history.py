@@ -38,11 +38,12 @@ else:
     body = history_match.group("body")
     for token in [
         "guard line.kind == .output else { return }",
-        "currentTranscriptLines.append(TranscriptLine(",
+        "let transcriptLine = TranscriptLine(",
         "text: line.text",
         "originalText: line.originalText",
         "languageCode: line.languageCode",
         "timestamp: line.timestamp",
+        "currentTranscriptLines.append(transcriptLine)",
     ]:
         if token not in body:
             errors.append(f"appendCurrentTranscriptLine must preserve transcript line data through {token}")
