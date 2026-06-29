@@ -75,6 +75,7 @@ final class AppState: ObservableObject {
     private var restartTask: Task<Void, Never>?
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
+    private var connectionStopTask: Task<Void, Never>?
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var audioSendTask: Task<Void, Never>?
@@ -175,6 +176,8 @@ final class AppState: ObservableObject {
         reconnectAttempts = 0
         reconnectTask?.cancel()
         reconnectTask = nil
+        connectionStopTask?.cancel()
+        connectionStopTask = nil
         usageResumeTask?.cancel()
         usageResumeTask = nil
         resetAudioSendPipeline()
@@ -210,6 +213,8 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        connectionStopTask?.cancel()
+        connectionStopTask = nil
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
@@ -745,7 +750,7 @@ final class AppState: ObservableObject {
                 level: .error,
                 log: true
             )
-            Task { await stopRuntimeAfterConnectionFailure() }
+            scheduleStopRuntimeAfterConnectionFailure()
         }
     }
 
@@ -759,7 +764,7 @@ final class AppState: ObservableObject {
                 level: .error,
                 log: true
             )
-            Task { await stopRuntimeAfterConnectionFailure() }
+            scheduleStopRuntimeAfterConnectionFailure()
             return
         }
 
@@ -802,6 +807,15 @@ final class AppState: ObservableObject {
         }
     }
 
+    private func scheduleStopRuntimeAfterConnectionFailure() {
+        guard connectionStopTask == nil else { return }
+        connectionStopTask = Task { @MainActor [weak self] in
+            await self?.stopRuntimeAfterConnectionFailure()
+            guard !Task.isCancelled else { return }
+            self?.connectionStopTask = nil
+        }
+    }
+
     private func stopRuntimeAfterConnectionFailure() async {
         userInitiatedStop = true
         reconnectTask?.cancel()
@@ -813,6 +827,7 @@ final class AppState: ObservableObject {
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
+        guard !Task.isCancelled else { return }
         screenCapture = nil
         client?.close()
         client = nil
@@ -821,6 +836,8 @@ final class AppState: ObservableObject {
         saveUsageLedger()
         audioLevel = 0.0
         isRunning = false
+        connectionStopTask?.cancel()
+        connectionStopTask = nil
     }
 
     private func connectionEvent(from error: Error) -> LiveConnectionEvent {
@@ -1374,6 +1391,7 @@ final class AppState: ObservableObject {
     deinit {
         restartTask?.cancel()
         reconnectTask?.cancel()
+        connectionStopTask?.cancel()
         usageResumeTask?.cancel()
         setupChecklistRefreshTask?.cancel()
         audioSendTask?.cancel()
