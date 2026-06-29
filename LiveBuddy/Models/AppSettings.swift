@@ -228,9 +228,6 @@ struct AppSettings: Codable, Equatable {
     var globalShortcutsEnabled = true
     var globalShortcuts: GlobalShortcutSet = .defaults
     var usageControls = LiveUsageSettings()
-    var virtualAudioIsolationEnabled = false
-    var virtualAudioInputDeviceUID: String? = nil
-    var translatedAudioOutputDeviceUID: String? = nil
 
     // Audio Player
     var audioPlayerVolume: Double = 1.0
@@ -263,9 +260,6 @@ struct AppSettings: Codable, Equatable {
         case globalShortcutsEnabled
         case globalShortcuts
         case usageControls
-        case virtualAudioIsolationEnabled
-        case virtualAudioInputDeviceUID
-        case translatedAudioOutputDeviceUID
         case audioPlayerVolume
         case audioPlayerMuted
         case subtitleFontSize
@@ -296,9 +290,6 @@ struct AppSettings: Codable, Equatable {
         globalShortcutsEnabled = try container.decodeIfPresent(Bool.self, forKey: .globalShortcutsEnabled) ?? defaults.globalShortcutsEnabled
         globalShortcuts = try container.decodeIfPresent(GlobalShortcutSet.self, forKey: .globalShortcuts) ?? defaults.globalShortcuts
         usageControls = try container.decodeIfPresent(LiveUsageSettings.self, forKey: .usageControls) ?? defaults.usageControls
-        virtualAudioIsolationEnabled = try container.decodeIfPresent(Bool.self, forKey: .virtualAudioIsolationEnabled) ?? defaults.virtualAudioIsolationEnabled
-        virtualAudioInputDeviceUID = try container.decodeIfPresent(String.self, forKey: .virtualAudioInputDeviceUID)
-        translatedAudioOutputDeviceUID = try container.decodeIfPresent(String.self, forKey: .translatedAudioOutputDeviceUID)
         audioPlayerVolume = try container.decodeIfPresent(Double.self, forKey: .audioPlayerVolume) ?? defaults.audioPlayerVolume
         audioPlayerMuted = try container.decodeIfPresent(Bool.self, forKey: .audioPlayerMuted) ?? defaults.audioPlayerMuted
         subtitleFontSize = try container.decodeIfPresent(Double.self, forKey: .subtitleFontSize) ?? defaults.subtitleFontSize
@@ -326,9 +317,6 @@ struct AppSettings: Codable, Equatable {
         try container.encode(globalShortcutsEnabled, forKey: .globalShortcutsEnabled)
         try container.encode(globalShortcuts, forKey: .globalShortcuts)
         try container.encode(usageControls, forKey: .usageControls)
-        try container.encode(virtualAudioIsolationEnabled, forKey: .virtualAudioIsolationEnabled)
-        try container.encodeIfPresent(virtualAudioInputDeviceUID, forKey: .virtualAudioInputDeviceUID)
-        try container.encodeIfPresent(translatedAudioOutputDeviceUID, forKey: .translatedAudioOutputDeviceUID)
         try container.encode(audioPlayerVolume, forKey: .audioPlayerVolume)
         try container.encode(audioPlayerMuted, forKey: .audioPlayerMuted)
         try container.encode(subtitleFontSize, forKey: .subtitleFontSize)
@@ -347,8 +335,6 @@ struct AppSettings: Codable, Equatable {
             || userPrompt != other.userPrompt
             || glossaryEntries != other.glossaryEntries
             || audioSource != other.audioSource
-            || virtualAudioIsolationEnabled != other.virtualAudioIsolationEnabled
-            || virtualAudioInputDeviceUID != other.virtualAudioInputDeviceUID
             || echoTargetLanguage != other.echoTargetLanguage
             || selectedMicrophoneDeviceUID != other.selectedMicrophoneDeviceUID
     }
