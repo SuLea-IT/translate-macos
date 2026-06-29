@@ -44,4 +44,24 @@ struct ProviderHealthStatusTests {
             Issue.record("Expected invalid provider status")
         }
     }
+
+    @Test func cancellationErrorReturnsUncheckedStatus() async {
+        let service = ProviderHealthService { _ in
+            .failure(CancellationError())
+        }
+
+        let status = await service.verify(apiKey: "abc")
+
+        #expect(status == .unchecked)
+    }
+
+    @Test func urlCancellationReturnsUncheckedStatus() async {
+        let service = ProviderHealthService { _ in
+            .failure(URLError(.cancelled))
+        }
+
+        let status = await service.verify(apiKey: "abc")
+
+        #expect(status == .unchecked)
+    }
 }

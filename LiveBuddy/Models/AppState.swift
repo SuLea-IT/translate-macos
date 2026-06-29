@@ -738,7 +738,9 @@ final class AppState: ObservableObject {
     }
 
     func verifyGeminiToken() async throws {
+        try Task.checkCancellation()
         let status = await providerHealthService.verify(apiKey: settings.apiKey)
+        try Task.checkCancellation()
         switch status {
         case .valid:
             setDiagnosticIssue(nil)

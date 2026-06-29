@@ -14,12 +14,21 @@ struct ProviderHealthService {
         guard !trimmed.isEmpty else {
             return .missing
         }
+        guard !Task.isCancelled else {
+            return .unchecked
+        }
 
         let result = await ping(trimmed)
+        guard !Task.isCancelled else {
+            return .unchecked
+        }
         switch result {
         case .success:
             return .valid(checkedAt: now)
         case .failure(let error):
+            if Self.isCancellationError(error) {
+                return .unchecked
+            }
             let message = error.localizedDescription
             if message.localizedCaseInsensitiveContains("API key")
                 || message.localizedCaseInsensitiveContains("API_KEY_INVALID") {
@@ -38,10 +47,18 @@ extension ProviderHealthService {
         var lastError: Error?
 
         for model in modelsToTry {
+            if Task.isCancelled {
+                return .failure(CancellationError())
+            }
             do {
+                try Task.checkCancellation()
                 try await pingGeminiModel(model, withKey: apiKey)
+                try Task.checkCancellation()
                 return .success(())
             } catch {
+                if Self.isCancellationError(error) || Task.isCancelled {
+                    return .failure(CancellationError())
+                }
                 lastError = error
                 let nsError = error as NSError
                 if nsError.domain == "LiveBuddy" && (nsError.code == 400 || nsError.code == 403) {
@@ -62,6 +79,7 @@ extension ProviderHealthService {
     }
 
     private static func pingGeminiModel(_ modelName: String, withKey key: String) async throws {
+        try Task.checkCancellation()
         guard let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(modelName):generateContent?key=\(escapedKey)") else {
             throw NSError(domain: "LiveBuddy", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid API key format"])
@@ -92,6 +110,10 @@ extension ProviderHealthService {
         let response: URLResponse
         do {
             (data, response) = try await session.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch let error as URLError where error.code == .timedOut {
             throw NSError(
                 domain: "LiveBuddy",
@@ -99,6 +121,7 @@ extension ProviderHealthService {
                 userInfo: [NSLocalizedDescriptionKey: "Timed out after \(Int(requestTimeout.rounded())) seconds."]
             )
         }
+        try Task.checkCancellation()
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NSError(domain: "LiveBuddy", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid server response"])
@@ -112,5 +135,14 @@ extension ProviderHealthService {
             }
             throw NSError(domain: "LiveBuddy", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP Error \(httpResponse.statusCode)"])
         }
+    }
+
+    private static func isCancellationError(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain
+            && (nsError.code == NSURLErrorCancelled || nsError.code == URLError.Code.cancelled.rawValue)
     }
 }
