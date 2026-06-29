@@ -201,6 +201,10 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case noTranscriptLinesCaptured
     case sessionStillInProgress
     case searchTranscripts
+    case updates
+    case checkForUpdates
+    case openGitHubReleases
+    case freeBuildInstallHint
     case both
     case original
     case translated
@@ -440,6 +444,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .noTranscriptLinesCaptured: "No transcript lines captured",
         .sessionStillInProgress: "Session is still in progress",
         .searchTranscripts: "Search transcripts…",
+        .updates: "Updates",
+        .checkForUpdates: "Check for Updates",
+        .openGitHubReleases: "Open GitHub Releases",
+        .freeBuildInstallHint: "Free builds are ad-hoc signed. If macOS warns about an unidentified developer, right-click the app and choose Open once.",
         .both: "Both",
         .original: "Original",
         .translated: "Translated"
@@ -647,6 +655,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "未捕获转录行",
             .sessionStillInProgress: "会话仍在进行",
             .searchTranscripts: "搜索转录…",
+            .updates: "更新",
+            .checkForUpdates: "检查更新",
+            .openGitHubReleases: "打开 GitHub Releases",
+            .freeBuildInstallHint: "免费版使用 ad-hoc 签名。如果 macOS 提示无法验证开发者，请右键 App 并选择“打开”。",
             .both: "双语",
             .original: "原文",
             .translated: "译文"
@@ -851,6 +863,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "文字起こし行はありません",
             .sessionStillInProgress: "セッションは進行中です",
             .searchTranscripts: "文字起こしを検索…",
+            .updates: "アップデート",
+            .checkForUpdates: "アップデートを確認",
+            .openGitHubReleases: "GitHub Releases を開く",
+            .freeBuildInstallHint: "無料ビルドは ad-hoc 署名です。macOS が警告した場合は右クリックして一度だけ開いてください。",
             .both: "両方",
             .original: "原文",
             .translated: "翻訳"
@@ -1053,6 +1069,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "캡처된 전사 줄이 없습니다",
             .sessionStillInProgress: "세션이 아직 진행 중입니다",
             .searchTranscripts: "전사 검색…",
+            .updates: "업데이트",
+            .checkForUpdates: "업데이트 확인",
+            .openGitHubReleases: "GitHub Releases 열기",
+            .freeBuildInstallHint: "무료 빌드는 ad-hoc 서명입니다. macOS 경고가 표시되면 앱을 우클릭하고 한 번 열기를 선택하세요.",
             .both: "둘 다",
             .original: "원문",
             .translated: "번역"
@@ -1254,6 +1274,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "No se capturaron líneas",
             .sessionStillInProgress: "La sesión sigue en curso",
             .searchTranscripts: "Buscar transcripciones…",
+            .updates: "Actualizaciones",
+            .checkForUpdates: "Buscar actualizaciones",
+            .openGitHubReleases: "Abrir GitHub Releases",
+            .freeBuildInstallHint: "Las compilaciones gratuitas usan firma ad-hoc. Si macOS avisa de desarrollador no identificado, haz clic derecho y elige Abrir una vez.",
             .both: "Ambos",
             .original: "Original",
             .translated: "Traducido"
@@ -1455,6 +1479,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "Aucune ligne transcrite",
             .sessionStillInProgress: "La session est toujours en cours",
             .searchTranscripts: "Rechercher des transcriptions…",
+            .updates: "Mises à jour",
+            .checkForUpdates: "Rechercher des mises à jour",
+            .openGitHubReleases: "Ouvrir GitHub Releases",
+            .freeBuildInstallHint: "Les builds gratuits sont signés ad-hoc. Si macOS affiche un avertissement, faites un clic droit puis Ouvrir une fois.",
             .both: "Les deux",
             .original: "Original",
             .translated: "Traduit"
@@ -1656,6 +1684,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "Keine Transkriptzeilen erfasst",
             .sessionStillInProgress: "Sitzung läuft noch",
             .searchTranscripts: "Transkripte suchen…",
+            .updates: "Updates",
+            .checkForUpdates: "Nach Updates suchen",
+            .openGitHubReleases: "GitHub Releases öffnen",
+            .freeBuildInstallHint: "Kostenlose Builds sind ad-hoc signiert. Wenn macOS warnt, klicken Sie mit der rechten Maustaste und wählen Sie einmal Öffnen.",
             .both: "Beides",
             .original: "Original",
             .translated: "Übersetzt"
@@ -1857,6 +1889,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noTranscriptLinesCaptured: "Chưa ghi được dòng nào",
             .sessionStillInProgress: "Phiên vẫn đang diễn ra",
             .searchTranscripts: "Tìm bản ghi…",
+            .updates: "Cập nhật",
+            .checkForUpdates: "Kiểm tra cập nhật",
+            .openGitHubReleases: "Mở GitHub Releases",
+            .freeBuildInstallHint: "Bản miễn phí được ký ad-hoc. Nếu macOS cảnh báo, hãy nhấp phải vào ứng dụng và chọn Mở một lần.",
             .both: "Cả hai",
             .original: "Gốc",
             .translated: "Đã dịch"

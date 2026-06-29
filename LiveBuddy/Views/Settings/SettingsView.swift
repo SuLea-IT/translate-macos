@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 
 enum NavigationItem: Hashable {
@@ -197,6 +198,21 @@ struct SettingsView: View {
                 TextEditor(text: appState.binding(\.userPrompt))
                     .font(.body)
                     .frame(minHeight: 92)
+            }
+
+            Section(appState.t(.updates)) {
+                Text(appState.t(.freeBuildInstallHint))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    if let url = URL(string: "https://github.com/SuLea-IT/translate-macos/releases") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Label(appState.t(.checkForUpdates), systemImage: "arrow.down.circle")
+                }
+                .help(appState.t(.openGitHubReleases))
             }
         }
         .formStyle(.grouped)
