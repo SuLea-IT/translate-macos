@@ -6,10 +6,12 @@ import sys
 root = Path(__file__).resolve().parents[1]
 client = root / "LiveBuddy" / "Services" / "GeminiLiveTranslateClient.swift"
 settings = root / "LiveBuddy" / "Views" / "Settings" / "SettingsView.swift"
+app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
 errors: list[str] = []
 
 client_text = client.read_text()
 settings_text = settings.read_text()
+app_state_text = app_state.read_text()
 
 for token in ["socketOpenTimeout", "setupMessageTimeout", "withLiveTimeout", "receiveMessage(timeout:"]:
     if token not in client_text:
@@ -42,6 +44,25 @@ else:
     body = file_import_match.group("body")
     if "defer" not in body or "stopAccessingSecurityScopedResource" not in body:
         errors.append("Local glossary import must release security-scoped resources via defer inside the import task")
+
+deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not deinit_match:
+    errors.append("AppState.deinit not found")
+else:
+    body = deinit_match.group("body")
+    for token in [
+        "restartTask?.cancel()",
+        "reconnectTask?.cancel()",
+        "usageResumeTask?.cancel()",
+        "microphoneCapture?.stop()",
+        "client?.close()",
+        "audioPlayer.stop()",
+        "globalShortcutRegistrar.unregisterAll()",
+        "screenCaptureForDeinit",
+        "await screenCaptureForDeinit.stop()",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.deinit must release runtime resource through {token}")
 
 if errors:
     print("Runtime closure verification failed:")

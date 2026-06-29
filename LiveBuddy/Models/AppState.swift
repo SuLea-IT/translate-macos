@@ -1229,6 +1229,19 @@ final class AppState: ObservableObject {
     }
 
     deinit {
+        restartTask?.cancel()
+        reconnectTask?.cancel()
+        usageResumeTask?.cancel()
+        microphoneCapture?.stop()
+        if let screenCaptureForDeinit = screenCapture {
+            Task {
+                await screenCaptureForDeinit.stop()
+            }
+        }
+        client?.close()
+        audioPlayer.stop()
+        globalShortcutRegistrar.unregisterAll()
+
         if let block = propertyListenerBlock {
             var propertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioHardwarePropertyDevices,
