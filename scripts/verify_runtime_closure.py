@@ -675,6 +675,26 @@ else:
     if "[handler]" in body:
         errors.append("CarbonGlobalShortcutRegistrar.handle(id:) must not capture a stale handler closure")
 
+shortcut_callback_match = re.search(r"let results = globalShortcutRegistrar\.register\([\s\S]*?\) \{ \[weak self\] action in(?P<body>[\s\S]*?)\n        \}", app_state_text)
+if not shortcut_callback_match:
+    errors.append("AppState global shortcut callback not found")
+else:
+    body = shortcut_callback_match.group("body")
+    if "Task { @MainActor [weak self] in" not in body or "self?.performGlobalShortcut(action)" not in body:
+        errors.append("AppState global shortcut callback must weakly capture self inside nested MainActor Task")
+    if "Task { @MainActor in" in body:
+        errors.append("AppState global shortcut callback must not use an unqualified nested MainActor Task")
+
+device_listener_match = re.search(r"let block: AudioObjectPropertyListenerBlock = \{ \[weak self\] _, _ in(?P<body>[\s\S]*?)\n        \}", app_state_text)
+if not device_listener_match:
+    errors.append("AppState CoreAudio device-change listener block not found")
+else:
+    body = device_listener_match.group("body")
+    if "Task { @MainActor [weak self] in" not in body or "self?.refreshAvailableMicrophones()" not in body:
+        errors.append("AppState CoreAudio device-change callback must weakly capture self inside nested MainActor Task")
+    if "Task { @MainActor in" in body:
+        errors.append("AppState CoreAudio device-change callback must not use an unqualified nested MainActor Task")
+
 if "private func removeShowCaptionObserver()" not in app_delegate_text:
     errors.append("AppDelegate must centralize showCaptionObserver cleanup")
 for context, pattern in [

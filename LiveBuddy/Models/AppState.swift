@@ -564,7 +564,7 @@ final class AppState: ObservableObject {
         }
 
         let results = globalShortcutRegistrar.register(settings.globalShortcuts.enabledShortcuts) { [weak self] action in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.performGlobalShortcut(action)
             }
         }
@@ -1441,7 +1441,7 @@ final class AppState: ObservableObject {
         )
         
         let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.refreshAvailableMicrophones()
             }
         }
