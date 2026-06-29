@@ -44,6 +44,20 @@ if "appState.deleteTranscriptSession(session)" in context_menu_body:
     errors.append("TranscriptsView must not delete a single transcript directly from the context menu")
 
 for token in [
+    ".onChange(of: appState.transcriptSessions)",
+    "reconcileSelectedSession()",
+    "private func reconcileSelectedSession()",
+    "appState.transcriptSessions.first(where: { $0.id == selectedSession.id })",
+    "self.selectedSession = refreshedSession",
+    "self.selectedSession = nil",
+    "generatedMeetingNotes = nil",
+    "meetingNotesSessionID = nil",
+    "pendingDeleteSession = nil",
+]:
+    if token not in view_text:
+        errors.append(f"TranscriptsView must keep selected transcript detail synchronized through {token}")
+
+for token in [
     "TranscriptArchiveExporter",
     "exportAllTranscriptsFromUI()",
     ".exportAllTranscripts",

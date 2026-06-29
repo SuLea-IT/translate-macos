@@ -74,6 +74,9 @@ struct TranscriptsView: View {
         } message: {
             Text(appState.t(.deleteTranscriptConfirmationMessage, pendingDeleteSession?.displayTitle ?? ""))
         }
+        .onChange(of: appState.transcriptSessions) { _, _ in
+            reconcileSelectedSession()
+        }
     }
 
     // MARK: - List View
@@ -339,6 +342,20 @@ struct TranscriptsView: View {
                 }
             }
         }
+    }
+
+    private func reconcileSelectedSession() {
+        guard let selectedSession else { return }
+        if let refreshedSession = appState.transcriptSessions.first(where: { $0.id == selectedSession.id }) {
+            self.selectedSession = refreshedSession
+            return
+        }
+        self.selectedSession = nil
+        generatedMeetingNotes = nil
+        meetingNotesSessionID = nil
+        pendingDeleteSession = nil
+        isShowingDeleteTranscriptConfirmation = false
+        exportErrorMessage = nil
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
