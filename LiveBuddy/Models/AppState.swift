@@ -858,8 +858,19 @@ final class AppState: ObservableObject {
         oldClient?.close()
     }
 
+    private func shouldContinueRuntimeConnection() -> Bool {
+        !Task.isCancelled && isRunning && !userInitiatedStop
+    }
+
+    private func discardAsyncClient(_ candidate: GeminiLiveTranslateClient) {
+        if client === candidate {
+            client = nil
+        }
+        candidate.close()
+    }
+
     private func reconnectGeminiClient() async {
-        guard isRunning, !userInitiatedStop else {
+        guard shouldContinueRuntimeConnection() else {
             reconnectTask = nil
             return
         }
@@ -867,12 +878,22 @@ final class AppState: ObservableObject {
         let newClient = makeGeminiClient()
         do {
             try await newClient.connect()
+            guard shouldContinueRuntimeConnection() else {
+                discardAsyncClient(newClient)
+                reconnectTask = nil
+                return
+            }
             client = newClient
             reconnectTask = nil
             reconnectAttempts = 0
             setDiagnosticIssue(nil)
             updateStatus(settings.interfaceLanguage.localized(.connectionRecovered), level: .running, log: true)
         } catch {
+            newClient.close()
+            guard shouldContinueRuntimeConnection() else {
+                reconnectTask = nil
+                return
+            }
             reconnectTask = nil
             handleConnectionEvent(connectionEvent(from: error))
         }
@@ -1104,7 +1125,7 @@ final class AppState: ObservableObject {
     }
 
     private func resumeFromUsagePause(replayChunks: [BufferedAudioChunk]) async {
-        guard isRunning, !userInitiatedStop else {
+        guard shouldContinueRuntimeConnection() else {
             usageResumeTask = nil
             return
         }
@@ -1113,9 +1134,24 @@ final class AppState: ObservableObject {
         let newClient = makeGeminiClient()
         do {
             try await newClient.connect()
+            guard shouldContinueRuntimeConnection() else {
+                discardAsyncClient(newClient)
+                usageResumeTask = nil
+                return
+            }
             client = newClient
             for chunk in replayChunks {
+                guard shouldContinueRuntimeConnection(), client === newClient else {
+                    discardAsyncClient(newClient)
+                    usageResumeTask = nil
+                    return
+                }
                 await newClient.sendAudio(chunk.data)
+            }
+            guard shouldContinueRuntimeConnection(), client === newClient else {
+                discardAsyncClient(newClient)
+                usageResumeTask = nil
+                return
             }
             sentChunkCount += replayChunks.count
             usageEngine.markReplaySent(replayChunks)
@@ -1124,6 +1160,11 @@ final class AppState: ObservableObject {
             saveUsageLedger()
             updateStatus(runningUsageStatusMessage(), level: .running, log: true)
         } catch {
+            newClient.close()
+            guard shouldContinueRuntimeConnection() else {
+                usageResumeTask = nil
+                return
+            }
             client = nil
             usageEngine.forcePause(.idle)
             usageSnapshot = usageEngine.snapshot
