@@ -17,9 +17,13 @@ struct UsageControlTests {
             ledger: UsageLedger(dayKey: UsageLedger.dayKey(for: start), sentAudioSeconds: 30)
         )
 
-        let decision = engine.ingest(chunk: chunk(seconds: 2, at: start), level: 0.08, now: start)
+        let liveChunk = chunk(seconds: 2, at: start)
+        let decision = engine.ingest(chunk: liveChunk, level: 0.08, now: start)
 
         #expect(decision.shouldSend)
+        #expect(engine.snapshot.sessionSentAudioSeconds == 0)
+        #expect(engine.snapshot.todaySentAudioSeconds == 30)
+        engine.markSent(liveChunk)
         #expect(engine.snapshot.sessionSentAudioSeconds == 2)
         #expect(engine.snapshot.todaySentAudioSeconds == 32)
     }
@@ -99,7 +103,9 @@ struct UsageControlTests {
         let start = Date(timeIntervalSince1970: 6_000)
         var engine = UsageControlEngine(settings: settings, now: start, ledger: .empty(for: start))
 
-        _ = engine.ingest(chunk: chunk(seconds: 2, at: start), level: 0.08, now: start)
+        let firstChunk = chunk(seconds: 2, at: start)
+        _ = engine.ingest(chunk: firstChunk, level: 0.08, now: start)
+        engine.markSent(firstChunk)
         let limit = engine.ingest(chunk: chunk(seconds: 2, at: start.addingTimeInterval(2)), level: 0.08, now: start.addingTimeInterval(2))
 
         #expect(limit.shouldSend == false)
