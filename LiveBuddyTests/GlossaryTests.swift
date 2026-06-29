@@ -68,6 +68,17 @@ struct GlossaryTests {
         #expect(entries == [second])
     }
 
+    @Test func editorDeletesAllEntriesForBulkReset() {
+        let entries = [
+            GlossaryEntry(sourceTerm: "OpenAI", targetTerm: "OpenAI"),
+            GlossaryEntry(sourceTerm: "Gemini", targetTerm: "Gemini API")
+        ]
+
+        let cleared = GlossaryEntryEditor().deleteAll(from: entries)
+
+        #expect(cleared.isEmpty)
+    }
+
     @Test func listDisplayCollapsesLargeImportedGlossariesByDefault() {
         let entries = (1...60).map { index in
             GlossaryEntry(sourceTerm: "Term \(index)", targetTerm: "术语 \(index)")

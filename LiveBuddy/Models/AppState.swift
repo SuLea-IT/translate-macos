@@ -341,6 +341,14 @@ final class AppState: ObservableObject {
         refreshSetupChecklist()
     }
 
+    func clearGlossaryEntries() {
+        guard !settings.glossaryEntries.isEmpty else { return }
+        settings.glossaryEntries = GlossaryEntryEditor().deleteAll(from: settings.glossaryEntries)
+        glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryCleared)
+        updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
+        refreshSetupChecklist()
+    }
+
     func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
         guard !isImportingGlossary else { return }
         isImportingGlossary = true

@@ -70,6 +70,10 @@ struct GlossaryEntryEditor {
         entries.filter { $0.id != entry.id }
     }
 
+    func deleteAll(from entries: [GlossaryEntry]) -> [GlossaryEntry] {
+        []
+    }
+
     private func normalized(_ value: String) -> String {
         value.split { character in
             character == " " || character == "\t" || character == "\n" || character == "\r"

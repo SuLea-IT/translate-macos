@@ -41,6 +41,12 @@ if "prepareGlossaryExport()" not in text:
     errors.append("Glossary page must expose an export action")
 if ".exportGlossary" not in text:
     errors.append("Glossary export button must use localized text")
+if ".clearGlossary" not in text:
+    errors.append("Glossary page must expose a localized bulk clear action")
+if "isShowingClearGlossaryConfirmation" not in text or ".confirmationDialog(" not in text:
+    errors.append("Bulk clearing the glossary must require confirmation")
+if "clearGlossaryEntries()" not in text:
+    errors.append("Glossary page must call AppState.clearGlossaryEntries() for bulk reset")
 
 glossary_model = root / "LiveBuddy" / "Models" / "Glossary.swift"
 model_text = glossary_model.read_text()
@@ -48,6 +54,13 @@ if "struct GlossaryExporter" not in model_text:
     errors.append("Glossary model must include a CSV exporter")
 if "source,target,note,isEnabled" not in model_text:
     errors.append("Glossary exporter must include a stable CSV header")
+if "deleteAll(from entries:" not in model_text:
+    errors.append("Glossary editor must provide a bulk delete/reset helper")
+
+app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
+app_state_text = app_state.read_text()
+if "func clearGlossaryEntries()" not in app_state_text:
+    errors.append("AppState must expose clearGlossaryEntries() for the glossary UI")
 
 if errors:
     print("Glossary navigation verification failed:")

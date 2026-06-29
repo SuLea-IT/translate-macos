@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var glossaryExportDocument: GlossaryExportDocument?
     @State private var glossaryExportFileName = "LiveBuddy-Glossary.csv"
     @State private var glossaryExportErrorMessage: String?
+    @State private var isShowingClearGlossaryConfirmation = false
 
     var body: some View {
         NavigationSplitView {
@@ -505,6 +506,18 @@ struct SettingsView: View {
                 glossaryExportErrorMessage = error.localizedDescription
             }
         }
+        .confirmationDialog(
+            appState.t(.clearGlossaryConfirmationTitle),
+            isPresented: $isShowingClearGlossaryConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(appState.t(.clearGlossary), role: .destructive) {
+                clearGlossaryEntriesFromUI()
+            }
+            Button(appState.t(.cancel), role: .cancel) {}
+        } message: {
+            Text(appState.t(.clearGlossaryConfirmationMessage, appState.settings.glossaryEntries.count))
+        }
     }
 
     private var glossaryEditorSection: some View {
@@ -616,6 +629,13 @@ struct SettingsView: View {
                     Label(appState.t(.exportGlossary), systemImage: "square.and.arrow.down")
                 }
                 .disabled(appState.settings.glossaryEntries.isEmpty)
+
+                Button(role: .destructive) {
+                    isShowingClearGlossaryConfirmation = true
+                } label: {
+                    Label(appState.t(.clearGlossary), systemImage: "trash")
+                }
+                .disabled(appState.settings.glossaryEntries.isEmpty)
             }
 
             if let glossaryExportErrorMessage {
@@ -700,6 +720,13 @@ struct SettingsView: View {
         let exporter = GlossaryExporter()
         glossaryExportDocument = GlossaryExportDocument(csvText: exporter.export(entries: appState.settings.glossaryEntries))
         glossaryExportFileName = exporter.defaultFileName()
+        glossaryExportErrorMessage = nil
+    }
+
+    private func clearGlossaryEntriesFromUI() {
+        appState.clearGlossaryEntries()
+        glossarySearchText = ""
+        isGlossaryListExpanded = false
         glossaryExportErrorMessage = nil
     }
 

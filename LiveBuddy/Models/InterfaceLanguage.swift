@@ -87,6 +87,10 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case preserveOriginalTerm
     case addTerm
     case deleteTerm
+    case clearGlossary
+    case clearGlossaryConfirmationTitle
+    case clearGlossaryConfirmationMessage
+    case glossaryCleared
     case publicTerminologySources
     case glossaryImportSource
     case microsoftTerminology
@@ -353,6 +357,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .preserveOriginalTerm: "Preserve original term",
         .addTerm: "Add Term",
         .deleteTerm: "Delete term",
+        .clearGlossary: "Clear Glossary",
+        .clearGlossaryConfirmationTitle: "Clear glossary?",
+        .clearGlossaryConfirmationMessage: "This will remove all %d glossary terms. Export a backup first if needed.",
+        .glossaryCleared: "Glossary cleared.",
         .publicTerminologySources: "Public terminology sources",
         .glossaryImportSource: "Glossary source",
         .microsoftTerminology: "Microsoft Terminology",
@@ -587,6 +595,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "保留原词",
             .addTerm: "添加术语",
             .deleteTerm: "删除术语",
+            .clearGlossary: "清空术语库",
+            .clearGlossaryConfirmationTitle: "清空术语库？",
+            .clearGlossaryConfirmationMessage: "将删除全部 %d 条术语。需要备份请先导出。",
+            .glossaryCleared: "术语库已清空。",
             .publicTerminologySources: "公开术语库",
             .glossaryImportSource: "术语来源",
             .microsoftTerminology: "Microsoft 术语库",
@@ -818,6 +830,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "元の用語を保持",
             .addTerm: "用語を追加",
             .deleteTerm: "用語を削除",
+            .clearGlossary: "用語集を消去",
+            .clearGlossaryConfirmationTitle: "用語集を消去しますか？",
+            .clearGlossaryConfirmationMessage: "%d 件の用語をすべて削除します。必要なら先に書き出してください。",
+            .glossaryCleared: "用語集を消去しました。",
             .publicTerminologySources: "公開用語ソース",
             .glossaryImportSource: "用語ソース",
             .microsoftTerminology: "Microsoft Terminology",
@@ -1047,6 +1063,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "원본 용어 유지",
             .addTerm: "용어 추가",
             .deleteTerm: "용어 삭제",
+            .clearGlossary: "용어집 비우기",
+            .clearGlossaryConfirmationTitle: "용어집을 비울까요?",
+            .clearGlossaryConfirmationMessage: "용어 %d개를 모두 삭제합니다. 필요하면 먼저 내보내세요.",
+            .glossaryCleared: "용어집을 비웠습니다.",
             .publicTerminologySources: "공개 용어 소스",
             .glossaryImportSource: "용어 소스",
             .microsoftTerminology: "Microsoft Terminology",
@@ -1275,6 +1295,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "Conservar término original",
             .addTerm: "Añadir término",
             .deleteTerm: "Eliminar término",
+            .clearGlossary: "Vaciar glosario",
+            .clearGlossaryConfirmationTitle: "¿Vaciar glosario?",
+            .clearGlossaryConfirmationMessage: "Se eliminarán los %d términos. Exporta una copia primero si la necesitas.",
+            .glossaryCleared: "Glosario vaciado.",
             .publicTerminologySources: "Fuentes terminológicas públicas",
             .glossaryImportSource: "Fuente del glosario",
             .microsoftTerminology: "Microsoft Terminology",
@@ -1503,6 +1527,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "Conserver le terme original",
             .addTerm: "Ajouter un terme",
             .deleteTerm: "Supprimer le terme",
+            .clearGlossary: "Vider le glossaire",
+            .clearGlossaryConfirmationTitle: "Vider le glossaire ?",
+            .clearGlossaryConfirmationMessage: "Les %d termes seront supprimés. Exportez une sauvegarde si besoin.",
+            .glossaryCleared: "Glossaire vidé.",
             .publicTerminologySources: "Sources terminologiques publiques",
             .glossaryImportSource: "Source du glossaire",
             .microsoftTerminology: "Microsoft Terminology",
@@ -1731,6 +1759,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "Originalbegriff beibehalten",
             .addTerm: "Begriff hinzufügen",
             .deleteTerm: "Begriff löschen",
+            .clearGlossary: "Glossar leeren",
+            .clearGlossaryConfirmationTitle: "Glossar leeren?",
+            .clearGlossaryConfirmationMessage: "Alle %d Begriffe werden entfernt. Exportiere bei Bedarf zuerst eine Sicherung.",
+            .glossaryCleared: "Glossar geleert.",
             .publicTerminologySources: "Öffentliche Terminologiequellen",
             .glossaryImportSource: "Glossarquelle",
             .microsoftTerminology: "Microsoft Terminology",
@@ -1959,6 +1991,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preserveOriginalTerm: "Giữ nguyên thuật ngữ gốc",
             .addTerm: "Thêm thuật ngữ",
             .deleteTerm: "Xóa thuật ngữ",
+            .clearGlossary: "Xóa bảng thuật ngữ",
+            .clearGlossaryConfirmationTitle: "Xóa bảng thuật ngữ?",
+            .clearGlossaryConfirmationMessage: "Thao tác này sẽ xóa tất cả %d thuật ngữ. Hãy xuất bản sao lưu trước nếu cần.",
+            .glossaryCleared: "Đã xóa bảng thuật ngữ.",
             .publicTerminologySources: "Nguồn thuật ngữ công khai",
             .glossaryImportSource: "Nguồn bảng thuật ngữ",
             .microsoftTerminology: "Microsoft Terminology",
