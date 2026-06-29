@@ -679,6 +679,37 @@ else:
         if token not in body:
             errors.append(f"CarbonGlobalShortcutRegistrar.unregisterAll() must release global shortcut resource through {token}")
 
+shortcut_register_match = re.search(r"func register\(_ shortcuts: \[GlobalShortcut\], handler: @escaping \(GlobalShortcutAction\) -> Void\) -> \[GlobalShortcutRegistrationResult\] \{(?P<body>[\s\S]*?)\n    \}\n\n    func unregisterAll", global_shortcut_text)
+if not shortcut_register_match:
+    errors.append("CarbonGlobalShortcutRegistrar.register not found")
+else:
+    body = shortcut_register_match.group("body")
+    for token in [
+        "guard !shortcuts.isEmpty else { return [] }",
+        "let handlerStatus = installHandlerIfNeeded()",
+        "guard handlerStatus == noErr else",
+        "self.handler = nil",
+        "GlobalShortcutRegistrationResult(shortcut: shortcut, status: .failed(Int32(handlerStatus)))",
+    ]:
+        if token not in body:
+            errors.append(f"CarbonGlobalShortcutRegistrar.register must avoid phantom shortcut handlers through {token}")
+
+shortcut_install_match = re.search(r"private func installHandlerIfNeeded\(\) -> OSStatus \{(?P<body>[\s\S]*?)\n    \}\n\n    private func handle", global_shortcut_text)
+if not shortcut_install_match:
+    errors.append("CarbonGlobalShortcutRegistrar.installHandlerIfNeeded() must return OSStatus")
+else:
+    body = shortcut_install_match.group("body")
+    for token in [
+        "guard eventHandler == nil else { return noErr }",
+        "let status = InstallEventHandler(",
+        "guard status == noErr else { return status }",
+        "return noErr",
+    ]:
+        if token not in body:
+            errors.append(f"CarbonGlobalShortcutRegistrar.installHandlerIfNeeded must surface Carbon install status through {token}")
+if "private func installHandlerIfNeeded() {" in global_shortcut_text:
+    errors.append("CarbonGlobalShortcutRegistrar.installHandlerIfNeeded must not ignore InstallEventHandler status")
+
 shortcut_handle_match = re.search(r"private func handle\(id: UInt32\) \{(?P<body>[\s\S]*?)\n    \}", global_shortcut_text)
 if not shortcut_handle_match:
     errors.append("CarbonGlobalShortcutRegistrar.handle(id:) not found")

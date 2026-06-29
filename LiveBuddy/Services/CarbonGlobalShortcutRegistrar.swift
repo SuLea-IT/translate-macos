@@ -14,8 +14,15 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
 
     func register(_ shortcuts: [GlobalShortcut], handler: @escaping (GlobalShortcutAction) -> Void) -> [GlobalShortcutRegistrationResult] {
         unregisterAll()
+        guard !shortcuts.isEmpty else { return [] }
         self.handler = handler
-        installHandlerIfNeeded()
+        let handlerStatus = installHandlerIfNeeded()
+        guard handlerStatus == noErr else {
+            self.handler = nil
+            return shortcuts.map { shortcut in
+                GlobalShortcutRegistrationResult(shortcut: shortcut, status: .failed(Int32(handlerStatus)))
+            }
+        }
 
         return shortcuts.map { shortcut in
             var hotKeyRef: EventHotKeyRef?
@@ -52,10 +59,10 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
         unregisterAll()
     }
 
-    private func installHandlerIfNeeded() {
-        guard eventHandler == nil else { return }
+    private func installHandlerIfNeeded() -> OSStatus {
+        guard eventHandler == nil else { return noErr }
         var eventSpec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(
+        let status = InstallEventHandler(
             GetApplicationEventTarget(),
             { _, event, userData in
                 guard let event, let userData else { return noErr }
@@ -79,6 +86,8 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
             Unmanaged.passUnretained(self).toOpaque(),
             &eventHandler
         )
+        guard status == noErr else { return status }
+        return noErr
     }
 
     private func handle(id: UInt32) {
