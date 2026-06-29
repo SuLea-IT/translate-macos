@@ -121,3 +121,31 @@ struct UsageControlTests {
         #expect(engine.snapshot.todaySentAudioSeconds == 0)
     }
 }
+
+extension UsageControlTests {
+    @Test func legacySettingsDecodeUsageControlDefaults() throws {
+        let legacyJSON = #"{"activeProvider":"gemini","targetLanguageCode":"ja"}"#.data(using: .utf8)!
+
+        let settings = try JSONDecoder().decode(AppSettings.self, from: legacyJSON)
+
+        #expect(settings.usageControls.idleAutoPauseEnabled)
+        #expect(settings.usageControls.idlePauseDelaySeconds == 60)
+        #expect(settings.usageControls.estimatedCostPerMinuteUSD == 0.0368)
+    }
+
+    @Test func usageControlSettingsRoundTripThroughCodable() throws {
+        var settings = AppSettings()
+        settings.usageControls.idleAutoPauseEnabled = false
+        settings.usageControls.perSessionLimitMinutes = 15
+        settings.usageControls.dailyLimitMinutes = 45
+        settings.usageControls.estimatedCostPerMinuteUSD = 0.05
+
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(AppSettings.self, from: data)
+
+        #expect(decoded.usageControls.idleAutoPauseEnabled == false)
+        #expect(decoded.usageControls.perSessionLimitMinutes == 15)
+        #expect(decoded.usageControls.dailyLimitMinutes == 45)
+        #expect(decoded.usageControls.estimatedCostPerMinuteUSD == 0.05)
+    }
+}

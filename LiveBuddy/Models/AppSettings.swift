@@ -227,6 +227,7 @@ struct AppSettings: Codable, Equatable {
     var subtitleDisplayMode: SubtitleDisplayMode = .translated
     var globalShortcutsEnabled = true
     var globalShortcuts: GlobalShortcutSet = .defaults
+    var usageControls = LiveUsageSettings()
 
     // Audio Player
     var audioPlayerVolume: Double = 1.0
@@ -258,6 +259,7 @@ struct AppSettings: Codable, Equatable {
         case subtitleDisplayMode
         case globalShortcutsEnabled
         case globalShortcuts
+        case usageControls
         case audioPlayerVolume
         case audioPlayerMuted
         case subtitleFontSize
@@ -287,6 +289,7 @@ struct AppSettings: Codable, Equatable {
         subtitleDisplayMode = try container.decodeIfPresent(SubtitleDisplayMode.self, forKey: .subtitleDisplayMode) ?? defaults.subtitleDisplayMode
         globalShortcutsEnabled = try container.decodeIfPresent(Bool.self, forKey: .globalShortcutsEnabled) ?? defaults.globalShortcutsEnabled
         globalShortcuts = try container.decodeIfPresent(GlobalShortcutSet.self, forKey: .globalShortcuts) ?? defaults.globalShortcuts
+        usageControls = try container.decodeIfPresent(LiveUsageSettings.self, forKey: .usageControls) ?? defaults.usageControls
         audioPlayerVolume = try container.decodeIfPresent(Double.self, forKey: .audioPlayerVolume) ?? defaults.audioPlayerVolume
         audioPlayerMuted = try container.decodeIfPresent(Bool.self, forKey: .audioPlayerMuted) ?? defaults.audioPlayerMuted
         subtitleFontSize = try container.decodeIfPresent(Double.self, forKey: .subtitleFontSize) ?? defaults.subtitleFontSize
@@ -313,6 +316,7 @@ struct AppSettings: Codable, Equatable {
         try container.encode(subtitleDisplayMode, forKey: .subtitleDisplayMode)
         try container.encode(globalShortcutsEnabled, forKey: .globalShortcutsEnabled)
         try container.encode(globalShortcuts, forKey: .globalShortcuts)
+        try container.encode(usageControls, forKey: .usageControls)
         try container.encode(audioPlayerVolume, forKey: .audioPlayerVolume)
         try container.encode(audioPlayerMuted, forKey: .audioPlayerMuted)
         try container.encode(subtitleFontSize, forKey: .subtitleFontSize)
