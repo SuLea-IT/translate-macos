@@ -1421,17 +1421,31 @@ final class AppState: ObservableObject {
     }
 
     func deleteTranscriptSession(_ session: TranscriptSession) {
-        if currentSessionID == session.id {
+        let wasActiveSession = currentSessionID == session.id
+        if wasActiveSession {
             clearActiveTranscriptState()
         }
         transcriptSessions.removeAll { $0.id == session.id }
+        if wasActiveSession {
+            restartTranscriptSessionIfRunning()
+        }
         saveTranscriptSessions()
     }
 
     func deleteAllTranscriptSessions() {
         clearActiveTranscriptState()
         transcriptSessions.removeAll()
+        restartTranscriptSessionIfRunning()
         saveTranscriptSessions()
+    }
+
+    private func restartTranscriptSessionIfRunning() {
+        guard isRunning else { return }
+        captionDraft = ""
+        originalDraft = ""
+        completedOriginalSentences.removeAll()
+        captions.removeAll()
+        beginTranscriptSession()
     }
 
     private func clearActiveTranscriptState() {

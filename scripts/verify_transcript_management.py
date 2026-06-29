@@ -62,10 +62,13 @@ for token in [
 
 for token in [
     "private func clearActiveTranscriptState()",
+    "private func restartTranscriptSessionIfRunning()",
     "currentSessionID = nil",
     "captionDraft = \"\"",
     "originalDraft = \"\"",
     "completedOriginalSentences.removeAll()",
+    "captions.removeAll()",
+    "beginTranscriptSession()",
 ]:
     if token not in app_state_text:
         errors.append(f"AppState must release active transcript state through {token}")
@@ -80,6 +83,16 @@ for context, pattern in [
         errors.append(f"AppState.{context} not found for active transcript cleanup")
     elif "clearActiveTranscriptState()" not in match.group("body"):
         errors.append(f"AppState.{context} must clear active transcript state when needed")
+
+for context, pattern in [
+    ("deleteTranscriptSession", r"func deleteTranscriptSession\(_ session: TranscriptSession\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteAllTranscriptSessions"),
+    ("deleteAllTranscriptSessions", r"func deleteAllTranscriptSessions\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func restartTranscriptSessionIfRunning"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for live transcript continuity")
+    elif "restartTranscriptSessionIfRunning()" not in match.group("body"):
+        errors.append(f"AppState.{context} must start a fresh transcript session when clearing live history")
 
 for token in [
     "TranscriptArchiveExporter",

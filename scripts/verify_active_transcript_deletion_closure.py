@@ -26,7 +26,8 @@ if not delete_match:
 else:
     body = delete_match.group("body")
     for token in [
-        "if currentSessionID == session.id",
+        "let wasActiveSession = currentSessionID == session.id",
+        "if wasActiveSession",
         "clearActiveTranscriptState()",
     ]:
         if token not in body:
