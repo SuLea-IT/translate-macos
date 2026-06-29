@@ -176,6 +176,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case color
     case previewText
     case runtimeLogs
+    case exportLogs
+    case copyLogs
     case clear
     case welcomeToLiveBuddy
     case configureProviderPrompt
@@ -449,6 +451,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .color: "Color",
         .previewText: "Preview text",
         .runtimeLogs: "Runtime Logs",
+        .exportLogs: "Export Logs",
+        .copyLogs: "Copy Logs",
         .clear: "Clear",
         .welcomeToLiveBuddy: "Welcome to LiveBuddy",
         .configureProviderPrompt: "Please configure your AI Provider to start using LiveBuddy for real-time translation.",
@@ -690,6 +694,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "颜色",
             .previewText: "预览文本",
             .runtimeLogs: "运行日志",
+            .exportLogs: "导出日志",
+            .copyLogs: "复制日志",
             .clear: "清除",
             .welcomeToLiveBuddy: "欢迎使用 LiveBuddy",
             .configureProviderPrompt: "请配置 AI 提供商以开始使用 LiveBuddy 实时翻译。",
@@ -928,6 +934,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "色",
             .previewText: "プレビューテキスト",
             .runtimeLogs: "実行ログ",
+            .exportLogs: "ログを書き出し",
+            .copyLogs: "ログをコピー",
             .clear: "消去",
             .welcomeToLiveBuddy: "LiveBuddy へようこそ",
             .configureProviderPrompt: "LiveBuddy のリアルタイム翻訳を開始するには AI プロバイダーを設定してください。",
@@ -1164,6 +1172,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "색상",
             .previewText: "미리보기 텍스트",
             .runtimeLogs: "런타임 로그",
+            .exportLogs: "로그 내보내기",
+            .copyLogs: "로그 복사",
             .clear: "지우기",
             .welcomeToLiveBuddy: "LiveBuddy에 오신 것을 환영합니다",
             .configureProviderPrompt: "실시간 번역을 시작하려면 AI 제공업체를 설정하세요.",
@@ -1399,6 +1409,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "Color",
             .previewText: "Texto de vista previa",
             .runtimeLogs: "Registros de ejecución",
+            .exportLogs: "Exportar registros",
+            .copyLogs: "Copiar registros",
             .clear: "Limpiar",
             .welcomeToLiveBuddy: "Bienvenido a LiveBuddy",
             .configureProviderPrompt: "Configura tu proveedor de IA para empezar a usar la traducción en tiempo real de LiveBuddy.",
@@ -1634,6 +1646,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "Couleur",
             .previewText: "Texte d’aperçu",
             .runtimeLogs: "Journaux d’exécution",
+            .exportLogs: "Exporter les journaux",
+            .copyLogs: "Copier les journaux",
             .clear: "Effacer",
             .welcomeToLiveBuddy: "Bienvenue dans LiveBuddy",
             .configureProviderPrompt: "Configurez votre fournisseur d’IA pour commencer la traduction en temps réel avec LiveBuddy.",
@@ -1869,6 +1883,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "Farbe",
             .previewText: "Vorschautext",
             .runtimeLogs: "Laufzeitprotokolle",
+            .exportLogs: "Logs exportieren",
+            .copyLogs: "Logs kopieren",
             .clear: "Löschen",
             .welcomeToLiveBuddy: "Willkommen bei LiveBuddy",
             .configureProviderPrompt: "Konfigurieren Sie Ihren KI-Anbieter, um LiveBuddy für Echtzeitübersetzung zu verwenden.",
@@ -2104,6 +2120,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .color: "Màu",
             .previewText: "Văn bản xem trước",
             .runtimeLogs: "Nhật ký chạy",
+            .exportLogs: "Xuất nhật ký",
+            .copyLogs: "Sao chép nhật ký",
             .clear: "Xóa",
             .welcomeToLiveBuddy: "Chào mừng đến với LiveBuddy",
             .configureProviderPrompt: "Vui lòng cấu hình nhà cung cấp AI để bắt đầu dùng LiveBuddy cho dịch thời gian thực.",

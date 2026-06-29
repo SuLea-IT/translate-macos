@@ -31,6 +31,9 @@ struct SettingsView: View {
     @State private var glossaryExportFileName = "LiveBuddy-Glossary.csv"
     @State private var glossaryExportErrorMessage: String?
     @State private var isShowingClearGlossaryConfirmation = false
+    @State private var logExportDocument: TranscriptExportDocument?
+    @State private var logExportFileName = "LiveBuddy-Logs.txt"
+    @State private var logExportErrorMessage: String?
 
     var body: some View {
         NavigationSplitView {
@@ -807,6 +810,20 @@ struct SettingsView: View {
                     .font(.headline)
                 Spacer()
                 Button {
+                    copyLogsFromUI()
+                } label: {
+                    Label(appState.t(.copyLogs), systemImage: "doc.on.doc")
+                }
+                .disabled(appState.logs.isEmpty)
+
+                Button {
+                    exportLogsFromUI()
+                } label: {
+                    Label(appState.t(.exportLogs), systemImage: "square.and.arrow.down")
+                }
+                .disabled(appState.logs.isEmpty)
+
+                Button {
                     appState.clearLogs()
                 } label: {
                     Label(appState.t(.clear), systemImage: "trash")
@@ -816,6 +833,15 @@ struct SettingsView: View {
             .padding(.vertical, 10)
 
             Divider()
+
+            if let logExportErrorMessage {
+                Text(appState.t(.exportFailed, logExportErrorMessage))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -834,6 +860,43 @@ struct SettingsView: View {
                 }
             }
         }
+        .fileExporter(
+            isPresented: Binding(
+                get: { logExportDocument != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        logExportDocument = nil
+                    }
+                }
+            ),
+            document: logExportDocument,
+            contentType: .plainText,
+            defaultFilename: logExportFileName
+        ) { result in
+            switch result {
+            case .success:
+                logExportDocument = nil
+                logExportErrorMessage = nil
+            case .failure(let error):
+                logExportDocument = nil
+                logExportErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func copyLogsFromUI() {
+        let logText = LogExporter().export(entries: appState.logs)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(logText, forType: .string)
+        logExportErrorMessage = nil
+    }
+
+    private func exportLogsFromUI() {
+        let exporter = LogExporter()
+        let logText = exporter.export(entries: appState.logs)
+        logExportDocument = TranscriptExportDocument(text: logText, contentType: .plainText)
+        logExportFileName = exporter.defaultFileName()
+        logExportErrorMessage = nil
     }
 }
 

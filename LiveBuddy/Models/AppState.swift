@@ -1271,10 +1271,55 @@ enum LogLevel {
 }
 
 struct LogEntry: Identifiable, Equatable {
-    let id = UUID()
-    let timestamp = Date()
+    let id: UUID
+    let timestamp: Date
     let message: String
     let level: LogLevel
+
+    init(id: UUID = UUID(), timestamp: Date = Date(), message: String, level: LogLevel) {
+        self.id = id
+        self.timestamp = timestamp
+        self.message = message
+        self.level = level
+    }
+}
+
+struct LogExporter {
+    func export(entries: [LogEntry]) -> String {
+        guard !entries.isEmpty else {
+            return "# Runtime Logs\n\nNo log entries.\n"
+        }
+
+        let lines = entries.map { entry in
+            "[\(formattedTimestamp(entry.timestamp))] \(levelText(entry.level)) \(entry.message)"
+        }
+        return "# Runtime Logs\n\n\(lines.joined(separator: "\n"))\n"
+    }
+
+    func defaultFileName(date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "LiveBuddy-Logs-\(formatter.string(from: date)).txt"
+    }
+
+    private func formattedTimestamp(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
+    private func levelText(_ level: LogLevel) -> String {
+        switch level {
+        case .info:
+            return "INFO"
+        case .error:
+            return "ERROR"
+        }
+    }
 }
 
 enum CaptionKind {

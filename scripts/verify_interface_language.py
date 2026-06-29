@@ -56,6 +56,8 @@ else:
         "detectedSourceLanguage",
         "transcripts",
         "runtimeLogs",
+        "exportLogs",
+        "copyLogs",
         "subtitleDisplayMode",
         "clearTranscriptsConfirmationTitle",
         "clearTranscriptsConfirmationMessage",
