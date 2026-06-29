@@ -327,6 +327,14 @@ struct AppSettings: Codable, Equatable {
         try container.encode(subtitleColor, forKey: .subtitleColor)
     }
 
+    func requiresSettingsFileSave(comparedTo other: AppSettings) -> Bool {
+        var current = self
+        var comparison = other
+        current.apiKey = ""
+        comparison.apiKey = ""
+        return current != comparison
+    }
+
     func requiresSessionRestart(comparedTo other: AppSettings) -> Bool {
         activeProvider != other.activeProvider
             || apiKey != other.apiKey

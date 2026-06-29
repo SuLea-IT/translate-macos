@@ -21,7 +21,7 @@ final class AppState: ObservableObject {
 
     @Published private(set) var settings: AppSettings {
         didSet {
-            scheduleSettingsSave()
+            scheduleSettingsSaveIfNeeded(oldValue: oldValue)
             rebuildRunningSessionIfNeeded(oldValue: oldValue)
             configureGlobalShortcutsIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolumeIfNeeded(oldValue: oldValue)
@@ -1443,6 +1443,11 @@ final class AppState: ObservableObject {
 
         let remainder = String(text[start...]).trimmingCharacters(in: .whitespacesAndNewlines)
         return (completed, remainder)
+    }
+
+    private func scheduleSettingsSaveIfNeeded(oldValue: AppSettings) {
+        guard settings.requiresSettingsFileSave(comparedTo: oldValue) else { return }
+        scheduleSettingsSave()
     }
 
     private func scheduleSettingsSave() {

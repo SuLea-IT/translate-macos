@@ -23,7 +23,7 @@ if not did_set_match:
 else:
     body = did_set_match.group("body")
     for token in [
-        "scheduleSettingsSave()",
+        "scheduleSettingsSaveIfNeeded(oldValue: oldValue)",
         "rebuildRunningSessionIfNeeded(oldValue: oldValue)",
         "configureGlobalShortcutsIfNeeded(oldValue: oldValue)",
         "updateAudioPlayerVolumeIfNeeded(oldValue: oldValue)",
