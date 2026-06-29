@@ -63,24 +63,16 @@ struct CaptionView: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .onAppear {
-            isPlaying = appState.isRunning
-        }
-        .onChange(of: appState.isRunning) { _, newValue in
-            isPlaying = newValue
-        }
     }
 
     @State private var isHovered = false
-    @State private var isPlaying = false
 
     private var topControls: some View {
         HStack(spacing: 9) {
             Button {
-                isPlaying.toggle()
                 appState.toggle()
             } label: {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                Image(systemName: appState.isRunning ? "pause.fill" : "play.fill")
                     .font(.system(size: 14, weight: .bold))
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
@@ -88,7 +80,7 @@ struct CaptionView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.86))
-            .help(isPlaying ? appState.t(.pause) : appState.t(.play))
+            .help(appState.isRunning ? appState.t(.pause) : appState.t(.play))
 
             StatusDot(level: appState.statusLevel)
 
