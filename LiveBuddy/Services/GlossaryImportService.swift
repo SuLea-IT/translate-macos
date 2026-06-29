@@ -27,6 +27,10 @@ final class GlossaryImportService: @unchecked Sendable {
         self.downloadTimeout = downloadTimeout
     }
 
+    deinit {
+        session.invalidateAndCancel()
+    }
+
     private static func makeDownloadSession(downloadTimeout: TimeInterval) -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = downloadTimeout

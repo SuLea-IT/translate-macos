@@ -16,6 +16,7 @@ for token in [
     "configuration.timeoutIntervalForRequest = downloadTimeout",
     "configuration.timeoutIntervalForResource = downloadTimeout",
     "URLSession(configuration: configuration)",
+    "deinit {\n        session.invalidateAndCancel()\n    }",
 ]:
     if token not in service_text:
         errors.append(f"GlossaryImportService must use an explicit bounded URLSession timeout through {token}")
