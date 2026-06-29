@@ -287,6 +287,8 @@ struct SettingsView: View {
                 }
             }
 
+            usageControlSection
+
             glossarySection
 
             Section(appState.t(.globalShortcuts)) {
@@ -388,6 +390,92 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var usageControlSection: some View {
+        Section(appState.t(.costAndUsageControl)) {
+            usageMetricRow(
+                title: appState.t(.thisSessionTranslatedTime),
+                value: AppState.formatUsageDuration(appState.usageSnapshot.sessionSentAudioSeconds)
+            )
+            usageMetricRow(
+                title: appState.t(.todayTranslatedTime),
+                value: AppState.formatUsageDuration(appState.usageSnapshot.todaySentAudioSeconds)
+            )
+            usageMetricRow(
+                title: appState.t(.estimatedCost),
+                value: "\(AppState.formatUsageCost(appState.usageSnapshot.estimatedSessionCostUSD)) / \(AppState.formatUsageCost(appState.usageSnapshot.estimatedTodayCostUSD))"
+            )
+
+            Toggle(appState.t(.idleAutoPause), isOn: appState.binding(\.usageControls.idleAutoPauseEnabled))
+
+            HStack {
+                Text(appState.t(.idlePauseDelay))
+                Spacer()
+                Stepper(
+                    "\(Int(appState.settings.usageControls.idlePauseDelaySeconds))s",
+                    value: appState.binding(\.usageControls.idlePauseDelaySeconds),
+                    in: 15...300,
+                    step: 15
+                )
+                .frame(width: 120)
+            }
+            .disabled(!appState.settings.usageControls.idleAutoPauseEnabled)
+
+            HStack {
+                Text(appState.t(.sessionUsageLimit))
+                Spacer()
+                Stepper(
+                    usageLimitText(appState.settings.usageControls.perSessionLimitMinutes),
+                    value: appState.binding(\.usageControls.perSessionLimitMinutes),
+                    in: 0...480,
+                    step: 5
+                )
+                .frame(width: 140)
+            }
+
+            HStack {
+                Text(appState.t(.dailyUsageLimit))
+                Spacer()
+                Stepper(
+                    usageLimitText(appState.settings.usageControls.dailyLimitMinutes),
+                    value: appState.binding(\.usageControls.dailyLimitMinutes),
+                    in: 0...1_440,
+                    step: 10
+                )
+                .frame(width: 140)
+            }
+
+            HStack {
+                Text(appState.t(.estimatedPricePerMinute))
+                Spacer()
+                Stepper(
+                    String(format: "$%.4f/min", appState.settings.usageControls.estimatedCostPerMinuteUSD),
+                    value: appState.binding(\.usageControls.estimatedCostPerMinuteUSD),
+                    in: 0...1,
+                    step: 0.001
+                )
+                .frame(width: 160)
+            }
+
+            Text(appState.t(.pricingEstimateNote))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func usageMetricRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func usageLimitText(_ minutes: Double) -> String {
+        minutes <= 0 ? appState.t(.usageLimitDisabled) : "\(Int(minutes)) min"
     }
 
     private var glossarySection: some View {

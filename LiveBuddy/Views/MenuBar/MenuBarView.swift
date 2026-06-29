@@ -65,6 +65,10 @@ struct MenuBarView: View {
 
                     Divider()
                 }
+
+                usageCompactView
+
+                Divider()
                 
                 // Audio Settings
                 VStack(alignment: .leading, spacing: 12) {
@@ -225,6 +229,31 @@ struct MenuBarView: View {
         .onAppear {
             appState.refreshAvailableMicrophones()
             appState.openWindowAction = openWindow
+        }
+    }
+
+    private var usageCompactView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(appState.t(.costAndUsageControl))
+                .font(.headline)
+
+            HStack {
+                Text(appState.t(.thisSessionTranslatedTime))
+                Spacer()
+                Text(AppState.formatUsageDuration(appState.usageSnapshot.sessionSentAudioSeconds))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack {
+                Text(appState.t(.estimatedCost))
+                Spacer()
+                Text(AppState.formatUsageCost(appState.usageSnapshot.estimatedSessionCostUSD))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            Toggle(appState.t(.idleAutoPause), isOn: appState.binding(\.usageControls.idleAutoPauseEnabled))
         }
     }
 }
