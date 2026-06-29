@@ -42,13 +42,14 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
         }
         hotKeys.removeAll()
         handler = nil
+        if let eventHandler {
+            RemoveEventHandler(eventHandler)
+            self.eventHandler = nil
+        }
     }
 
     deinit {
         unregisterAll()
-        if let eventHandler {
-            RemoveEventHandler(eventHandler)
-        }
     }
 
     private func installHandlerIfNeeded() {
@@ -82,8 +83,8 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
 
     private func handle(id: UInt32) {
         guard let action = GlobalShortcutAction(rawValue: id) else { return }
-        DispatchQueue.main.async { [handler] in
-            handler?(action)
+        DispatchQueue.main.async { [weak self] in
+            self?.handler?(action)
         }
     }
 

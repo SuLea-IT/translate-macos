@@ -11,6 +11,7 @@ microphone_capture = root / "LiveBuddy" / "Services" / "MicrophoneCapture.swift"
 screen_audio_capture = root / "LiveBuddy" / "Services" / "ScreenAudioCapture.swift"
 audio_player = root / "LiveBuddy" / "Utilities" / "PCM16AudioPlayer.swift"
 app_delegate = root / "LiveBuddy" / "App" / "AppDelegate.swift"
+global_shortcut_registrar = root / "LiveBuddy" / "Services" / "CarbonGlobalShortcutRegistrar.swift"
 errors: list[str] = []
 
 client_text = client.read_text()
@@ -20,6 +21,7 @@ microphone_text = microphone_capture.read_text()
 screen_audio_text = screen_audio_capture.read_text()
 audio_player_text = audio_player.read_text()
 app_delegate_text = app_delegate.read_text()
+global_shortcut_text = global_shortcut_registrar.read_text()
 
 public_stop_match = re.search(r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 internal_stop_match = re.search(r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
@@ -597,6 +599,25 @@ if will_terminate_match and "Task { await appState?.stop() }" in will_terminate_
 delegate_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", app_delegate_text)
 if delegate_deinit_match and "terminationTask?.cancel()" not in delegate_deinit_match.group("body"):
     errors.append("AppDelegate.deinit must cancel terminationTask")
+
+unregister_shortcuts_match = re.search(r"func unregisterAll\(\) \{(?P<body>[\s\S]*?)\n    \}", global_shortcut_text)
+if not unregister_shortcuts_match:
+    errors.append("CarbonGlobalShortcutRegistrar.unregisterAll() not found")
+else:
+    body = unregister_shortcuts_match.group("body")
+    for token in ["UnregisterEventHotKey", "hotKeys.removeAll()", "handler = nil", "RemoveEventHandler(eventHandler)", "eventHandler = nil"]:
+        if token not in body:
+            errors.append(f"CarbonGlobalShortcutRegistrar.unregisterAll() must release global shortcut resource through {token}")
+
+shortcut_handle_match = re.search(r"private func handle\(id: UInt32\) \{(?P<body>[\s\S]*?)\n    \}", global_shortcut_text)
+if not shortcut_handle_match:
+    errors.append("CarbonGlobalShortcutRegistrar.handle(id:) not found")
+else:
+    body = shortcut_handle_match.group("body")
+    if "DispatchQueue.main.async { [weak self] in" not in body or "self?.handler?(action)" not in body:
+        errors.append("CarbonGlobalShortcutRegistrar.handle(id:) must resolve handler at execution time so disabled shortcuts cannot fire queued stale actions")
+    if "[handler]" in body:
+        errors.append("CarbonGlobalShortcutRegistrar.handle(id:) must not capture a stale handler closure")
 
 if "private func removeShowCaptionObserver()" not in app_delegate_text:
     errors.append("AppDelegate must centralize showCaptionObserver cleanup")
