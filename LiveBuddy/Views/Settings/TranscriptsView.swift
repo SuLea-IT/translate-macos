@@ -12,6 +12,7 @@ struct TranscriptsView: View {
     @State private var exportErrorMessage: String?
     @State private var generatedMeetingNotes: MeetingNotes?
     @State private var meetingNotesSessionID: UUID?
+    @State private var isShowingClearTranscriptsConfirmation = false
 
     private let transcriptExporter = TranscriptExporter()
     private let meetingNotesGenerator = MeetingNotesGenerator()
@@ -59,8 +60,7 @@ struct TranscriptsView: View {
             Spacer()
             if !appState.transcriptSessions.isEmpty {
                 Button(role: .destructive) {
-                    appState.deleteAllTranscriptSessions()
-                    selectedSession = nil
+                    isShowingClearTranscriptsConfirmation = true
                 } label: {
                     Label(appState.t(.clearAll), systemImage: "trash")
                 }
@@ -69,6 +69,18 @@ struct TranscriptsView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
+        .confirmationDialog(
+            appState.t(.clearTranscriptsConfirmationTitle),
+            isPresented: $isShowingClearTranscriptsConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(appState.t(.clearAll), role: .destructive) {
+                clearAllTranscriptSessionsFromUI()
+            }
+            Button(appState.t(.cancel), role: .cancel) {}
+        } message: {
+            Text(appState.t(.clearTranscriptsConfirmationMessage, appState.transcriptSessions.count))
+        }
     }
 
     private var searchBar: some View {
@@ -312,6 +324,15 @@ struct TranscriptsView: View {
         exportDocument = TranscriptExportDocument(text: text, contentType: format.contentType)
         exportContentType = format.contentType
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
+        exportErrorMessage = nil
+    }
+
+    private func clearAllTranscriptSessionsFromUI() {
+        appState.deleteAllTranscriptSessions()
+        selectedSession = nil
+        searchText = ""
+        generatedMeetingNotes = nil
+        meetingNotesSessionID = nil
         exportErrorMessage = nil
     }
 

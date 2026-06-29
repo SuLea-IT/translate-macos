@@ -193,6 +193,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case unmute
     case closeSubtitleWindowAndStopCapture
     case clearAll
+    case clearTranscriptsConfirmationTitle
+    case clearTranscriptsConfirmationMessage
     case copyTranscript
     case delete
     case noResultsForSearch
@@ -463,6 +465,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .unmute: "Unmute",
         .closeSubtitleWindowAndStopCapture: "Close subtitle screen and stop capture",
         .clearAll: "Clear All",
+        .clearTranscriptsConfirmationTitle: "Clear all transcripts?",
+        .clearTranscriptsConfirmationMessage: "This will permanently delete all %d transcript sessions.",
         .copyTranscript: "Copy Transcript",
         .delete: "Delete",
         .noResultsForSearch: "No results for \"%@\"",
@@ -701,6 +705,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "取消静音",
             .closeSubtitleWindowAndStopCapture: "关闭字幕窗口并停止采集",
             .clearAll: "全部清除",
+            .clearTranscriptsConfirmationTitle: "清空所有转录记录？",
+            .clearTranscriptsConfirmationMessage: "将永久删除全部 %d 个转录会话。",
             .copyTranscript: "复制转录",
             .delete: "删除",
             .noResultsForSearch: "未找到“%@”的结果",
@@ -936,6 +942,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "ミュート解除",
             .closeSubtitleWindowAndStopCapture: "字幕画面を閉じてキャプチャを停止",
             .clearAll: "すべて消去",
+            .clearTranscriptsConfirmationTitle: "すべての文字起こしを削除しますか？",
+            .clearTranscriptsConfirmationMessage: "%d 件の文字起こしセッションを完全に削除します。",
             .copyTranscript: "文字起こしをコピー",
             .delete: "削除",
             .noResultsForSearch: "「%@」の結果はありません",
@@ -1169,6 +1177,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "음소거 해제",
             .closeSubtitleWindowAndStopCapture: "자막 화면을 닫고 캡처 중지",
             .clearAll: "모두 지우기",
+            .clearTranscriptsConfirmationTitle: "모든 전사 기록을 지울까요?",
+            .clearTranscriptsConfirmationMessage: "전사 세션 %d개를 영구 삭제합니다.",
             .copyTranscript: "전사 복사",
             .delete: "삭제",
             .noResultsForSearch: "\"%@\"에 대한 결과가 없습니다",
@@ -1401,6 +1411,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "Activar sonido",
             .closeSubtitleWindowAndStopCapture: "Cerrar subtítulos y detener captura",
             .clearAll: "Borrar todo",
+            .clearTranscriptsConfirmationTitle: "¿Borrar todas las transcripciones?",
+            .clearTranscriptsConfirmationMessage: "Se eliminarán permanentemente las %d sesiones de transcripción.",
             .copyTranscript: "Copiar transcripción",
             .delete: "Eliminar",
             .noResultsForSearch: "Sin resultados para \"%@\"",
@@ -1633,6 +1645,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "Réactiver le son",
             .closeSubtitleWindowAndStopCapture: "Fermer les sous-titres et arrêter la capture",
             .clearAll: "Tout effacer",
+            .clearTranscriptsConfirmationTitle: "Effacer toutes les transcriptions ?",
+            .clearTranscriptsConfirmationMessage: "Les %d sessions de transcription seront supprimées définitivement.",
             .copyTranscript: "Copier la transcription",
             .delete: "Supprimer",
             .noResultsForSearch: "Aucun résultat pour « %@ »",
@@ -1865,6 +1879,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "Ton einschalten",
             .closeSubtitleWindowAndStopCapture: "Untertitel schließen und Aufnahme stoppen",
             .clearAll: "Alle löschen",
+            .clearTranscriptsConfirmationTitle: "Alle Transkripte löschen?",
+            .clearTranscriptsConfirmationMessage: "Alle %d Transkript-Sitzungen werden dauerhaft gelöscht.",
             .copyTranscript: "Transkript kopieren",
             .delete: "Löschen",
             .noResultsForSearch: "Keine Ergebnisse für \"%@\"",
@@ -2097,6 +2113,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .unmute: "Bật tiếng",
             .closeSubtitleWindowAndStopCapture: "Đóng phụ đề và dừng thu",
             .clearAll: "Xóa tất cả",
+            .clearTranscriptsConfirmationTitle: "Xóa tất cả bản chép lời?",
+            .clearTranscriptsConfirmationMessage: "Thao tác này sẽ xóa vĩnh viễn tất cả %d phiên chép lời.",
             .copyTranscript: "Sao chép bản ghi",
             .delete: "Xóa",
             .noResultsForSearch: "Không có kết quả cho \"%@\"",

@@ -57,6 +57,8 @@ else:
         "transcripts",
         "runtimeLogs",
         "subtitleDisplayMode",
+        "clearTranscriptsConfirmationTitle",
+        "clearTranscriptsConfirmationMessage",
         "exportGlossary",
         "exportTranscript",
         "exportAsSRT",
