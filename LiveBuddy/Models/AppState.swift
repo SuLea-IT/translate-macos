@@ -77,6 +77,11 @@ final class AppState: ObservableObject {
     private var reconnectTask: Task<Void, Never>?
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
+    private var audioSendTask: Task<Void, Never>?
+    private var pendingAudioSendChunks = 0
+    private let maxPendingAudioSendChunks = 120
+    private var audioSendGeneration = UUID()
+    private var lastAudioSendBackpressureLogAt = Date.distantPast
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
     private var currentSessionID: UUID?
@@ -167,6 +172,7 @@ final class AppState: ObservableObject {
         reconnectTask = nil
         usageResumeTask?.cancel()
         usageResumeTask = nil
+        resetAudioSendPipeline()
         detectedSourceLanguageCode = nil
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
 
@@ -204,6 +210,7 @@ final class AppState: ObservableObject {
         reconnectAttempts = 0
         restartTask?.cancel()
         restartTask = nil
+        resetAudioSendPipeline()
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
@@ -675,6 +682,7 @@ final class AppState: ObservableObject {
         appendLog(event.statusMessage, level: .error)
 
         let oldClient = client
+        resetAudioSendPipeline()
         client = nil
         reconnectTask = Task { [weak self] in
             let nanoseconds = UInt64(max(delay, 0) * 1_000_000_000)
@@ -711,6 +719,7 @@ final class AppState: ObservableObject {
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
+        resetAudioSendPipeline()
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
@@ -807,10 +816,7 @@ final class AppState: ObservableObject {
 
         if decision.shouldSend {
             sentChunkCount += 1
-            let client = self.client
-            Task {
-                await client?.sendAudio(data)
-            }
+            enqueueAudioSend(data)
             saveUsageLedger()
         }
 
@@ -851,12 +857,55 @@ final class AppState: ObservableObject {
         usageSnapshot = usageEngine.snapshot
     }
 
+    private func enqueueAudioSend(_ data: Data) {
+        guard !data.isEmpty, let client else { return }
+        guard pendingAudioSendChunks < maxPendingAudioSendChunks else {
+            let now = Date()
+            if now.timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5 {
+                lastAudioSendBackpressureLogAt = now
+                appendLog("Audio send queue is full; dropping live audio chunks to keep latency bounded", level: .error)
+            }
+            return
+        }
+
+        pendingAudioSendChunks += 1
+        let generation = audioSendGeneration
+        let previousTask = audioSendTask
+        audioSendTask = Task { [weak self, client, data, previousTask, generation] in
+            await previousTask?.value
+            defer {
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    pendingAudioSendChunks = max(0, pendingAudioSendChunks - 1)
+                    if pendingAudioSendChunks == 0, audioSendGeneration == generation {
+                        audioSendTask = nil
+                    }
+                }
+            }
+            guard !Task.isCancelled else { return }
+            let shouldSend = await MainActor.run { [weak self, client] in
+                guard let self else { return false }
+                return audioSendGeneration == generation && self.client === client
+            }
+            guard shouldSend else { return }
+            await client.sendAudio(data)
+        }
+    }
+
+    private func resetAudioSendPipeline() {
+        audioSendGeneration = UUID()
+        audioSendTask?.cancel()
+        audioSendTask = nil
+        pendingAudioSendChunks = 0
+    }
+
     private func updateUsageControlSettings() {
         usageEngine.updateSettings(settings.usageControls, now: Date())
         usageSnapshot = usageEngine.snapshot
     }
 
     private func enterUsagePause(reason: UsageControlPauseReason) {
+        resetAudioSendPipeline()
         client?.close()
         client = nil
         audioPlayer.stop()
@@ -1237,6 +1286,7 @@ final class AppState: ObservableObject {
         reconnectTask?.cancel()
         usageResumeTask?.cancel()
         setupChecklistRefreshTask?.cancel()
+        audioSendTask?.cancel()
         microphoneCapture?.stop()
         if let screenCaptureForDeinit = screenCapture {
             Task {

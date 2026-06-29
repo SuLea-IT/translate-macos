@@ -63,6 +63,7 @@ else:
         "reconnectTask?.cancel()",
         "usageResumeTask?.cancel()",
         "setupChecklistRefreshTask?.cancel()",
+        "audioSendTask?.cancel()",
         "microphoneCapture?.stop()",
         "client?.close()",
         "audioPlayer.stop()",
@@ -89,6 +90,68 @@ else:
     ]:
         if token not in body:
             errors.append(f"AppState.refreshSetupChecklist() must manage cancellable refresh work through {token}")
+
+
+for token in [
+    "private var audioSendTask: Task<Void, Never>?",
+    "private var pendingAudioSendChunks = 0",
+    "private let maxPendingAudioSendChunks",
+    "private var audioSendGeneration = UUID()",
+    "private var lastAudioSendBackpressureLogAt = Date.distantPast",
+]:
+    if token not in app_state_text:
+        errors.append(f"AppState must bound and retain audio send work through {token}")
+
+handle_audio_match = re.search(r"private func handleCapturedAudio\(_ data: Data, source: AudioSource, level: Float\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not handle_audio_match:
+    errors.append("AppState.handleCapturedAudio() not found")
+else:
+    body = handle_audio_match.group("body")
+    if "Task {" in body and "sendAudio" in body:
+        errors.append("AppState.handleCapturedAudio() must not spawn one detached send task per audio chunk")
+    if "enqueueAudioSend(data)" not in body:
+        errors.append("AppState.handleCapturedAudio() must send audio through bounded enqueueAudioSend(data)")
+
+enqueue_match = re.search(r"private func enqueueAudioSend\(_ data: Data\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not enqueue_match:
+    errors.append("AppState.enqueueAudioSend(_:) must exist to serialize and bound live audio sends")
+else:
+    body = enqueue_match.group("body")
+    for token in [
+        "pendingAudioSendChunks < maxPendingAudioSendChunks",
+        "pendingAudioSendChunks += 1",
+        "let previousTask = audioSendTask",
+        "await previousTask?.value",
+        "guard !Task.isCancelled else { return }",
+        "self.client === client",
+        "await client.sendAudio(data)",
+        "Date()",
+        "timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5",
+        "lastAudioSendBackpressureLogAt = now",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.enqueueAudioSend(_:) must serialize/bound send work through {token}")
+
+reset_audio_send_match = re.search(r"private func resetAudioSendPipeline\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not reset_audio_send_match:
+    errors.append("AppState.resetAudioSendPipeline() must exist to cancel queued live audio sends")
+else:
+    body = reset_audio_send_match.group("body")
+    for token in ["audioSendGeneration = UUID()", "audioSendTask?.cancel()", "audioSendTask = nil", "pendingAudioSendChunks = 0"]:
+        if token not in body:
+            errors.append(f"AppState.resetAudioSendPipeline() must release send work through {token}")
+
+for context, pattern in [
+    ("stop", r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("enterUsagePause", r"private func enterUsagePause\(reason: UsageControlPauseReason\) \{(?P<body>[\s\S]*?)\n    \}"),
+    ("scheduleReconnect", r"private func scheduleReconnect\(after event: LiveConnectionEvent\) \{(?P<body>[\s\S]*?)\n    \}"),
+]:
+    match = re.search(pattern, app_state_text)
+    if not match:
+        errors.append(f"AppState.{context} not found for audio send cleanup")
+    elif "resetAudioSendPipeline()" not in match.group("body"):
+        errors.append(f"AppState.{context} must cancel queued audio sends through resetAudioSendPipeline()")
 
 mic_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", microphone_text)
 if not mic_deinit_match:
