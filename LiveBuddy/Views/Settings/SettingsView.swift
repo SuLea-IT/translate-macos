@@ -225,6 +225,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .onChange(of: appState.settings.apiKey) { _, _ in
+            cancelTokenCheck()
             isTokenValid = nil
             tokenCheckError = nil
         }

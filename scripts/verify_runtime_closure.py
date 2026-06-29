@@ -450,6 +450,15 @@ for token in [
     if token not in settings_text:
         errors.append(f"SettingsView must retain/cancel API token check work through {token}")
 
+api_key_change_match = re.search(r"\.onChange\(of: appState.settings.apiKey\) \{ _, _ in(?P<body>[\s\S]*?)\n        \}", settings_text)
+if not api_key_change_match:
+    errors.append("SettingsView must reset API token verification state when the key changes")
+else:
+    body = api_key_change_match.group("body")
+    for token in ["cancelTokenCheck()", "isTokenValid = nil", "tokenCheckError = nil"]:
+        if token not in body:
+            errors.append(f"SettingsView API key change handler must clear stale token check state through {token}")
+
 provider_section_match = re.search(r"Button\(appState.t\(\.check\)\) \{(?P<body>[\s\S]*?)\n                        \}", settings_text)
 if not provider_section_match:
     errors.append("SettingsView API token check button not found")
