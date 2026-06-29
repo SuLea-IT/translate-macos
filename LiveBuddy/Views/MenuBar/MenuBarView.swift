@@ -228,6 +228,7 @@ struct MenuBarView: View {
         .tint(.white)
         .onAppear {
             appState.refreshAvailableMicrophones()
+            appState.refreshAvailableOutputDevices()
             appState.openWindowAction = openWindow
         }
     }

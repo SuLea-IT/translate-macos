@@ -285,6 +285,12 @@ struct SettingsView: View {
                         .monospacedDigit()
                         .frame(width: 42, alignment: .trailing)
                 }
+
+                virtualAudioIsolationSection
+            }
+            .onAppear {
+                appState.refreshAvailableMicrophones()
+                appState.refreshAvailableOutputDevices()
             }
 
             usageControlSection
@@ -390,6 +396,68 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var virtualAudioIsolationSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(appState.t(.virtualAudioIsolation), isOn: appState.binding(\.virtualAudioIsolationEnabled))
+
+            if appState.settings.virtualAudioIsolationEnabled {
+                Label(
+                    detectedVirtualInput == nil ? appState.t(.blackHoleNotDetected) : "\(appState.t(.blackHoleDetected)): \(detectedVirtualInput?.name ?? "")",
+                    systemImage: detectedVirtualInput == nil ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(detectedVirtualInput == nil ? .orange : .green)
+
+                Picker(appState.t(.virtualAudioInputDevice), selection: appState.binding(\.virtualAudioInputDeviceUID)) {
+                    Text(appState.t(.systemDefault)).tag(nil as String?)
+                    ForEach(virtualInputPickerDevices) { device in
+                        Text(device.name).tag(device.uid as String?)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker(appState.t(.translatedVoiceOutputDevice), selection: appState.binding(\.translatedAudioOutputDeviceUID)) {
+                    Text(appState.t(.systemDefaultOutput)).tag(nil as String?)
+                    ForEach(appState.availableOutputDevices) { device in
+                        Text(device.name).tag(device.uid as String?)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(appState.t(.virtualAudioIsolationHelp))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Button(appState.t(.openBlackHoleDownload)) {
+                        if let url = URL(string: "https://github.com/ExistentialAudio/BlackHole") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+
+                    Button(appState.t(.openSoundSettings)) {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.sound") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    private var detectedVirtualInput: AudioDevice? {
+        AudioDeviceManager.preferredVirtualInputDevice(
+            from: appState.availableMicrophones,
+            selectedUID: appState.settings.virtualAudioInputDeviceUID
+        )
+    }
+
+    private var virtualInputPickerDevices: [AudioDevice] {
+        let virtualDevices = appState.availableMicrophones.filter(AudioDeviceManager.isLikelyVirtualLoopbackDevice)
+        return virtualDevices.isEmpty ? appState.availableMicrophones : virtualDevices
     }
 
     private var usageControlSection: some View {
