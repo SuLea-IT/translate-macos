@@ -908,7 +908,12 @@ final class AppState: ObservableObject {
         client = nil
         reconnectTask = Task { [weak self] in
             let nanoseconds = UInt64(max(delay, 0) * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: nanoseconds)
+            do {
+                try await Task.sleep(nanoseconds: nanoseconds)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
             await self?.reconnectGeminiClient()
         }
         oldClient?.close()
