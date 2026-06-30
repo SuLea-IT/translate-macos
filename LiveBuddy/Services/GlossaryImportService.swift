@@ -58,6 +58,7 @@ final class GlossaryImportService: @unchecked Sendable {
         try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
 
         let (temporaryURL, response) = try await download(url: url, progress: progress)
+        await progress?(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing())
 
         if let httpResponse = response as? HTTPURLResponse, !(200..<300).contains(httpResponse.statusCode) {
             throw GlossaryImportError.downloadFailed("HTTP \(httpResponse.statusCode)")
@@ -78,7 +79,6 @@ final class GlossaryImportService: @unchecked Sendable {
         try FileManager.default.moveItem(at: temporaryURL, to: destination)
         downloadedURL = nil
         do {
-            await progress?(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing())
             let result = try parser.parse(fileURL: destination, sourceName: sourceName, existingEntries: existingEntries, options: options)
             if result.entries.isEmpty {
                 throw GlossaryImportError.emptyImport
