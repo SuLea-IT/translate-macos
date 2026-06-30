@@ -1,10 +1,12 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
 final class CaptionPanelController: NSObject, NSWindowDelegate {
     private let panel: NSPanel
     private weak var appState: AppState?
+    private var titleCancellable: AnyCancellable?
 
     init(appState: AppState) {
         self.appState = appState
@@ -18,7 +20,13 @@ final class CaptionPanelController: NSObject, NSWindowDelegate {
             defer: false
         )
         super.init()
-        panel.title = "Subtitle Screen"
+        updateTitle(language: appState.settings.interfaceLanguage)
+        titleCancellable = appState.$settings
+            .map(\.interfaceLanguage)
+            .removeDuplicates()
+            .sink { [weak self] language in
+                self?.updateTitle(language: language)
+            }
         panel.minSize = NSSize(width: 420, height: 120)
         panel.level = .screenSaver
         panel.isOpaque = false
@@ -60,5 +68,9 @@ final class CaptionPanelController: NSObject, NSWindowDelegate {
 
     private func saveFrame() {
         appState?.saveSubtitleScreenFrame(panel.frame)
+    }
+
+    private func updateTitle(language: InterfaceLanguage) {
+        panel.title = language.localized(.captionWindow)
     }
 }
