@@ -110,6 +110,7 @@ final class AppState: ObservableObject {
     private var temporaryTestCaptionPreviousDraft: String?
     private var glossaryImportTask: Task<Void, Never>?
     private var transcriptSaveTask: Task<Void, Never>?
+    private var transcriptSaveGeneration = UUID()
     private var glossaryImportGeneration = UUID()
     private var pendingAudioSendChunks = 0
     private let maxPendingAudioSendChunks = 120
@@ -1809,24 +1810,34 @@ final class AppState: ObservableObject {
 
     private func scheduleTranscriptSave() {
         guard transcriptSaveTask == nil else { return }
+        let generation = UUID()
+        transcriptSaveGeneration = generation
         transcriptSaveTask = Task { @MainActor [weak self] in
             do {
                 try await Task.sleep(nanoseconds: Self.transcriptSaveDebounceNanoseconds)
             } catch {
-                self?.transcriptSaveTask = nil
+                if self?.transcriptSaveGeneration == generation {
+                    self?.transcriptSaveTask = nil
+                }
                 return
             }
             guard !Task.isCancelled else {
-                self?.transcriptSaveTask = nil
+                if self?.transcriptSaveGeneration == generation {
+                    self?.transcriptSaveTask = nil
+                }
                 return
             }
             guard let self else { return }
+            guard self.transcriptSaveGeneration == generation else { return }
             self.saveTranscriptSessions()
-            self.transcriptSaveTask = nil
+            if self.transcriptSaveGeneration == generation {
+                self.transcriptSaveTask = nil
+            }
         }
     }
 
     private func saveTranscriptSessionsImmediately() {
+        transcriptSaveGeneration = UUID()
         transcriptSaveTask?.cancel()
         transcriptSaveTask = nil
         saveTranscriptSessions()
