@@ -61,7 +61,7 @@ struct MeetingNotesGenerator {
             "- \(language.localized(.meetingNotesStarted)): \(MeetingNotesFormatter.sessionDate(session.startedAt))",
             "- \(language.localized(.meetingNotesSource)): \(session.audioSource)",
             "- \(language.localized(.meetingNotesTargetLanguage)): \(session.targetLanguage)",
-            "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration)",
+            "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration(language: language))",
             "",
             "## \(language.localized(.meetingSummary))",
             bulletList(notes.summary, includeTime: false, emptyText: language.localized(.noMeetingNotesContent)),

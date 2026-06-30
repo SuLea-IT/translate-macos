@@ -29,7 +29,15 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
     }
 
     var formattedDuration: String {
-        guard let duration else { return "In progress…" }
+        formattedDuration(inProgressText: "In progress…")
+    }
+
+    func formattedDuration(language: InterfaceLanguage) -> String {
+        formattedDuration(inProgressText: language.localized(.live))
+    }
+
+    private func formattedDuration(inProgressText: String) -> String {
+        guard let duration else { return inProgressText }
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         if minutes > 0 {
@@ -68,32 +76,34 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
         textForMode(.both)
     }
 
-    func textForMode(_ mode: TranscriptViewMode) -> String {
+    func textForMode(_ mode: TranscriptViewMode, language: InterfaceLanguage = .english) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let header = """
-        Transcript Session: \(formatter.string(from: startedAt))
-        Source: \(audioSource)
-        Target Language: \(targetLanguage)
-        Duration: \(formattedDuration)
-        Mode: \(mode.rawValue)
+        \(language.localized(.transcriptExportTitle)): \(formatter.string(from: startedAt))
+        \(language.localized(.meetingNotesSource)): \(audioSource)
+        \(language.localized(.meetingNotesTargetLanguage)): \(targetLanguage)
+        \(language.localized(.meetingNotesDuration)): \(formattedDuration(language: language))
+        \(language.localized(.transcriptExportMode)): \(mode.localizedTitle(language: language))
         ----------------------------------------
         """
+        let originalLabel = language.localized(.original)
+        let translatedLabel = language.localized(.translated)
         
         let body = lines.map { line in
             let timeStr = line.formattedTime
             switch mode {
             case .both:
                 if let original = line.originalText, !original.isEmpty {
-                    return "[\(timeStr)]\nOriginal: \(original)\nTranslated: \(line.text)"
+                    return "[\(timeStr)]\n\(originalLabel): \(original)\n\(translatedLabel): \(line.text)"
                 } else {
-                    return "[\(timeStr)]\nTranslated: \(line.text)"
+                    return "[\(timeStr)]\n\(translatedLabel): \(line.text)"
                 }
             case .original:
-                return "[\(timeStr)]\nOriginal: \(line.originalText ?? line.text)"
+                return "[\(timeStr)]\n\(originalLabel): \(line.originalText ?? line.text)"
             case .translated:
-                return "[\(timeStr)]\nTranslated: \(line.text)"
+                return "[\(timeStr)]\n\(translatedLabel): \(line.text)"
             }
         }.joined(separator: "\n\n")
         

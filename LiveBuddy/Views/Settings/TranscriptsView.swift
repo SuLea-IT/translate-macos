@@ -164,7 +164,7 @@ struct TranscriptsView: View {
                         .contextMenu {
                             Button(appState.t(.copyTranscript)) {
                                 NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(session.fullText, forType: .string)
+                                NSPasteboard.general.setString(session.textForMode(.both, language: appState.settings.interfaceLanguage), forType: .string)
                             }
                             Divider()
                             Button(appState.t(.delete), role: .destructive) {
@@ -220,7 +220,7 @@ struct TranscriptsView: View {
                     Label(session.displayTitle, systemImage: "calendar")
                         .font(.subheadline.weight(.medium))
                     Spacer()
-                    Label(session.formattedDuration, systemImage: "clock")
+                    Label(session.formattedDuration(language: appState.settings.interfaceLanguage), systemImage: "clock")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -254,14 +254,14 @@ struct TranscriptsView: View {
 
                     Button {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(session.textForMode(viewMode), forType: .string)
+                        NSPasteboard.general.setString(session.textForMode(viewMode, language: appState.settings.interfaceLanguage), forType: .string)
                     } label: {
                         Label(appState.t(.copyAll), systemImage: "doc.on.doc")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
 
-                    ShareLink(item: session.textForMode(viewMode)) {
+                    ShareLink(item: session.textForMode(viewMode, language: appState.settings.interfaceLanguage)) {
                         Label(appState.t(.share), systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)
@@ -533,7 +533,7 @@ struct SessionCard: View {
                 Text(session.displayTitle)
                     .font(.subheadline.weight(.medium))
                 Spacer()
-                Text(session.formattedDuration)
+                Text(session.formattedDuration(language: appState.settings.interfaceLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
