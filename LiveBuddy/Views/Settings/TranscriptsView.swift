@@ -79,6 +79,11 @@ struct TranscriptsView: View {
         .onChange(of: selectedSession?.id) { _, _ in
             clearTranscriptDetailFeedbackForSelectionChange()
         }
+        .onChange(of: isShowingDeleteTranscriptConfirmation) { _, isPresented in
+            if !isPresented {
+                pendingDeleteSession = nil
+            }
+        }
     }
 
     // MARK: - List View
