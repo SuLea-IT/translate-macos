@@ -546,6 +546,9 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .onChange(of: selectedGlossaryImportSourceID) { _, _ in
+                    clearGlossaryImportSelectionFeedback()
+                }
 
                 Text(localizedGlossarySourceDetail(selectedGlossaryImportSource))
                     .font(.caption)
@@ -555,9 +558,15 @@ struct SettingsView: View {
                     TextField(appState.t(.glossaryImportLinkPlaceholder), text: $glossaryImportURLString)
                         .textFieldStyle(.roundedBorder)
                         .accessibilityLabel(appState.t(.glossaryImportLink))
+                        .onChange(of: glossaryImportURLString) { _, _ in
+                            clearGlossaryImportSelectionFeedback()
+                        }
                 }
 
                 Stepper("\(appState.t(.importLimit)): \(glossaryImportLimit)", value: $glossaryImportLimit, in: 1...2_000, step: 50)
+                    .onChange(of: glossaryImportLimit) { _, _ in
+                        clearGlossaryImportSelectionFeedback()
+                    }
 
                 HStack {
                     Button(appState.t(.downloadAndImport)) {
@@ -750,6 +759,11 @@ struct SettingsView: View {
             UTType(filenameExtension: "tbx"),
             UTType(filenameExtension: "zip")
         ].compactMap { $0 }
+    }
+
+    private func clearGlossaryImportSelectionFeedback() {
+        glossaryImportInputMessage = ""
+        appState.clearGlossaryImportFeedback()
     }
 
     private func clearGlossaryExportFeedback() {
