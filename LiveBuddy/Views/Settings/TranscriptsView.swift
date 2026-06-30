@@ -10,6 +10,7 @@ struct TranscriptsView: View {
     @State private var exportFileName = "LiveBuddy-Transcript"
     @State private var exportContentType: UTType = .plainText
     @State private var exportErrorMessage: String?
+    @State private var copyErrorMessage: String?
     @State private var generatedMeetingNotes: MeetingNotes?
     @State private var meetingNotesSessionID: UUID?
     @State private var isShowingClearTranscriptsConfirmation = false
@@ -132,6 +133,15 @@ struct TranscriptsView: View {
 
     private var transcriptListExportErrorFeedback: some View {
         Group {
+            if let copyErrorMessage {
+                Text(copyErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+            }
+
             if let exportErrorMessage {
                 Text(appState.t(.exportFailed, exportErrorMessage))
                     .font(.caption)
@@ -177,8 +187,7 @@ struct TranscriptsView: View {
                         }
                         .contextMenu {
                             Button(appState.t(.copyTranscript)) {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(session.textForMode(.both, language: appState.settings.interfaceLanguage), forType: .string)
+                                copyTranscriptTextToPasteboard(session.textForMode(.both, language: appState.settings.interfaceLanguage))
                             }
                             Divider()
                             Button(appState.t(.delete), role: .destructive) {
@@ -267,8 +276,7 @@ struct TranscriptsView: View {
                     Spacer()
 
                     Button {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(session.textForMode(viewMode, language: appState.settings.interfaceLanguage), forType: .string)
+                        copyTranscriptTextToPasteboard(session.textForMode(viewMode, language: appState.settings.interfaceLanguage))
                     } label: {
                         Label(appState.t(.copyAll), systemImage: "doc.on.doc")
                     }
@@ -306,12 +314,7 @@ struct TranscriptsView: View {
                     .controlSize(.regular)
                 }
 
-                if let exportErrorMessage {
-                    Text(appState.t(.exportFailed, exportErrorMessage))
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                transcriptDetailFeedback
 
                 if let generatedMeetingNotes, meetingNotesSessionID == session.id {
                     meetingNotesPanel(notes: generatedMeetingNotes, session: session)
@@ -369,6 +372,7 @@ struct TranscriptsView: View {
         pendingDeleteSession = nil
         isShowingDeleteTranscriptConfirmation = false
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func refreshMeetingNotesForCurrentMode() {
@@ -391,6 +395,7 @@ struct TranscriptsView: View {
         generatedMeetingNotes = nil
         meetingNotesSessionID = nil
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
@@ -399,6 +404,7 @@ struct TranscriptsView: View {
         exportContentType = format.contentType
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func exportAllTranscriptsFromUI() {
@@ -408,6 +414,7 @@ struct TranscriptsView: View {
         exportContentType = contentType
         exportFileName = transcriptArchiveExporter.defaultFileName()
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func clearAllTranscriptSessionsFromUI() {
@@ -419,6 +426,7 @@ struct TranscriptsView: View {
         generatedMeetingNotes = nil
         meetingNotesSessionID = nil
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func requestDeleteTranscriptSession(_ session: TranscriptSession) {
@@ -438,6 +446,7 @@ struct TranscriptsView: View {
         }
         pendingDeleteSession = nil
         exportErrorMessage = nil
+        copyErrorMessage = nil
     }
 
     private func toggleMeetingNotes(for session: TranscriptSession) {
@@ -455,8 +464,18 @@ struct TranscriptsView: View {
     }
 
     private func copyMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
+        copyTranscriptTextToPasteboard(meetingNotesGenerator.markdown(for: notes, session: session, language: appState.settings.interfaceLanguage))
+    }
+
+    private func copyTranscriptTextToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(meetingNotesGenerator.markdown(for: notes, session: session, language: appState.settings.interfaceLanguage), forType: .string)
+        let didCopy = NSPasteboard.general.setString(text, forType: .string)
+        guard didCopy else {
+            copyErrorMessage = appState.t(.copyFailed)
+            exportErrorMessage = nil
+            return
+        }
+        copyErrorMessage = nil
     }
 
     private func exportMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
@@ -465,6 +484,25 @@ struct TranscriptsView: View {
         exportContentType = contentType
         exportFileName = meetingNotesGenerator.defaultFileName(session: session)
         exportErrorMessage = nil
+        copyErrorMessage = nil
+    }
+
+    private var transcriptDetailFeedback: some View {
+        Group {
+            if let copyErrorMessage {
+                Text(copyErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let exportErrorMessage {
+                Text(appState.t(.exportFailed, exportErrorMessage))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
 
     private func meetingNotesPanel(notes: MeetingNotes, session: TranscriptSession) -> some View {
