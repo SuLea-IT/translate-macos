@@ -68,7 +68,7 @@ struct SettingsView: View {
                         Label(appState.t(.caption), systemImage: "captions.bubble")
                     }
                     NavigationLink(value: NavigationItem.glossary) {
-                        Label(appState.t(.terminologyGlossary), systemImage: "text.book.closed")
+                        glossarySidebarLabel
                     }
                     NavigationLink(value: NavigationItem.provider) {
                         Label(appState.t(.apiProvider), systemImage: "network")
@@ -168,6 +168,30 @@ struct SettingsView: View {
     private var canUseRuntimeToolbarButton: Bool {
         let apiKeyIsEmpty = appState.settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return appState.isRunning || !apiKeyIsEmpty
+    }
+
+    private var glossarySidebarLabel: some View {
+        HStack(spacing: 8) {
+            Label(appState.t(.terminologyGlossary), systemImage: "text.book.closed")
+            Spacer(minLength: 6)
+            if appState.isImportingGlossary {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel(appState.t(.importingGlossary))
+            } else if !appState.settings.glossaryEntries.isEmpty {
+                Text("\(appState.settings.glossaryEntries.count)")
+                    .font(.caption2.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(Color.secondary.opacity(0.14))
+                    )
+                    .accessibilityLabel("\(appState.settings.glossaryEntries.count)")
+            }
+        }
     }
 
     private var providerForm: some View {
