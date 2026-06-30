@@ -615,7 +615,7 @@ private struct ZIPGlossaryArchive {
         guard !entry.contains("../"), !entry.hasPrefix("/") else {
             throw GlossaryImportError.unsupportedFormat(entry)
         }
-        return try runUnzipData(arguments: ["-p", fileURL.path, entry])
+        return try runUnzipData(arguments: ["-p", fileURL.path, entry], maxOutputBytes: maxEntryBytes)
     }
 
     private func runUnzip(arguments: [String]) throws -> String {
@@ -623,7 +623,7 @@ private struct ZIPGlossaryArchive {
         return String(decoding: output, as: UTF8.self)
     }
 
-    private func runUnzipData(arguments: [String]) throws -> Data {
+    private func runUnzipData(arguments: [String], maxOutputBytes: Int? = nil) throws -> Data {
         try Task.checkCancellation()
         let temporaryDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("LiveBuddyUnzip-\(UUID().uuidString)", isDirectory: true)
@@ -659,12 +659,21 @@ private struct ZIPGlossaryArchive {
         process.waitUntilExit()
         try Task.checkCancellation()
 
-        let output = try Data(contentsOf: stdoutURL)
         if process.terminationStatus != 0 {
             let error = String(decoding: (try? Data(contentsOf: stderrURL)) ?? Data(), as: UTF8.self)
             throw GlossaryImportError.parseFailed(error.isEmpty ? "unzip failed" : error)
         }
+        let outputSize = try fileSize(at: stdoutURL)
+        if let maxOutputBytes, outputSize > maxOutputBytes {
+            throw GlossaryImportError.fileTooLarge
+        }
+        let output = try Data(contentsOf: stdoutURL)
         return output
+    }
+
+    private func fileSize(at url: URL) throws -> Int {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        return (attributes[.size] as? NSNumber)?.intValue ?? 0
     }
 }
 

@@ -36,7 +36,7 @@ checks = [
     ("parseZIP", r"private func parseZIP\([\s\S]*?\) throws -> GlossaryImportResult \{(?P<body>[\s\S]*?)\n    \}\n\n    private func buildResult"),
     ("buildResult", r"private func buildResult\([\s\S]*?\) throws -> GlossaryImportResult \{(?P<body>[\s\S]*?)\n    \}\n\n    private func looksLikeXML"),
     ("CSVRowParser.parse", r"func parse\(_ text: String\) throws -> \[\[String\]\] \{(?P<body>[\s\S]*?)\n    \}\n\n    private func consumeUnquoted"),
-    ("ZIPGlossaryArchive.runUnzipData", r"private func runUnzipData\(arguments: \[String\]\) throws -> Data \{(?P<body>[\s\S]*?)\n    \}\n\}")
+    ("ZIPGlossaryArchive.runUnzipData", r"private func runUnzipData\(arguments: \[String\], maxOutputBytes: Int\? = nil\) throws -> Data \{(?P<body>[\s\S]*?)\n    \}\n\n    private func fileSize")
 ]
 for name, pattern in checks:
     match = re.search(pattern, parser_text)
@@ -47,7 +47,7 @@ for name, pattern in checks:
     if "Task.checkCancellation()" not in body:
         errors.append(f"{name} must call Task.checkCancellation() during potentially long work")
 
-run_unzip_match = re.search(r"private func runUnzipData\(arguments: \[String\]\) throws -> Data \{(?P<body>[\s\S]*?)\n    \}\n\}", parser_text)
+run_unzip_match = re.search(r"private func runUnzipData\(arguments: \[String\], maxOutputBytes: Int\? = nil\) throws -> Data \{(?P<body>[\s\S]*?)\n    \}\n\n    private func fileSize", parser_text)
 if run_unzip_match:
     body = run_unzip_match.group("body")
     for token in ["while process.isRunning", "process.terminate()", "throw CancellationError()", "Thread.sleep"]:
