@@ -367,7 +367,7 @@ struct TranscriptsView: View {
     }
 
     private func exportAllTranscriptsFromUI() {
-        let archiveText = transcriptArchiveExporter.export(sessions: appState.transcriptSessions, mode: viewMode)
+        let archiveText = transcriptArchiveExporter.export(sessions: appState.transcriptSessions, mode: .both)
         let contentType = UTType(filenameExtension: "md") ?? .plainText
         exportDocument = TranscriptExportDocument(text: archiveText, contentType: contentType)
         exportContentType = contentType
