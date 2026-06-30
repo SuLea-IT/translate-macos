@@ -40,19 +40,21 @@ else:
         "let replayChunks = pendingUsageResumeReplayChunks",
         "pendingUsageResumeReplayChunks.removeAll",
         "usageEngine.markResumed(now: Date())",
-        "usageEngine.markReplaySent(replayChunks)",
+        "recordReplayedUsageChunk(chunk)",
     ]:
         if token not in body:
             errors.append(f"resumeFromUsagePause must use and clear the refreshed replay buffer through {token}")
+    if "usageEngine.markReplaySent(replayChunks)" in body or "sentChunkCount += replayChunks.count" in body:
+        errors.append("resumeFromUsagePause must not batch-account replay usage only after the full replay completes")
     connect_idx = body.find("try await newClient.connect()")
-    capture_idx = body.find("let replayChunks = pendingUsageResumeReplayChunks")
     assign_idx = body.find("client = newClient")
+    capture_idx = body.find("let replayChunks = pendingUsageResumeReplayChunks")
     mark_resumed_idx = body.find("usageEngine.markResumed(now: Date())")
     loop_idx = body.find("for chunk in replayChunks")
-    mark_sent_idx = body.find("usageEngine.markReplaySent(replayChunks)")
-    if min(connect_idx, capture_idx, assign_idx, mark_resumed_idx, loop_idx, mark_sent_idx) != -1:
-        if not (connect_idx < assign_idx < capture_idx < mark_resumed_idx < loop_idx < mark_sent_idx):
-            errors.append("resumeFromUsagePause must connect, publish client, capture latest replay, mark active, send replay, then account replay")
+    record_idx = body.find("recordReplayedUsageChunk(chunk)", loop_idx)
+    if min(connect_idx, capture_idx, assign_idx, mark_resumed_idx, loop_idx, record_idx) != -1:
+        if not (connect_idx < assign_idx < capture_idx < mark_resumed_idx < loop_idx < record_idx):
+            errors.append("resumeFromUsagePause must connect, publish client, capture latest replay, mark active, send replay, then incrementally account replay")
 
 for name, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func stop"),

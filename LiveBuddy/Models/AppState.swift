@@ -1552,6 +1552,13 @@ final class AppState: ObservableObject {
     }
 
     private func resumeFromUsagePause(generation: UUID) async {
+        var replayUsageLedgerNeedsSave = false
+        defer {
+            if replayUsageLedgerNeedsSave {
+                saveUsageLedger()
+            }
+        }
+
         guard usageResumeGeneration == generation else { return }
         guard shouldContinueRuntimeConnection() else {
             if usageResumeGeneration == generation {
@@ -1588,6 +1595,8 @@ final class AppState: ObservableObject {
                     return
                 }
                 await newClient.sendAudio(chunk.data)
+                recordReplayedUsageChunk(chunk)
+                replayUsageLedgerNeedsSave = true
             }
             guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else {
                 discardAsyncClient(newClient)
@@ -1597,10 +1606,6 @@ final class AppState: ObservableObject {
                 }
                 return
             }
-            sentChunkCount += replayChunks.count
-            usageEngine.markReplaySent(replayChunks)
-            usageSnapshot = usageEngine.snapshot
-            saveUsageLedger()
             updateStatus(runningUsageStatusMessage(), level: .running, log: true)
         } catch {
             newClient.close()
@@ -1623,6 +1628,12 @@ final class AppState: ObservableObject {
             pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
             usageResumeTask = nil
         }
+    }
+
+    private func recordReplayedUsageChunk(_ chunk: BufferedAudioChunk) {
+        sentChunkCount += 1
+        usageEngine.markReplaySent([chunk])
+        usageSnapshot = usageEngine.snapshot
     }
 
     private func runningUsageStatusMessage() -> String {
