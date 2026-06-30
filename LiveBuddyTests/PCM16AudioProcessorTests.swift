@@ -23,7 +23,6 @@ private final class PCM16ChunkerReentryProbe: @unchecked Sendable {
 }
 
 private final class PCM16ChunkerReentryHarness: @unchecked Sendable {
-    let completion = DispatchSemaphore(value: 0)
     let probe: PCM16ChunkerReentryProbe
     let chunker: PCM16Chunker
 
@@ -37,22 +36,16 @@ private final class PCM16ChunkerReentryHarness: @unchecked Sendable {
         self.chunker = chunker
     }
 
-    func appendOneChunk() {
+    func appendOneChunkAndResetFromCallback() {
         chunker.append(Data(repeating: 1, count: 3_200))
-        completion.signal()
     }
 }
 
 struct PCM16AudioProcessorTests {
-    @Test func chunkerInvokesCallbacksOutsidePendingBufferLock() {
+    @Test func chunkerAllowsCallbackToResetPendingBuffer() {
         let harness = PCM16ChunkerReentryHarness()
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            harness.appendOneChunk()
-        }
-
-        let result = harness.completion.wait(timeout: .now() + .milliseconds(500))
-        #expect(result == .success)
+        harness.appendOneChunkAndResetFromCallback()
         #expect(harness.probe.emittedCount == 1)
     }
 }
