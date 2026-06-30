@@ -41,6 +41,27 @@ struct MeetingNotesTests {
         #expect(markdown.contains("## Timeline"))
     }
 
+    @Test func markdownUsesSelectedInterfaceLanguageForHeadingsAndEmptyText() {
+        let session = sampleSession()
+        let notes = MeetingNotes(
+            summary: [MeetingNoteBullet(timestamp: session.startedAt, offset: 0, text: "发布前检查术语导入。")],
+            keyPoints: [],
+            actionItems: [],
+            timeline: []
+        )
+
+        let markdown = MeetingNotesGenerator().markdown(for: notes, session: session, language: .simplifiedChinese)
+
+        #expect(markdown.contains("# 会议纪要"))
+        #expect(markdown.contains("## 摘要"))
+        #expect(markdown.contains("## 关键点"))
+        #expect(markdown.contains("## 待办事项"))
+        #expect(markdown.contains("- 未发现待办事项"))
+        #expect(markdown.contains("# Meeting Notes") == false)
+        #expect(markdown.contains("## Summary") == false)
+        #expect(markdown.contains("No action items found") == false)
+    }
+
     @Test func emptyTranscriptReturnsEmptyNotes() {
         let session = TranscriptSession(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,

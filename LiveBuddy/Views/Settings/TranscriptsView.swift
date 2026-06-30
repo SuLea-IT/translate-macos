@@ -442,12 +442,12 @@ struct TranscriptsView: View {
 
     private func copyMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(meetingNotesGenerator.markdown(for: notes, session: session), forType: .string)
+        NSPasteboard.general.setString(meetingNotesGenerator.markdown(for: notes, session: session, language: appState.settings.interfaceLanguage), forType: .string)
     }
 
     private func exportMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
         let contentType = UTType(filenameExtension: "md") ?? .plainText
-        exportDocument = TranscriptExportDocument(text: meetingNotesGenerator.markdown(for: notes, session: session), contentType: contentType)
+        exportDocument = TranscriptExportDocument(text: meetingNotesGenerator.markdown(for: notes, session: session, language: appState.settings.interfaceLanguage), contentType: contentType)
         exportContentType = contentType
         exportFileName = meetingNotesGenerator.defaultFileName(session: session)
         exportErrorMessage = nil

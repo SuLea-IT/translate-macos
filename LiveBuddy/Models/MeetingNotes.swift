@@ -54,26 +54,26 @@ struct MeetingNotesGenerator {
         return MeetingNotes(summary: summary, keyPoints: keyPoints, actionItems: actionItems, timeline: timeline)
     }
 
-    func markdown(for notes: MeetingNotes, session: TranscriptSession) -> String {
+    func markdown(for notes: MeetingNotes, session: TranscriptSession, language: InterfaceLanguage = .english) -> String {
         let sections: [String] = [
-            "# Meeting Notes",
+            "# \(language.localized(.meetingNotes))",
             "",
-            "- Started: \(MeetingNotesFormatter.sessionDate(session.startedAt))",
-            "- Source: \(session.audioSource)",
-            "- Target Language: \(session.targetLanguage)",
-            "- Duration: \(session.formattedDuration)",
+            "- \(language.localized(.meetingNotesStarted)): \(MeetingNotesFormatter.sessionDate(session.startedAt))",
+            "- \(language.localized(.meetingNotesSource)): \(session.audioSource)",
+            "- \(language.localized(.meetingNotesTargetLanguage)): \(session.targetLanguage)",
+            "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration)",
             "",
-            "## Summary",
-            bulletList(notes.summary, includeTime: false),
+            "## \(language.localized(.meetingSummary))",
+            bulletList(notes.summary, includeTime: false, emptyText: language.localized(.noMeetingNotesContent)),
             "",
-            "## Key Points",
-            bulletList(notes.keyPoints, includeTime: false),
+            "## \(language.localized(.meetingKeyPoints))",
+            bulletList(notes.keyPoints, includeTime: false, emptyText: language.localized(.noMeetingNotesContent)),
             "",
-            "## Action Items",
-            bulletList(notes.actionItems, includeTime: true, emptyText: "No action items found."),
+            "## \(language.localized(.meetingActionItems))",
+            bulletList(notes.actionItems, includeTime: true, emptyText: language.localized(.noActionItemsFound)),
             "",
-            "## Timeline",
-            bulletList(notes.timeline, includeTime: true),
+            "## \(language.localized(.meetingTimeline))",
+            bulletList(notes.timeline, includeTime: true, emptyText: language.localized(.noMeetingNotesContent)),
             ""
         ]
         return sections.joined(separator: "\n")
@@ -208,7 +208,7 @@ struct MeetingNotesGenerator {
         tokens.append(token)
     }
 
-    private func bulletList(_ bullets: [MeetingNoteBullet], includeTime: Bool, emptyText: String = "No content.") -> String {
+    private func bulletList(_ bullets: [MeetingNoteBullet], includeTime: Bool, emptyText: String) -> String {
         guard !bullets.isEmpty else { return "- \(emptyText)" }
         return bullets.map { bullet in
             if includeTime {
