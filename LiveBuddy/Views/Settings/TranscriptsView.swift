@@ -398,6 +398,7 @@ struct TranscriptsView: View {
         isShowingDeleteTranscriptConfirmation = false
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func refreshMeetingNotesForCurrentMode() {
