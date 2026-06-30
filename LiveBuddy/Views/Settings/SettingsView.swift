@@ -504,6 +504,10 @@ struct SettingsView: View {
                 glossaryExportErrorMessage = nil
             case .failure(let error):
                 glossaryExportDocument = nil
+                if isUserCancelledFileExport(error) {
+                    glossaryExportErrorMessage = nil
+                    return
+                }
                 glossaryExportErrorMessage = error.localizedDescription
             }
         }
@@ -1001,6 +1005,11 @@ struct SettingsView: View {
                 logCopyErrorMessage = nil
             case .failure(let error):
                 logExportDocument = nil
+                if isUserCancelledFileExport(error) {
+                    logExportErrorMessage = nil
+                    logCopyErrorMessage = nil
+                    return
+                }
                 logExportErrorMessage = error.localizedDescription
                 logCopyErrorMessage = nil
             }

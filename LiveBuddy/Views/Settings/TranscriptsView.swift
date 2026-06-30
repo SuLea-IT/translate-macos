@@ -48,6 +48,11 @@ struct TranscriptsView: View {
                 exportErrorMessage = nil
             case .failure(let error):
                 exportDocument = nil
+                if isUserCancelledFileExport(error) {
+                    exportErrorMessage = nil
+                    copyErrorMessage = nil
+                    return
+                }
                 exportErrorMessage = error.localizedDescription
             }
         }
