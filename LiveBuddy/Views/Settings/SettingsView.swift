@@ -796,6 +796,7 @@ struct SettingsView: View {
 
     private func importSelectedGlossarySource() {
         glossaryImportInputMessage = ""
+        appState.clearGlossaryImportFeedback()
         let source = selectedGlossaryImportSource
         switch source.kind {
         case .builtIn(let url):
@@ -811,6 +812,7 @@ struct SettingsView: View {
 
     private func handleGlossaryFileImporterResult(_ result: Result<[URL], Error>) {
         glossaryImportInputMessage = ""
+        appState.clearGlossaryImportFeedback()
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }

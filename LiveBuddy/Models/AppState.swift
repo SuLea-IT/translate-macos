@@ -508,8 +508,13 @@ final class AppState: ObservableObject {
         updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
     }
 
+    func clearGlossaryImportFeedback() {
+        glossaryImportMessage = ""
+    }
+
     func startGlossaryImport(from url: URL, sourceName: String, importLimit: Int) {
         guard glossaryImportTask == nil else { return }
+        clearGlossaryImportFeedback()
         let generation = UUID()
         glossaryImportGeneration = generation
         glossaryImportTask = Task { @MainActor [weak self] in
@@ -524,6 +529,7 @@ final class AppState: ObservableObject {
 
     func startGlossaryImportFromLocalFile(url: URL, sourceName: String, importLimit: Int) {
         guard glossaryImportTask == nil else { return }
+        clearGlossaryImportFeedback()
         let generation = UUID()
         glossaryImportGeneration = generation
         glossaryImportTask = Task { @MainActor [weak self] in
@@ -548,6 +554,7 @@ final class AppState: ObservableObject {
         glossaryImportTask = nil
         isImportingGlossary = false
         glossaryImportProgress = nil
+        clearGlossaryImportFeedback()
     }
 
     func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
