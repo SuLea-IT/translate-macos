@@ -77,16 +77,16 @@ final class AppState: ObservableObject {
 
     var sourceLanguageDisplayText: String {
         if let sourceLanguageCode = settings.sourceLanguageCode, !sourceLanguageCode.isEmpty {
-            return TranslationLanguage.name(for: sourceLanguageCode)
+            return TranslationLanguage.name(for: sourceLanguageCode, language: settings.interfaceLanguage)
         }
         if let detectedSourceLanguageCode, !detectedSourceLanguageCode.isEmpty {
-            return settings.interfaceLanguage.localized(.detectedSourceLanguage, arguments: [TranslationLanguage.name(for: detectedSourceLanguageCode)])
+            return settings.interfaceLanguage.localized(.detectedSourceLanguage, arguments: [TranslationLanguage.name(for: detectedSourceLanguageCode, language: settings.interfaceLanguage)])
         }
         return settings.interfaceLanguage.localized(.autoDetectLanguage)
     }
 
     var languagePairDisplayText: String {
-        "\(sourceLanguageDisplayText) → \(TranslationLanguage.name(for: settings.targetLanguageCode))"
+        "\(sourceLanguageDisplayText) → \(TranslationLanguage.name(for: settings.targetLanguageCode, language: settings.interfaceLanguage))"
     }
 
 
@@ -1932,7 +1932,7 @@ final class AppState: ObservableObject {
             id: UUID(),
             startedAt: Date(),
             endedAt: nil,
-            targetLanguage: TranslationLanguage.name(for: settings.targetLanguageCode),
+            targetLanguage: TranslationLanguage.name(for: settings.targetLanguageCode, language: settings.interfaceLanguage),
             audioSource: settings.audioSource.title,
             lines: []
         )

@@ -77,6 +77,17 @@ struct InterfaceLanguageTests {
         #expect(newSettings.requiresSessionRestart(comparedTo: oldSettings) == false)
     }
 
+    @Test func localizesTranslationLanguageNamesForInterfaceLanguage() {
+        let simplifiedChinese = Locale(identifier: InterfaceLanguage.simplifiedChinese.localeIdentifier)
+        let english = Locale(identifier: InterfaceLanguage.english.localeIdentifier)
+
+        #expect(TranslationLanguage.name(for: "en", language: .simplifiedChinese) == simplifiedChinese.localizedString(forLanguageCode: "en"))
+        #expect(TranslationLanguage.name(for: "ja", language: .simplifiedChinese) == simplifiedChinese.localizedString(forLanguageCode: "ja"))
+        #expect(TranslationLanguage.name(for: "en", language: .simplifiedChinese) != TranslationLanguage.name(for: "en"))
+        #expect(TranslationLanguage.name(for: "vi", language: .english) == english.localizedString(forLanguageCode: "vi"))
+        #expect(TranslationLanguage.name(for: "not-a-language", language: .simplifiedChinese) == "not-a-language")
+    }
+
     @Test func globalShortcutsDefaultToEnabledAndDoNotRestartTranslationSession() {
         let oldSettings = AppSettings()
         var newSettings = oldSettings

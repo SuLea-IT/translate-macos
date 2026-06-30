@@ -100,13 +100,13 @@ struct MenuBarView: View {
                     Picker(appState.t(.translateFrom), selection: appState.binding(\.sourceLanguageCode)) {
                         Text(appState.t(.autoDetectLanguage)).tag(nil as String?)
                         ForEach(TranslationLanguage.all) { language in
-                            Text(language.name).tag(language.id as String?)
+                            Text(language.localizedName(language: appState.settings.interfaceLanguage)).tag(language.id as String?)
                         }
                     }
 
                     Picker(appState.t(.translateTo), selection: appState.binding(\.targetLanguageCode)) {
                         ForEach(TranslationLanguage.all) { language in
-                            Text(language.name).tag(language.id)
+                            Text(language.localizedName(language: appState.settings.interfaceLanguage)).tag(language.id)
                         }
                     }
 

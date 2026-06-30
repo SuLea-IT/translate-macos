@@ -31,6 +31,16 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable {
 struct TranslationLanguage: Identifiable, Hashable {
     let id: String
     let name: String
+
+    func localizedName(language: InterfaceLanguage) -> String {
+        if let localized = Locale(identifier: language.localeIdentifier)
+            .localizedString(forLanguageCode: id)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !localized.isEmpty {
+            return localized
+        }
+        return name
+    }
 }
 
 extension TranslationLanguage {
@@ -136,6 +146,10 @@ extension TranslationLanguage {
 
     static func name(for code: String) -> String {
         all.first { $0.id == code }?.name ?? code
+    }
+
+    static func name(for code: String, language: InterfaceLanguage) -> String {
+        all.first { $0.id == code }?.localizedName(language: language) ?? code
     }
 }
 
