@@ -63,6 +63,19 @@ struct TranscriptExportTests {
         #expect(markdown.contains("第二句"))
     }
 
+    @Test func markdownUsesSelectedInterfaceLanguageForMetadata() {
+        let markdown = TranscriptExporter().export(session: sampleSession(), mode: .both, format: .markdown, language: .simplifiedChinese)
+
+        #expect(markdown.contains("# 转录记录"))
+        #expect(markdown.contains("- 来源: Screen audio"))
+        #expect(markdown.contains("- 目标语言: English"))
+        #expect(markdown.contains("- 时长: 00:10"))
+        #expect(markdown.contains("- 模式: 双语"))
+        #expect(markdown.contains("# Transcript") == false)
+        #expect(markdown.contains("- Source:") == false)
+        #expect(markdown.contains("- Mode:") == false)
+    }
+
     @Test func plainTextDoesNotIncludeSubtitleTiming() {
         let text = TranscriptExporter().export(session: sampleSession(), mode: .translated, format: .plainText)
 
@@ -112,6 +125,19 @@ struct TranscriptExportTests {
         #expect(archive.contains("- Target Language: English"))
         #expect(archive.contains("你好 世界\nHello world"))
         #expect(archive.contains("第二个会话\nSecond session"))
+    }
+
+    @Test func archiveExporterUsesSelectedInterfaceLanguageForMetadata() {
+        let archive = TranscriptArchiveExporter().export(sessions: [sampleSession()], mode: .both, language: .simplifiedChinese)
+
+        #expect(archive.hasPrefix("# 转录归档"))
+        #expect(archive.contains("- 会话数: 1"))
+        #expect(archive.contains("- 模式: 双语"))
+        #expect(archive.contains("# 转录记录"))
+        #expect(archive.contains("- 来源: Screen audio"))
+        #expect(archive.contains("# LiveBuddy Transcript Archive") == false)
+        #expect(archive.contains("- Sessions:") == false)
+        #expect(archive.contains("- Mode:") == false)
     }
 
     @Test func archiveExporterDefaultFileNameIsExtensionSafe() {

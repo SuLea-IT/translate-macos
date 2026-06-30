@@ -77,14 +77,14 @@ struct TranscriptExporter {
         }
     }
 
-    func export(session: TranscriptSession, mode: TranscriptViewMode, format: TranscriptExportFormat) -> String {
+    func export(session: TranscriptSession, mode: TranscriptViewMode, format: TranscriptExportFormat, language: InterfaceLanguage = .english) -> String {
         switch format {
         case .srt:
             composeSRT(cues: cues(for: session, mode: mode))
         case .webVTT:
             composeWebVTT(cues: cues(for: session, mode: mode))
         case .markdown:
-            composeMarkdown(session: session, mode: mode)
+            composeMarkdown(session: session, mode: mode, language: language)
         case .plainText:
             composePlainText(session: session, mode: mode)
         }
@@ -124,15 +124,15 @@ struct TranscriptExporter {
         return body.isEmpty ? "WEBVTT\n" : "WEBVTT\n\n\(body)\n"
     }
 
-    private func composeMarkdown(session: TranscriptSession, mode: TranscriptViewMode) -> String {
+    private func composeMarkdown(session: TranscriptSession, mode: TranscriptViewMode, language: InterfaceLanguage) -> String {
         var sections = [
-            "# Transcript",
+            "# \(language.localized(.transcriptExportTitle))",
             "",
-            "- Started: \(formattedSessionDate(session.startedAt))",
-            "- Source: \(session.audioSource)",
-            "- Target Language: \(session.targetLanguage)",
-            "- Duration: \(session.formattedDuration)",
-            "- Mode: \(mode.rawValue)",
+            "- \(language.localized(.meetingNotesStarted)): \(formattedSessionDate(session.startedAt))",
+            "- \(language.localized(.meetingNotesSource)): \(session.audioSource)",
+            "- \(language.localized(.meetingNotesTargetLanguage)): \(session.targetLanguage)",
+            "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration)",
+            "- \(language.localized(.transcriptExportMode)): \(mode.localizedTitle(language: language))",
             "",
             "---",
             ""
@@ -244,12 +244,12 @@ struct TranscriptExporter {
 struct TranscriptArchiveExporter {
     private let transcriptExporter = TranscriptExporter()
 
-    func export(sessions: [TranscriptSession], mode: TranscriptViewMode) -> String {
+    func export(sessions: [TranscriptSession], mode: TranscriptViewMode, language: InterfaceLanguage = .english) -> String {
         var sections = [
-            "# LiveBuddy Transcript Archive",
+            "# \(language.localized(.transcriptArchiveTitle))",
             "",
-            "- Sessions: \(sessions.count)",
-            "- Mode: \(mode.rawValue)",
+            "- \(language.localized(.transcriptSessionsCount, arguments: [sessions.count]))",
+            "- \(language.localized(.transcriptExportMode)): \(mode.localizedTitle(language: language))",
             "",
             "---",
             ""
@@ -258,7 +258,7 @@ struct TranscriptArchiveExporter {
         for (index, session) in sessions.enumerated() {
             sections.append("## \(index + 1). \(session.displayTitle)")
             sections.append("")
-            sections.append(transcriptExporter.export(session: session, mode: mode, format: .markdown).trimmingCharacters(in: .whitespacesAndNewlines))
+            sections.append(transcriptExporter.export(session: session, mode: mode, format: .markdown, language: language).trimmingCharacters(in: .whitespacesAndNewlines))
             sections.append("")
             sections.append("---")
             sections.append("")

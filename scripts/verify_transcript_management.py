@@ -194,8 +194,8 @@ for token in [
 
 if "struct TranscriptArchiveExporter" not in export_text:
     errors.append("TranscriptExport.swift must provide TranscriptArchiveExporter for bulk backup")
-if "LiveBuddy Transcript Archive" not in export_text:
-    errors.append("Bulk transcript export must use a stable Markdown archive header")
+if "language.localized(.transcriptArchiveTitle)" not in export_text:
+    errors.append("Bulk transcript export must use the localized Markdown archive header")
 if "func defaultFileName(date:" not in export_text:
     errors.append("Bulk transcript export must provide a deterministic default file name")
 

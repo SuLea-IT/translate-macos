@@ -380,7 +380,7 @@ struct TranscriptsView: View {
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
-        let text = transcriptExporter.export(session: session, mode: viewMode, format: format)
+        let text = transcriptExporter.export(session: session, mode: viewMode, format: format, language: appState.settings.interfaceLanguage)
         exportDocument = TranscriptExportDocument(text: text, contentType: format.contentType)
         exportContentType = format.contentType
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
@@ -388,7 +388,7 @@ struct TranscriptsView: View {
     }
 
     private func exportAllTranscriptsFromUI() {
-        let archiveText = transcriptArchiveExporter.export(sessions: appState.transcriptSessions, mode: .both)
+        let archiveText = transcriptArchiveExporter.export(sessions: appState.transcriptSessions, mode: .both, language: appState.settings.interfaceLanguage)
         let contentType = UTType(filenameExtension: "md") ?? .plainText
         exportDocument = TranscriptExportDocument(text: archiveText, contentType: contentType)
         exportContentType = contentType

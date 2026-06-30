@@ -254,6 +254,10 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case exportAsMarkdown
     case exportAsPlainText
     case exportFailed
+    case transcriptExportTitle
+    case transcriptArchiveTitle
+    case transcriptSessionsCount
+    case transcriptExportMode
     case meetingNotes
     case generateMeetingNotes
     case hideMeetingNotes
@@ -573,6 +577,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .exportAsMarkdown: "Export as Markdown",
         .exportAsPlainText: "Export as TXT",
         .exportFailed: "Export failed: %@",
+        .transcriptExportTitle: "Transcript",
+        .transcriptArchiveTitle: "LiveBuddy Transcript Archive",
+        .transcriptSessionsCount: "Sessions: %d",
+        .transcriptExportMode: "Mode",
         .meetingNotes: "Meeting Notes",
         .generateMeetingNotes: "Generate Meeting Notes",
         .hideMeetingNotes: "Hide Meeting Notes",
@@ -860,6 +868,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "导出为 Markdown",
             .exportAsPlainText: "导出为 TXT",
             .exportFailed: "导出失败：%@",
+            .transcriptExportTitle: "转录记录",
+            .transcriptArchiveTitle: "转录归档",
+            .transcriptSessionsCount: "会话数: %d",
+            .transcriptExportMode: "模式",
             .meetingNotes: "会议纪要",
             .generateMeetingNotes: "生成会议纪要",
             .hideMeetingNotes: "隐藏会议纪要",
@@ -1144,6 +1156,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Markdown として書き出し",
             .exportAsPlainText: "TXT として書き出し",
             .exportFailed: "書き出しに失敗しました: %@",
+            .transcriptExportTitle: "文字起こし",
+            .transcriptArchiveTitle: "文字起こしアーカイブ",
+            .transcriptSessionsCount: "セッション数: %d",
+            .transcriptExportMode: "モード",
             .meetingNotes: "会議メモ",
             .generateMeetingNotes: "会議メモを生成",
             .hideMeetingNotes: "会議メモを隠す",
@@ -1426,6 +1442,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Markdown으로 내보내기",
             .exportAsPlainText: "TXT로 내보내기",
             .exportFailed: "내보내기 실패: %@",
+            .transcriptExportTitle: "전사 기록",
+            .transcriptArchiveTitle: "전사 아카이브",
+            .transcriptSessionsCount: "세션 수: %d",
+            .transcriptExportMode: "모드",
             .meetingNotes: "회의 메모",
             .generateMeetingNotes: "회의 메모 생성",
             .hideMeetingNotes: "회의 메모 숨기기",
@@ -1707,6 +1727,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Exportar como Markdown",
             .exportAsPlainText: "Exportar como TXT",
             .exportFailed: "Error al exportar: %@",
+            .transcriptExportTitle: "Transcripción",
+            .transcriptArchiveTitle: "Archivo de transcripciones",
+            .transcriptSessionsCount: "Sesiones: %d",
+            .transcriptExportMode: "Modo",
             .meetingNotes: "Notas de reunión",
             .generateMeetingNotes: "Generar notas de reunión",
             .hideMeetingNotes: "Ocultar notas de reunión",
@@ -1988,6 +2012,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Exporter en Markdown",
             .exportAsPlainText: "Exporter en TXT",
             .exportFailed: "Échec de l’exportation : %@",
+            .transcriptExportTitle: "Transcription",
+            .transcriptArchiveTitle: "Archive des transcriptions",
+            .transcriptSessionsCount: "Sessions : %d",
+            .transcriptExportMode: "Mode",
             .meetingNotes: "Notes de réunion",
             .generateMeetingNotes: "Générer les notes",
             .hideMeetingNotes: "Masquer les notes",
@@ -2269,6 +2297,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Als Markdown exportieren",
             .exportAsPlainText: "Als TXT exportieren",
             .exportFailed: "Export fehlgeschlagen: %@",
+            .transcriptExportTitle: "Transkript",
+            .transcriptArchiveTitle: "Transkriptarchiv",
+            .transcriptSessionsCount: "Sitzungen: %d",
+            .transcriptExportMode: "Modus",
             .meetingNotes: "Besprechungsnotizen",
             .generateMeetingNotes: "Besprechungsnotizen erstellen",
             .hideMeetingNotes: "Notizen ausblenden",
@@ -2550,6 +2582,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .exportAsMarkdown: "Xuất dạng Markdown",
             .exportAsPlainText: "Xuất dạng TXT",
             .exportFailed: "Xuất thất bại: %@",
+            .transcriptExportTitle: "Bản ghi",
+            .transcriptArchiveTitle: "Kho lưu bản ghi",
+            .transcriptSessionsCount: "Số phiên: %d",
+            .transcriptExportMode: "Chế độ",
             .meetingNotes: "Ghi chú cuộc họp",
             .generateMeetingNotes: "Tạo ghi chú cuộc họp",
             .hideMeetingNotes: "Ẩn ghi chú cuộc họp",
