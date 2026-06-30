@@ -253,8 +253,9 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func receiveLoop() {
-        webSocket?.receive { [weak self] result in
-            guard let self else { return }
+        guard !isClosed, let webSocket else { return }
+        webSocket.receive { [weak self, weak webSocket] result in
+            guard let self, let webSocket, !self.isClosed, self.webSocket === webSocket else { return }
             switch result {
             case .success(let message):
                 do {
@@ -263,6 +264,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
                 } catch {
                     self.report(.parseFailed(error.localizedDescription))
                 }
+                guard !self.isClosed, self.webSocket === webSocket else { return }
                 self.receiveLoop()
             case .failure(let error):
                 self.report(.disconnected(error.localizedDescription))
