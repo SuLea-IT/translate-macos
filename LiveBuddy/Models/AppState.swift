@@ -486,11 +486,17 @@ final class AppState: ObservableObject {
         do {
             try apiKeyStore.save(apiKey)
             pendingAPIKeyForKeychain = nil
+            clearResolvedStorageDiagnostic(.settingsSaveFailed)
         } catch {
             let issue = DiagnosticClassifier.storage(.settingsSaveFailed, underlyingMessage: error.localizedDescription)
             setDiagnosticIssue(issue)
             updateStatus(settings.interfaceLanguage.localized(issue.titleKey), level: .error, log: true)
         }
+    }
+
+    private func clearResolvedStorageDiagnostic(_ code: DiagnosticCode) {
+        guard currentDiagnosticIssue?.code == code else { return }
+        setDiagnosticIssue(nil)
     }
 
     func updateSetting<Value>(_ keyPath: WritableKeyPath<AppSettings, Value>, to value: Value) {
@@ -1748,6 +1754,7 @@ final class AppState: ObservableObject {
             try FileManager.default.createDirectory(at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(settings)
             try data.write(to: settingsURL, options: [.atomic])
+            clearResolvedStorageDiagnostic(.settingsSaveFailed)
         } catch {
             let issue = DiagnosticClassifier.storage(.settingsSaveFailed, underlyingMessage: error.localizedDescription)
             setDiagnosticIssue(issue)
@@ -2009,6 +2016,7 @@ final class AppState: ObservableObject {
             try FileManager.default.createDirectory(at: transcriptsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(transcriptSessions)
             try data.write(to: transcriptsURL, options: [.atomic])
+            clearResolvedStorageDiagnostic(.transcriptSaveFailed)
         } catch {
             setDiagnosticIssue(DiagnosticClassifier.storage(.transcriptSaveFailed, underlyingMessage: error.localizedDescription))
             appendLog("Cannot save transcripts: \(error.localizedDescription)", level: .error)
