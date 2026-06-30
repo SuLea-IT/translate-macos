@@ -228,6 +228,9 @@ struct MenuBarView: View {
             appState.refreshAvailableMicrophones()
             appState.openWindowAction = openWindow
         }
+        .onDisappear {
+            appState.openWindowAction = nil
+        }
     }
 
     private var usageCompactView: some View {
