@@ -82,7 +82,7 @@ struct CaptionView: View {
             .foregroundStyle(.white.opacity(0.86))
             .help(appState.isRunning ? appState.t(.pause) : appState.t(.play))
 
-            StatusDot(level: appState.statusLevel)
+            StatusDot(level: appState.statusLevel, interfaceLanguage: appState.settings.interfaceLanguage)
 
             Text(appState.languagePairDisplayText)
                 .font(.caption.weight(.semibold))

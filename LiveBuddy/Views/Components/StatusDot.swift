@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusDot: View {
     let level: LiveStatusLevel
+    let interfaceLanguage: InterfaceLanguage
 
     var body: some View {
         Circle()
@@ -21,10 +22,10 @@ struct StatusDot: View {
 
     private var helpText: String {
         switch level {
-        case .running: "Running"
-        case .connecting: "Connecting"
-        case .error: "Error"
-        case .stopped: "Stopped"
+        case .running: interfaceLanguage.localized(.statusRunning)
+        case .connecting: interfaceLanguage.localized(.statusConnecting)
+        case .error: interfaceLanguage.localized(.statusError)
+        case .stopped: interfaceLanguage.localized(.statusStopped)
         }
     }
 }

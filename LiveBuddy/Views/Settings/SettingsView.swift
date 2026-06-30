@@ -50,7 +50,7 @@ struct SettingsView: View {
                         Text(appState.t(.liveTranslate))
                             .font(.headline)
                         HStack(spacing: 5) {
-                            StatusDot(level: appState.statusLevel)
+                            StatusDot(level: appState.statusLevel, interfaceLanguage: appState.settings.interfaceLanguage)
                             Text(appState.statusMessage)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
