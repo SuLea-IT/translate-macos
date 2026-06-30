@@ -53,8 +53,10 @@ struct SetupChecklistView: View {
         switch appState.setupChecklist.apiKey {
         case .valid:
             return .satisfied
-        case .missing, .invalid, .failed:
+        case .missing, .invalid:
             return .blocked
+        case .failed:
+            return .unknown
         case .unchecked, .checking:
             return .unknown
         }
