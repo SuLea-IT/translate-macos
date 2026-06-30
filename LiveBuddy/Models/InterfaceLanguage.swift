@@ -156,6 +156,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case preflightNoAudioCaptured
     case preflightShowingSubtitleTest
     case preflightSubtitleWindowShown
+    case preflightStopTranslationBeforeDiagnostics
     case testPassed
     case testWarning
     case testFailed
@@ -493,6 +494,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .preflightNoAudioCaptured: "No audio samples were captured",
         .preflightShowingSubtitleTest: "Showing subtitle test",
         .preflightSubtitleWindowShown: "Subtitle window test shown",
+        .preflightStopTranslationBeforeDiagnostics: "Stop translation before running diagnostics",
         .testPassed: "Passed",
         .testWarning: "Needs attention",
         .testFailed: "Failed",
@@ -798,6 +800,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "未采集到音频样本",
             .preflightShowingSubtitleTest: "正在显示字幕测试",
             .preflightSubtitleWindowShown: "已显示字幕窗口测试",
+            .preflightStopTranslationBeforeDiagnostics: "请先停止翻译，再运行诊断",
             .testPassed: "已通过",
             .testWarning: "需要注意",
             .testFailed: "失败",
@@ -1097,6 +1100,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "音声サンプルを取得できませんでした",
             .preflightShowingSubtitleTest: "字幕テストを表示中",
             .preflightSubtitleWindowShown: "字幕ウィンドウのテストを表示しました",
+            .preflightStopTranslationBeforeDiagnostics: "診断を実行する前に翻訳を停止してください",
             .testPassed: "合格",
             .testWarning: "要確認",
             .testFailed: "失敗",
@@ -1394,6 +1398,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "오디오 샘플을 캡처하지 못했습니다",
             .preflightShowingSubtitleTest: "자막 테스트 표시 중",
             .preflightSubtitleWindowShown: "자막 창 테스트가 표시됨",
+            .preflightStopTranslationBeforeDiagnostics: "진단을 실행하기 전에 번역을 중지하세요",
             .testPassed: "통과",
             .testWarning: "확인 필요",
             .testFailed: "실패",
@@ -1690,6 +1695,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "No se capturaron muestras de audio",
             .preflightShowingSubtitleTest: "Mostrando prueba de subtítulos",
             .preflightSubtitleWindowShown: "Prueba de ventana de subtítulos mostrada",
+            .preflightStopTranslationBeforeDiagnostics: "Detén la traducción antes de ejecutar diagnósticos",
             .testPassed: "Aprobado",
             .testWarning: "Revisar",
             .testFailed: "Falló",
@@ -1986,6 +1992,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "Aucun échantillon audio capturé",
             .preflightShowingSubtitleTest: "Affichage du test de sous-titres",
             .preflightSubtitleWindowShown: "Test de la fenêtre de sous-titres affiché",
+            .preflightStopTranslationBeforeDiagnostics: "Arrêtez la traduction avant d’exécuter les diagnostics",
             .testPassed: "Réussi",
             .testWarning: "À vérifier",
             .testFailed: "Échec",
@@ -2282,6 +2289,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "Keine Audiosamples erfasst",
             .preflightShowingSubtitleTest: "Untertiteltest wird angezeigt",
             .preflightSubtitleWindowShown: "Untertitel-Fenstertest angezeigt",
+            .preflightStopTranslationBeforeDiagnostics: "Stoppen Sie die Übersetzung, bevor Sie Diagnosen ausführen",
             .testPassed: "Bestanden",
             .testWarning: "Prüfen",
             .testFailed: "Fehlgeschlagen",
@@ -2578,6 +2586,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightNoAudioCaptured: "Không thu được mẫu âm thanh",
             .preflightShowingSubtitleTest: "Đang hiển thị thử nghiệm phụ đề",
             .preflightSubtitleWindowShown: "Đã hiển thị thử nghiệm cửa sổ phụ đề",
+            .preflightStopTranslationBeforeDiagnostics: "Dừng dịch trước khi chạy chẩn đoán",
             .testPassed: "Đạt",
             .testWarning: "Cần chú ý",
             .testFailed: "Thất bại",

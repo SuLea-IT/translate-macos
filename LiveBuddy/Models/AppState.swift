@@ -804,7 +804,7 @@ final class AppState: ObservableObject {
         guard preflightTestGeneration == generation else { return }
         guard !isRunning else {
             preflightTestReport = PreflightTestReport(steps: [
-                PreflightTestStep(id: .apiKey, state: .failed, message: "Stop translation before running diagnostics")
+                PreflightTestStep(id: .apiKey, state: .failed, message: settings.interfaceLanguage.localized(.preflightStopTranslationBeforeDiagnostics))
             ])
             return
         }
