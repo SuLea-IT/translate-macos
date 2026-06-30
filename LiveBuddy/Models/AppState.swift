@@ -798,6 +798,9 @@ final class AppState: ObservableObject {
     }
 
     func runStartPreflight() async -> SetupPreflightResult {
+        setupChecklistRefreshGeneration = UUID()
+        setupChecklistRefreshTask?.cancel()
+        setupChecklistRefreshTask = nil
         let permissions = await permissionStatusService.refreshStatuses()
         let checklist = SetupChecklistState.derive(
             audioSource: settings.audioSource,
@@ -805,7 +808,6 @@ final class AppState: ObservableObject {
             microphone: permissions.microphone,
             screenRecording: permissions.screenRecording
         )
-        setupChecklistRefreshGeneration = UUID()
         publishSetupChecklist(checklist)
         return SetupPreflightResult.from(checklist)
     }
