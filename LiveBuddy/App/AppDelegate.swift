@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if appState.isProviderConfigured {
             panel.show()
         } else {
-            appState.openSettingsWindow()
+            appState.openProviderSettings()
             appState.showSetupSheet = true
         }
         showCaptionObserver = NotificationCenter.default.addObserver(
@@ -72,7 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if self?.appState?.isProviderConfigured == true {
                     self?.captionPanel?.show()
                 } else {
-                    self?.appState?.openSettingsWindow()
+                    self?.appState?.openProviderSettings()
                     self?.appState?.showSetupSheet = true
                 }
             }

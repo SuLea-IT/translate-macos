@@ -219,7 +219,7 @@ final class AppState: ObservableObject {
             currentUserFacingError = error
             setDiagnosticIssue(DiagnosticClassifier.from(blockingIssue: issue))
             updateStatus(error.map { settings.interfaceLanguage.localized($0.titleKey) } ?? settings.interfaceLanguage.localized(.cannotStart), level: .error, log: true)
-            openSettingsWindow()
+            openProviderSettings()
             showSetupSheet = true
             return
         }
