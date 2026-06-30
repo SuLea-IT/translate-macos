@@ -198,7 +198,7 @@ final class AppState: ObservableObject {
         )
         usageSnapshot = usageEngine.snapshot
         loadTranscriptSessions()
-        appendLog("App ready", level: .info)
+        appendLog(loadedSettings.interfaceLanguage.localized(.logAppReady), level: .info)
         if shouldRewriteSettings {
             saveSettingsImmediately()
         }

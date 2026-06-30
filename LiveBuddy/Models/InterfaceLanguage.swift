@@ -9,6 +9,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case historyAndData
     case transcripts
     case logs
+    case logAppReady
     case backToTranscriptsList
     case stop
     case start
@@ -354,6 +355,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .historyAndData: "History & Data",
         .transcripts: "Transcripts",
         .logs: "Logs",
+        .logAppReady: "App ready",
         .backToTranscriptsList: "Back to transcripts list",
         .stop: "Stop",
         .start: "Start",
@@ -668,6 +670,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "历史与数据",
             .transcripts: "转录记录",
             .logs: "日志",
+            .logAppReady: "应用已就绪",
             .backToTranscriptsList: "返回转录列表",
             .stop: "停止",
             .start: "开始",
@@ -978,6 +981,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "履歴とデータ",
             .transcripts: "文字起こし",
             .logs: "ログ",
+            .logAppReady: "アプリの準備ができました",
             .backToTranscriptsList: "文字起こし一覧に戻る",
             .stop: "停止",
             .start: "開始",
@@ -1288,6 +1292,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "기록 및 데이터",
             .transcripts: "전사 기록",
             .logs: "로그",
+            .logAppReady: "앱 준비 완료",
             .backToTranscriptsList: "전사 목록으로 돌아가기",
             .stop: "중지",
             .start: "시작",
@@ -1598,6 +1603,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "Historial y datos",
             .transcripts: "Transcripciones",
             .logs: "Registros",
+            .logAppReady: "La app está lista",
             .backToTranscriptsList: "Volver a la lista de transcripciones",
             .stop: "Detener",
             .start: "Iniciar",
@@ -1908,6 +1914,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "Historique et données",
             .transcripts: "Transcriptions",
             .logs: "Journaux",
+            .logAppReady: "L’app est prête",
             .backToTranscriptsList: "Retour à la liste des transcriptions",
             .stop: "Arrêter",
             .start: "Démarrer",
@@ -2218,6 +2225,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "Verlauf & Daten",
             .transcripts: "Transkripte",
             .logs: "Protokolle",
+            .logAppReady: "App bereit",
             .backToTranscriptsList: "Zur Transkriptliste zurück",
             .stop: "Stopp",
             .start: "Start",
@@ -2528,6 +2536,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .historyAndData: "Lịch sử & dữ liệu",
             .transcripts: "Bản ghi",
             .logs: "Nhật ký",
+            .logAppReady: "Ứng dụng đã sẵn sàng",
             .backToTranscriptsList: "Quay lại danh sách bản ghi",
             .stop: "Dừng",
             .start: "Bắt đầu",
