@@ -13,6 +13,14 @@ final class AppState: ObservableObject {
     private static let maxPendingOriginalSentences = 120
     private static let maxPendingOriginalSentenceCharacters = 1_000
 
+    private static func audioDevicePropertyAddress() -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+    }
+
     private enum RuntimeControlRequest {
         case toggle
         case start
@@ -1872,11 +1880,8 @@ final class AppState: ObservableObject {
     }
 
     private func startListeningForDeviceChanges() {
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        stopListeningForDeviceChanges()
+        var propertyAddress = Self.audioDevicePropertyAddress()
         
         let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -1884,14 +1889,30 @@ final class AppState: ObservableObject {
             }
         }
         
-        self.propertyListenerBlock = block
-        
-        AudioObjectAddPropertyListenerBlock(
+        let status = AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
             &propertyAddress,
             DispatchQueue.main,
             block
         )
+        guard status == noErr else {
+            appendLog("Microphone device listener failed to start: \(status)", level: .error)
+            return
+        }
+
+        propertyListenerBlock = block
+    }
+
+    private func stopListeningForDeviceChanges() {
+        guard let block = propertyListenerBlock else { return }
+        var propertyAddress = Self.audioDevicePropertyAddress()
+        AudioObjectRemovePropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            DispatchQueue.main,
+            block
+        )
+        propertyListenerBlock = nil
     }
 
     deinit {
@@ -1921,19 +1942,8 @@ final class AppState: ObservableObject {
         client?.close()
         audioPlayer.stop()
         globalShortcutRegistrar.unregisterAll()
-
-        if let block = propertyListenerBlock {
-            var propertyAddress = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDevices,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-            AudioObjectRemovePropertyListenerBlock(
-                AudioObjectID(kAudioObjectSystemObject),
-                &propertyAddress,
-                DispatchQueue.main,
-                block
-            )
+        MainActor.assumeIsolated {
+            stopListeningForDeviceChanges()
         }
     }
 }
