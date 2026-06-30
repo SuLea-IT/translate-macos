@@ -57,12 +57,8 @@ final class GlossaryImportService: @unchecked Sendable {
         }
         try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
 
-        let (temporaryURL, response) = try await download(url: url, progress: progress)
+        let (temporaryURL, _) = try await download(url: url, progress: progress)
         await progress?(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing())
-
-        if let httpResponse = response as? HTTPURLResponse, !(200..<300).contains(httpResponse.statusCode) {
-            throw GlossaryImportError.downloadFailed("HTTP \(httpResponse.statusCode)")
-        }
 
         var downloadedURL: URL? = temporaryURL
         defer {
@@ -99,7 +95,7 @@ final class GlossaryImportService: @unchecked Sendable {
             let (bytes, response) = try await session.bytes(from: url)
             try Task.checkCancellation()
             if let httpResponse = response as? HTTPURLResponse, !(200..<300).contains(httpResponse.statusCode) {
-                return (FileManager.default.temporaryDirectory, httpResponse)
+                throw GlossaryImportError.downloadFailed("HTTP \(httpResponse.statusCode)")
             }
 
             let downloadURL = cacheDirectory.appendingPathComponent("download-\(UUID().uuidString).tmp")
