@@ -10,9 +10,9 @@ enum ProviderHealthStatus: Codable, Equatable {
 
     var blocksStart: Bool {
         switch self {
-        case .missing:
+        case .missing, .invalid:
             true
-        case .unchecked, .checking, .valid, .invalid, .failed:
+        case .unchecked, .checking, .valid, .failed:
             false
         }
     }

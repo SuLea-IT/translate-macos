@@ -41,6 +41,7 @@ struct PermissionChecklistItem: Codable, Equatable {
 
 enum SetupBlockingIssue: String, Codable, CaseIterable, Equatable {
     case apiKeyMissing
+    case apiKeyInvalid
     case microphonePermissionMissing
     case screenRecordingPermissionMissing
 }
@@ -67,8 +68,13 @@ struct SetupChecklistState: Codable, Equatable {
         screenRecording: PermissionStatus
     ) -> SetupChecklistState {
         var issues: [SetupBlockingIssue] = []
-        if apiKey.blocksStart {
+        switch apiKey {
+        case .missing:
             issues.append(.apiKeyMissing)
+        case .invalid:
+            issues.append(.apiKeyInvalid)
+        case .unchecked, .checking, .valid, .failed:
+            break
         }
 
         let needsMicrophone = audioSource == .microphone || audioSource == .both

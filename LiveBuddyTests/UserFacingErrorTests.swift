@@ -18,6 +18,14 @@ struct UserFacingErrorTests {
         #expect(error.titleKey == .apiKeyMissingTitle)
     }
 
+    @Test func invalidApiKeyMapsToProviderRecovery() {
+        let error = UserFacingError.apiKeyInvalid
+
+        #expect(error.kind == .provider)
+        #expect(error.action == .openProviderSettings)
+        #expect(error.titleKey == .diagnosticAPIKeyInvalidTitle)
+    }
+
     @Test func setupBlockingIssueMapsToFirstActionableError() {
         let error = UserFacingError.from(blockingIssues: [.screenRecordingPermissionMissing])
 

@@ -52,6 +52,29 @@ struct SetupChecklistTests {
         #expect(state.blockingIssues.contains(.apiKeyMissing))
     }
 
+    @Test func invalidApiKeyBlocksStartAfterManualVerification() {
+        let state = SetupChecklistState.derive(
+            audioSource: .screen,
+            apiKey: .invalid(message: "API key not valid", checkedAt: Date()),
+            microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+            screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+        )
+
+        #expect(state.blockingIssues.contains(.apiKeyInvalid))
+    }
+
+    @Test func transientProviderFailureDoesNotBlockStart() {
+        let state = SetupChecklistState.derive(
+            audioSource: .screen,
+            apiKey: .failed(message: "Timed out", checkedAt: Date()),
+            microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+            screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+        )
+
+        #expect(state.blockingIssues.contains(.apiKeyInvalid) == false)
+        #expect(state.blockingIssues.contains(.apiKeyMissing) == false)
+    }
+
     @Test func preflightBlocksWhenScreenRecordingIsMissing() {
         let checklist = SetupChecklistState.derive(
             audioSource: .screen,
@@ -63,6 +86,19 @@ struct SetupChecklistTests {
         let result = SetupPreflightResult.from(checklist)
 
         #expect(result == .blocked(.screenRecordingPermissionMissing))
+    }
+
+    @Test func preflightBlocksWhenApiKeyIsKnownInvalid() {
+        let checklist = SetupChecklistState.derive(
+            audioSource: .screen,
+            apiKey: .invalid(message: "API key not valid", checkedAt: Date()),
+            microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+            screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+        )
+
+        let result = SetupPreflightResult.from(checklist)
+
+        #expect(result == .blocked(.apiKeyInvalid))
     }
 
     @Test func preflightAllowsWhenChecklistHasNoBlockingIssues() {

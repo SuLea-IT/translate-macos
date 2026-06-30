@@ -31,6 +31,14 @@ struct UserFacingError: Codable, Equatable {
         action: .openProviderSettings
     )
 
+    static let apiKeyInvalid = UserFacingError(
+        kind: .provider,
+        titleKey: .diagnosticAPIKeyInvalidTitle,
+        messageKey: .diagnosticAPIKeyInvalidMessage,
+        recoveryKey: .diagnosticOpenProviderRecovery,
+        action: .openProviderSettings
+    )
+
     static let microphonePermissionMissing = UserFacingError(
         kind: .permission,
         titleKey: .microphonePermissionRequired,
@@ -53,6 +61,8 @@ struct UserFacingError: Codable, Equatable {
         switch firstIssue {
         case .apiKeyMissing:
             return .apiKeyMissing
+        case .apiKeyInvalid:
+            return .apiKeyInvalid
         case .microphonePermissionMissing:
             return .microphonePermissionMissing
         case .screenRecordingPermissionMissing:

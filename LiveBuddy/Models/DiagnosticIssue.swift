@@ -66,6 +66,8 @@ struct DiagnosticClassifier {
         switch blockingIssue {
         case .apiKeyMissing:
             return issue(.apiKeyMissing, kind: .provider, title: .diagnosticAPIKeyMissingTitle, message: .diagnosticAPIKeyMissingMessage, recovery: .diagnosticOpenProviderRecovery, action: .openProviderSettings)
+        case .apiKeyInvalid:
+            return issue(.apiKeyInvalid, kind: .provider, title: .diagnosticAPIKeyInvalidTitle, message: .diagnosticAPIKeyInvalidMessage, recovery: .diagnosticOpenProviderRecovery, action: .openProviderSettings)
         case .microphonePermissionMissing:
             return issue(.microphonePermissionMissing, kind: .permission, title: .diagnosticMicrophonePermissionTitle, message: .diagnosticMicrophonePermissionMessage, recovery: .diagnosticOpenMicrophoneRecovery, action: .openMicrophoneSettings)
         case .screenRecordingPermissionMissing:
