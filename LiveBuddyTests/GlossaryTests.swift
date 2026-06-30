@@ -59,6 +59,36 @@ struct GlossaryTests {
         #expect(entries == existing)
     }
 
+    @Test func editorUpdatesExistingTermInsteadOfAddingDuplicate() {
+        let existing = GlossaryEntry(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+            sourceTerm: "OpenAI",
+            targetTerm: "OpenAI",
+            note: "keep note",
+            isEnabled: false
+        )
+
+        let updated = GlossaryEntryEditor().add(sourceTerm: "  openai  ", targetTerm: "  OpenAI API  ", to: [existing])
+
+        #expect(updated.count == 1)
+        #expect(updated[0].id == existing.id)
+        #expect(updated[0].sourceTerm == "OpenAI")
+        #expect(updated[0].targetTerm == "OpenAI API")
+        #expect(updated[0].note == "keep note")
+        #expect(updated[0].isEnabled == false)
+    }
+
+    @Test func editorCollapsesLegacyDuplicateSourceTermsWhenUpdating() {
+        let first = GlossaryEntry(sourceTerm: "OpenAI", targetTerm: "old")
+        let duplicate = GlossaryEntry(sourceTerm: " openai ", targetTerm: "stale duplicate")
+        let other = GlossaryEntry(sourceTerm: "Gemini", targetTerm: "Gemini API")
+
+        let updated = GlossaryEntryEditor().add(sourceTerm: "OPENAI", targetTerm: "OpenAI API", to: [first, duplicate, other])
+
+        #expect(updated.map(\.sourceTerm) == ["OpenAI", "Gemini"])
+        #expect(updated.map(\.targetTerm) == ["OpenAI API", "Gemini API"])
+    }
+
     @Test func editorDeletesOnlyMatchingEntry() {
         let first = GlossaryEntry(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, sourceTerm: "OpenAI")
         let second = GlossaryEntry(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!, sourceTerm: "Gemini")

@@ -63,7 +63,29 @@ struct GlossaryEntryEditor {
         let source = normalized(sourceTerm)
         guard !source.isEmpty else { return entries }
         let target = normalized(targetTerm)
-        return entries + [GlossaryEntry(sourceTerm: source, targetTerm: target)]
+        let sourceKey = key(for: source)
+        var updatedEntries: [GlossaryEntry] = []
+        updatedEntries.reserveCapacity(entries.count + 1)
+        var didUpdate = false
+
+        for entry in entries {
+            if key(for: entry.sourceTerm) == sourceKey {
+                if didUpdate {
+                    continue
+                }
+                var updated = entry
+                updated.targetTerm = target
+                updatedEntries.append(updated)
+                didUpdate = true
+            } else {
+                updatedEntries.append(entry)
+            }
+        }
+
+        if !didUpdate {
+            updatedEntries.append(GlossaryEntry(sourceTerm: source, targetTerm: target))
+        }
+        return updatedEntries
     }
 
     func delete(_ entry: GlossaryEntry, from entries: [GlossaryEntry]) -> [GlossaryEntry] {
@@ -72,6 +94,10 @@ struct GlossaryEntryEditor {
 
     func deleteAll(from entries: [GlossaryEntry]) -> [GlossaryEntry] {
         []
+    }
+
+    private func key(for value: String) -> String {
+        normalized(value).lowercased()
     }
 
     private func normalized(_ value: String) -> String {
