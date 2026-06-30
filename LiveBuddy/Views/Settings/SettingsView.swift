@@ -529,7 +529,7 @@ struct SettingsView: View {
                 Button(appState.t(.addTerm)) {
                     addGlossaryEntryFromUI()
                 }
-                .disabled(newGlossarySourceTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!canMutateGlossaryEntries || newGlossarySourceTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
     }
@@ -642,14 +642,14 @@ struct SettingsView: View {
                 } label: {
                     Label(appState.t(.exportGlossary), systemImage: "square.and.arrow.down")
                 }
-                .disabled(appState.settings.glossaryEntries.isEmpty)
+                .disabled(appState.settings.glossaryEntries.isEmpty || !canMutateGlossaryEntries)
 
                 Button(role: .destructive) {
                     isShowingClearGlossaryConfirmation = true
                 } label: {
                     Label(appState.t(.clearGlossary), systemImage: "trash")
                 }
-                .disabled(appState.settings.glossaryEntries.isEmpty)
+                .disabled(appState.settings.glossaryEntries.isEmpty || !canMutateGlossaryEntries)
             }
 
             if let glossaryExportErrorMessage {
@@ -691,6 +691,7 @@ struct SettingsView: View {
                             Image(systemName: "trash")
                         }
                         .buttonStyle(.plain)
+                        .disabled(!canMutateGlossaryEntries)
                         .help(appState.t(.deleteTerm))
                     }
                 }
@@ -746,6 +747,10 @@ struct SettingsView: View {
         case .customURL, .localFile:
             return GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) != nil
         }
+    }
+
+    private var canMutateGlossaryEntries: Bool {
+        !appState.isImportingGlossary
     }
 
     private func startTokenCheck() {
@@ -810,6 +815,7 @@ struct SettingsView: View {
     }
 
     private func addGlossaryEntryFromUI() {
+        guard canMutateGlossaryEntries else { return }
         appState.addGlossaryEntry(sourceTerm: newGlossarySourceTerm, targetTerm: newGlossaryTargetTerm)
         newGlossarySourceTerm = ""
         newGlossaryTargetTerm = ""
@@ -817,11 +823,13 @@ struct SettingsView: View {
     }
 
     private func deleteGlossaryEntryFromUI(_ entry: GlossaryEntry) {
+        guard canMutateGlossaryEntries else { return }
         appState.deleteGlossaryEntry(entry)
         clearGlossaryExportFeedback()
     }
 
     private func clearGlossaryEntriesFromUI() {
+        guard canMutateGlossaryEntries else { return }
         appState.clearGlossaryEntries()
         glossarySearchText = ""
         isGlossaryListExpanded = false
