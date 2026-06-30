@@ -874,6 +874,11 @@ final class AppState: ObservableObject {
         await temporaryTestCaptionTask?.value
     }
 
+    func cancelRunningPreflightTest() {
+        cancelPreflightTest()
+        preflightTestReport = .idle
+    }
+
     private func cancelPreflightTest() {
         preflightTestGeneration = UUID()
         preflightTestTask?.cancel()

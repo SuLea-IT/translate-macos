@@ -446,11 +446,21 @@ for token in [
     if token not in app_state_text:
         errors.append(f"AppState must retain and control preflight work through {token}")
 
-settings_preflight_match = re.search(r"Button\(appState.t\(\.runTest\)\) \{(?P<body>[\s\S]*?)\n                \}", settings_text)
+settings_preflight_match = re.search(
+    r"private var preflightTestForm: some View \{(?P<body>[\s\S]*?)\n    \}\n\n    private var logsView",
+    settings_text,
+)
 if not settings_preflight_match:
-    errors.append("SettingsView preflight run button not found")
-elif "appState.startPreflightTest()" not in settings_preflight_match.group("body"):
-    errors.append("SettingsView preflight button must call AppState.startPreflightTest() instead of spawning an untracked Task")
+    errors.append("SettingsView preflight test form not found")
+else:
+    body = settings_preflight_match.group("body")
+    if "appState.startPreflightTest()" not in body:
+        errors.append("SettingsView preflight button must call AppState.startPreflightTest() instead of spawning an untracked Task")
+    if "appState.isRunningPreflightTest" in body and "appState.cancelRunningPreflightTest()" not in body:
+        errors.append("SettingsView preflight cancel state must call AppState.cancelRunningPreflightTest() instead of spawning an untracked Task")
+    if "Task {" in body:
+        errors.append("SettingsView preflight form must not spawn untracked Tasks")
+
 
 start_preflight_match = re.search(r"func startPreflightTest\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not start_preflight_match:

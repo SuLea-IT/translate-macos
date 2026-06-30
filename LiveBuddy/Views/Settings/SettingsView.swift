@@ -952,10 +952,14 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                Button(appState.t(.runTest)) {
-                    appState.startPreflightTest()
+                Button(appState.isRunningPreflightTest ? appState.t(.cancel) : appState.t(.runTest)) {
+                    if appState.isRunningPreflightTest {
+                        appState.cancelRunningPreflightTest()
+                    } else {
+                        appState.startPreflightTest()
+                    }
                 }
-                .disabled(appState.isRunning || appState.isRunningPreflightTest)
+                .disabled(appState.isRunning)
             }
 
             Section {
