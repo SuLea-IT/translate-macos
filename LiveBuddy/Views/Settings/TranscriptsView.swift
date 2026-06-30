@@ -11,6 +11,7 @@ struct TranscriptsView: View {
     @State private var exportContentType: UTType = .plainText
     @State private var exportErrorMessage: String?
     @State private var copyErrorMessage: String?
+    @State private var copySuccessMessage: String?
     @State private var generatedMeetingNotes: MeetingNotes?
     @State private var meetingNotesSessionID: UUID?
     @State private var isShowingClearTranscriptsConfirmation = false
@@ -46,14 +47,19 @@ struct TranscriptsView: View {
             case .success:
                 exportDocument = nil
                 exportErrorMessage = nil
+                copyErrorMessage = nil
+                copySuccessMessage = nil
             case .failure(let error):
                 exportDocument = nil
                 if isUserCancelledFileExport(error) {
                     exportErrorMessage = nil
                     copyErrorMessage = nil
+                    copySuccessMessage = nil
                     return
                 }
                 exportErrorMessage = error.localizedDescription
+                copyErrorMessage = nil
+                copySuccessMessage = nil
             }
         }
         .confirmationDialog(
@@ -147,6 +153,15 @@ struct TranscriptsView: View {
                 Text(copyErrorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+            }
+
+            if let copySuccessMessage {
+                Text(copySuccessMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 8)
@@ -406,6 +421,7 @@ struct TranscriptsView: View {
         meetingNotesSessionID = nil
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
@@ -415,6 +431,7 @@ struct TranscriptsView: View {
         exportFileName = transcriptExporter.defaultFileName(session: session, mode: viewMode, format: format)
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func exportAllTranscriptsFromUI() {
@@ -425,6 +442,7 @@ struct TranscriptsView: View {
         exportFileName = transcriptArchiveExporter.defaultFileName()
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func clearAllTranscriptSessionsFromUI() {
@@ -437,6 +455,7 @@ struct TranscriptsView: View {
         meetingNotesSessionID = nil
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func requestDeleteTranscriptSession(_ session: TranscriptSession) {
@@ -457,6 +476,7 @@ struct TranscriptsView: View {
         pendingDeleteSession = nil
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func toggleMeetingNotes(for session: TranscriptSession) {
@@ -482,10 +502,12 @@ struct TranscriptsView: View {
         let didCopy = NSPasteboard.general.setString(text, forType: .string)
         guard didCopy else {
             copyErrorMessage = appState.t(.copyFailed)
+            copySuccessMessage = nil
             exportErrorMessage = nil
             return
         }
         copyErrorMessage = nil
+        copySuccessMessage = appState.t(.copiedToClipboard)
         exportErrorMessage = nil
     }
 
@@ -496,6 +518,7 @@ struct TranscriptsView: View {
         exportFileName = meetingNotesGenerator.defaultFileName(session: session)
         exportErrorMessage = nil
         copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private var transcriptDetailFeedback: some View {
@@ -504,6 +527,13 @@ struct TranscriptsView: View {
                 Text(copyErrorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let copySuccessMessage {
+                Text(copySuccessMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

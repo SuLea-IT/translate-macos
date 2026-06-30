@@ -38,6 +38,7 @@ struct SettingsView: View {
     @State private var logExportFileName = "LiveBuddy-Logs.txt"
     @State private var logExportErrorMessage: String?
     @State private var logCopyErrorMessage: String?
+    @State private var logCopySuccessMessage: String?
     @State private var isShowingClearLogsConfirmation = false
 
     var body: some View {
@@ -979,6 +980,15 @@ struct SettingsView: View {
                     .padding(.top, 8)
             }
 
+            if let logCopySuccessMessage {
+                Text(logCopySuccessMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
             if let logExportErrorMessage {
                 Text(appState.t(.exportFailed, logExportErrorMessage))
                     .font(.caption)
@@ -1023,15 +1033,18 @@ struct SettingsView: View {
                 logExportDocument = nil
                 logExportErrorMessage = nil
                 logCopyErrorMessage = nil
+                logCopySuccessMessage = nil
             case .failure(let error):
                 logExportDocument = nil
                 if isUserCancelledFileExport(error) {
                     logExportErrorMessage = nil
                     logCopyErrorMessage = nil
+                    logCopySuccessMessage = nil
                     return
                 }
                 logExportErrorMessage = error.localizedDescription
                 logCopyErrorMessage = nil
+                logCopySuccessMessage = nil
             }
         }
         .confirmationDialog(
@@ -1054,10 +1067,12 @@ struct SettingsView: View {
         let didCopy = NSPasteboard.general.setString(logText, forType: .string)
         guard didCopy else {
             logCopyErrorMessage = appState.t(.copyFailed)
+            logCopySuccessMessage = nil
             logExportErrorMessage = nil
             return
         }
         logCopyErrorMessage = nil
+        logCopySuccessMessage = appState.t(.copiedToClipboard)
         logExportErrorMessage = nil
     }
 
@@ -1068,12 +1083,14 @@ struct SettingsView: View {
         logExportFileName = exporter.defaultFileName()
         logExportErrorMessage = nil
         logCopyErrorMessage = nil
+        logCopySuccessMessage = nil
     }
 
     private func clearLogsFromUI() {
         appState.clearLogs()
         logExportErrorMessage = nil
         logCopyErrorMessage = nil
+        logCopySuccessMessage = nil
     }
 }
 

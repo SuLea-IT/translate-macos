@@ -70,6 +70,7 @@ else:
         "runtimeLogs",
         "exportLogs",
         "copyLogs",
+        "copiedToClipboard",
         "subtitleDisplayMode",
         "clearTranscriptsConfirmationTitle",
         "clearTranscriptsConfirmationMessage",
