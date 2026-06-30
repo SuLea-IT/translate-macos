@@ -19,6 +19,8 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     deinit {
         chunker.reset()
         if let screenStreamForDeinit = stream {
+            try? screenStreamForDeinit.removeStreamOutput(self, type: .audio)
+            try? screenStreamForDeinit.removeStreamOutput(self, type: .screen)
             Task {
                 try? await screenStreamForDeinit.stopCapture()
             }
