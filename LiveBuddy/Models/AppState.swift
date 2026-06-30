@@ -95,6 +95,7 @@ final class AppState: ObservableObject {
     private var connectionStopTask: Task<Void, Never>?
     private var usageResumeTask: Task<Void, Never>?
     private var setupChecklistRefreshTask: Task<Void, Never>?
+    private var setupChecklistRefreshGeneration = UUID()
     private var audioSendTask: Task<Void, Never>?
     private var apiKeySaveTask: Task<Void, Never>?
     private var settingsSaveTask: Task<Void, Never>?
@@ -680,10 +681,13 @@ final class AppState: ObservableObject {
     }
 
     func refreshSetupChecklist() {
+        let generation = UUID()
+        setupChecklistRefreshGeneration = generation
         setupChecklistRefreshTask?.cancel()
         setupChecklistRefreshTask = Task { [weak self] in
             guard let self else { return }
             let permissions = await self.permissionStatusService.refreshStatuses()
+            guard self.setupChecklistRefreshGeneration == generation else { return }
             guard !Task.isCancelled else { return }
             self.setupChecklist = SetupChecklistState.derive(
                 audioSource: self.settings.audioSource,
@@ -691,7 +695,9 @@ final class AppState: ObservableObject {
                 microphone: permissions.microphone,
                 screenRecording: permissions.screenRecording
             )
-            self.setupChecklistRefreshTask = nil
+            if self.setupChecklistRefreshGeneration == generation {
+                self.setupChecklistRefreshTask = nil
+            }
         }
     }
 
@@ -703,6 +709,7 @@ final class AppState: ObservableObject {
             microphone: permissions.microphone,
             screenRecording: permissions.screenRecording
         )
+        setupChecklistRefreshGeneration = UUID()
         setupChecklist = checklist
         return SetupPreflightResult.from(checklist)
     }
