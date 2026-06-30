@@ -10,7 +10,17 @@ app_state = app_state_path.read_text()
 interface = interface_path.read_text()
 errors: list[str] = []
 
-for key in ["statusReady", "statusConnecting", "statusListening", "statusStopped", "statusResumingReplay"]:
+for key in [
+    "statusReady",
+    "statusConnecting",
+    "statusListening",
+    "statusStopped",
+    "statusResumingReplay",
+    "statusIdleWarning",
+    "statusApiPausedMonitoring",
+    "statusSessionUsageLimitReached",
+    "statusDailyUsageLimitReached",
+]:
     if f"case {key}" not in interface:
         errors.append(f"InterfaceText must include {key}")
     if interface.count(f".{key}:") < 8:
@@ -47,12 +57,37 @@ else:
     for token in [
         "return \"\\(localizedStatus(.statusListening)) · \\(base)\"",
         "return \"\\(localizedStatus(.statusResumingReplay)) · \\(base)\"",
+        "return \"\\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \\(base)\"",
     ]:
         if token not in body:
             errors.append(f"usageStatusMessage must compose localized runtime status through {token}")
-    for old in ["Listening ·", "Resuming · replaying buffered audio ·"]:
+    for old in [
+        "Listening ·",
+        "Resuming · replaying buffered audio ·",
+        "Idle soon · auto-pause",
+    ]:
         if old in body:
             errors.append(f"usageStatusMessage must not use hard-coded prefix {old}")
+
+pause_match = re.search(r"private func usagePauseLogMessage\(_ reason: UsageControlPauseReason\) -> String \{(?P<body>[\s\S]*?)\n    \}\n\n    static func formatUsageDuration", app_state)
+if not pause_match:
+    errors.append("AppState.usagePauseLogMessage(_:) not found")
+else:
+    body = pause_match.group("body")
+    for token in [
+        "return localizedStatus(.statusApiPausedMonitoring)",
+        "return localizedStatus(.statusSessionUsageLimitReached)",
+        "return localizedStatus(.statusDailyUsageLimitReached)",
+    ]:
+        if token not in body:
+            errors.append(f"usagePauseLogMessage must localize pause status through {token}")
+    for old in [
+        "API paused · monitoring locally",
+        "Session usage limit reached · API paused",
+        "Daily usage limit reached · API paused",
+    ]:
+        if old in body:
+            errors.append(f"usagePauseLogMessage must not expose hard-coded English status {old}")
 
 client_status_match = re.search(r"private func handleClientStatus\(_ message: String\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func localizedStatus", app_state)
 if not client_status_match:

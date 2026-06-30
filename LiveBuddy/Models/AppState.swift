@@ -1497,7 +1497,7 @@ final class AppState: ObservableObject {
         case .active:
             return "\(localizedStatus(.statusListening)) · \(base)"
         case .idleWarning(let remainingSeconds):
-            return "Idle soon · auto-pause in \(remainingSeconds)s · \(base)"
+            return "\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \(base)"
         case .paused(let reason):
             return "\(usagePauseLogMessage(reason)) · \(base)"
         case .resuming:
@@ -1508,11 +1508,11 @@ final class AppState: ObservableObject {
     private func usagePauseLogMessage(_ reason: UsageControlPauseReason) -> String {
         switch reason {
         case .idle:
-            return "API paused · monitoring locally"
+            return localizedStatus(.statusApiPausedMonitoring)
         case .sessionLimit:
-            return "Session usage limit reached · API paused"
+            return localizedStatus(.statusSessionUsageLimitReached)
         case .dailyLimit:
-            return "Daily usage limit reached · API paused"
+            return localizedStatus(.statusDailyUsageLimitReached)
         }
     }
 
@@ -1818,7 +1818,11 @@ final class AppState: ObservableObject {
     }
 
     private func localizedStatus(_ key: InterfaceText) -> String {
-        settings.interfaceLanguage.localized(key)
+        localizedStatus(key, arguments: [])
+    }
+
+    private func localizedStatus(_ key: InterfaceText, arguments: [CVarArg]) -> String {
+        settings.interfaceLanguage.localized(key, arguments: arguments)
     }
 
     private func updateLocalizedStatus(_ key: InterfaceText, level: LiveStatusLevel, log: Bool) {

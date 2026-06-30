@@ -70,6 +70,10 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case statusListening
     case statusStopped
     case statusResumingReplay
+    case statusIdleWarning
+    case statusApiPausedMonitoring
+    case statusSessionUsageLimitReached
+    case statusDailyUsageLimitReached
     case setupChecklist
     case refreshStatus
     case microphonePermission
@@ -357,6 +361,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .statusListening: "Listening",
         .statusStopped: "Stopped",
         .statusResumingReplay: "Resuming · replaying buffered audio",
+        .statusIdleWarning: "Idle soon · auto-pause in %ds",
+        .statusApiPausedMonitoring: "API paused · monitoring locally",
+        .statusSessionUsageLimitReached: "Session usage limit reached · API paused",
+        .statusDailyUsageLimitReached: "Daily usage limit reached · API paused",
         .setupChecklist: "Setup Checklist",
         .refreshStatus: "Refresh Status",
         .microphonePermission: "Microphone Permission",
@@ -612,6 +620,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "正在聆听",
             .statusStopped: "已停止",
             .statusResumingReplay: "正在恢复 · 回放缓冲音频",
+            .statusIdleWarning: "即将空闲暂停 · %d 秒后自动暂停",
+            .statusApiPausedMonitoring: "API 已暂停 · 本地继续监听",
+            .statusSessionUsageLimitReached: "本次使用上限已达到 · API 已暂停",
+            .statusDailyUsageLimitReached: "今日使用上限已达到 · API 已暂停",
             .setupChecklist: "设置检查清单",
             .refreshStatus: "刷新状态",
             .microphonePermission: "麦克风权限",
@@ -864,6 +876,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "聞き取り中",
             .statusStopped: "停止しました",
             .statusResumingReplay: "再開中・バッファ音声を再送中",
+            .statusIdleWarning: "まもなくアイドル一時停止・%d秒後に自動停止",
+            .statusApiPausedMonitoring: "APIを一時停止中・ローカルで監視中",
+            .statusSessionUsageLimitReached: "今回の使用上限に達しました・APIを一時停止中",
+            .statusDailyUsageLimitReached: "本日の使用上限に達しました・APIを一時停止中",
             .setupChecklist: "セットアップ確認リスト",
             .refreshStatus: "状態を更新",
             .microphonePermission: "マイクの許可",
@@ -1116,6 +1132,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "듣는 중",
             .statusStopped: "중지됨",
             .statusResumingReplay: "재개 중 · 버퍼 오디오 재생 중",
+            .statusIdleWarning: "곧 유휴 일시 중지 · %d초 후 자동 일시 중지",
+            .statusApiPausedMonitoring: "API 일시 중지 · 로컬에서 계속 모니터링",
+            .statusSessionUsageLimitReached: "이번 사용 한도 도달 · API 일시 중지",
+            .statusDailyUsageLimitReached: "오늘 사용 한도 도달 · API 일시 중지",
             .setupChecklist: "설정 체크리스트",
             .refreshStatus: "상태 새로 고침",
             .microphonePermission: "마이크 권한",
@@ -1365,6 +1385,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "Escuchando",
             .statusStopped: "Detenido",
             .statusResumingReplay: "Reanudando · reproduciendo audio en búfer",
+            .statusIdleWarning: "Inactividad pronto · pausa automática en %d s",
+            .statusApiPausedMonitoring: "API pausada · monitorización local",
+            .statusSessionUsageLimitReached: "Límite de esta sesión alcanzado · API pausada",
+            .statusDailyUsageLimitReached: "Límite diario alcanzado · API pausada",
             .setupChecklist: "Lista de configuración",
             .refreshStatus: "Actualizar estado",
             .microphonePermission: "Permiso de micrófono",
@@ -1614,6 +1638,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "Écoute en cours",
             .statusStopped: "Arrêté",
             .statusResumingReplay: "Reprise · relecture de l’audio en mémoire tampon",
+            .statusIdleWarning: "Inactivité imminente · pause auto dans %d s",
+            .statusApiPausedMonitoring: "API en pause · surveillance locale",
+            .statusSessionUsageLimitReached: "Limite de cette session atteinte · API en pause",
+            .statusDailyUsageLimitReached: "Limite quotidienne atteinte · API en pause",
             .setupChecklist: "Liste de configuration",
             .refreshStatus: "Actualiser l’état",
             .microphonePermission: "Autorisation du microphone",
@@ -1863,6 +1891,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "Zuhören",
             .statusStopped: "Gestoppt",
             .statusResumingReplay: "Wird fortgesetzt · gepufferte Audiodaten werden wiedergegeben",
+            .statusIdleWarning: "Bald inaktiv · automatische Pause in %d s",
+            .statusApiPausedMonitoring: "API pausiert · lokale Überwachung läuft",
+            .statusSessionUsageLimitReached: "Limit dieser Sitzung erreicht · API pausiert",
+            .statusDailyUsageLimitReached: "Tageslimit erreicht · API pausiert",
             .setupChecklist: "Einrichtungs-Checkliste",
             .refreshStatus: "Status aktualisieren",
             .microphonePermission: "Mikrofonberechtigung",
@@ -2112,6 +2144,10 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusListening: "Đang nghe",
             .statusStopped: "Đã dừng",
             .statusResumingReplay: "Đang tiếp tục · phát lại âm thanh đã đệm",
+            .statusIdleWarning: "Sắp rảnh · tự động tạm dừng sau %d giây",
+            .statusApiPausedMonitoring: "API đã tạm dừng · tiếp tục giám sát cục bộ",
+            .statusSessionUsageLimitReached: "Đã đạt giới hạn phiên · API đã tạm dừng",
+            .statusDailyUsageLimitReached: "Đã đạt giới hạn hằng ngày · API đã tạm dừng",
             .setupChecklist: "Danh sách kiểm tra thiết lập",
             .refreshStatus: "Làm mới trạng thái",
             .microphonePermission: "Quyền micrô",
