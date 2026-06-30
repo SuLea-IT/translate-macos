@@ -80,6 +80,9 @@ struct TranscriptsView: View {
         .onChange(of: viewMode) { _, _ in
             refreshMeetingNotesForCurrentMode()
         }
+        .onChange(of: selectedSession?.id) { _, _ in
+            clearTranscriptDetailFeedbackForSelectionChange()
+        }
     }
 
     // MARK: - List View
@@ -370,6 +373,12 @@ struct TranscriptsView: View {
         }
         generatedMeetingNotes = meetingNotesGenerator.generate(from: selectedSession, mode: viewMode)
         meetingNotesSessionID = selectedSession.id
+    }
+
+    private func clearTranscriptDetailFeedbackForSelectionChange() {
+        generatedMeetingNotes = nil
+        meetingNotesSessionID = nil
+        exportErrorMessage = nil
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
