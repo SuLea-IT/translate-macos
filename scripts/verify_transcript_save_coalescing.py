@@ -63,7 +63,7 @@ else:
 
 for name, pattern in [
     ("beginTranscriptSession", r"private func beginTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func finishTranscriptSession"),
-    ("finishTranscriptSession", r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession"),
+    ("finishTranscriptSession", r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession"),
     ("deleteTranscriptSession", r"func deleteTranscriptSession\(_ session: TranscriptSession\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteAllTranscriptSessions"),
     ("deleteAllTranscriptSessions", r"func deleteAllTranscriptSessions\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func restartTranscriptSessionIfRunning"),
 ]:

@@ -8,11 +8,11 @@ text = (root / "LiveBuddy" / "Models" / "AppState.swift").read_text()
 errors: list[str] = []
 
 match = re.search(
-    r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
+    r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
     text,
 )
 if not match:
-    errors.append("AppState.finishTranscriptSession() not found")
+    errors.append("AppState.finishTranscriptSession(saveImmediately:) not found")
 else:
     body = match.group("body")
     cleanup_block = '        captionDraft = ""\n        originalDraft = ""\n        completedOriginalSentences.removeAll()'

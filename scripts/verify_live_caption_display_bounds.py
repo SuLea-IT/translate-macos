@@ -60,11 +60,11 @@ else:
         errors.append("appendCaption must continue to persist every completed line into the transcript history")
 
 finish_match = re.search(
-    r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
+    r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
     text,
 )
 if not finish_match:
-    errors.append("AppState.finishTranscriptSession() not found")
+    errors.append("AppState.finishTranscriptSession(saveImmediately:) not found")
 else:
     body = finish_match.group("body")
     if "appendDisplayedCaption(line)" not in body:

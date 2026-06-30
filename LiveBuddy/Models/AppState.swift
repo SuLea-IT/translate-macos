@@ -354,7 +354,7 @@ final class AppState: ObservableObject {
     }
 
     func flushPendingStateBeforeTermination() {
-        finishTranscriptSession()
+        finishTranscriptSession(saveImmediately: false)
         saveAPIKeyImmediately()
         saveSettingsImmediately()
         saveTranscriptSessionsImmediately()
@@ -2025,7 +2025,7 @@ final class AppState: ObservableObject {
         saveTranscriptSessionsImmediately()
     }
 
-    private func finishTranscriptSession() {
+    private func finishTranscriptSession(saveImmediately: Bool = true) {
         guard let sessionID = currentSessionID else { return }
         guard let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) else {
             clearActiveTranscriptState()
@@ -2054,7 +2054,9 @@ final class AppState: ObservableObject {
         transcriptSessions[index] = session
         currentSessionID = nil
         currentTranscriptLines.removeAll()
-        saveTranscriptSessionsImmediately()
+        if saveImmediately {
+            saveTranscriptSessionsImmediately()
+        }
     }
 
     func deleteTranscriptSession(_ session: TranscriptSession) {

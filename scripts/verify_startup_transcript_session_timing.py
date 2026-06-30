@@ -30,9 +30,9 @@ else:
     if catch_index != -1 and begin_index != -1 and begin_index < catch_index and capture_index != -1 and begin_index < capture_index:
         errors.append("Startup failure path can still persist an empty transcript session")
 
-finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", text)
+finish_match = re.search(r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", text)
 if not finish_match:
-    errors.append("AppState.finishTranscriptSession() not found")
+    errors.append("AppState.finishTranscriptSession(saveImmediately:) not found")
 else:
     body = finish_match.group("body")
     if "guard let sessionID = currentSessionID else { return }" not in body:

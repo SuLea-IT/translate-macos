@@ -48,9 +48,9 @@ else:
         if token not in body:
             errors.append(f"appendCurrentTranscriptLine must preserve transcript line data through {token}")
 
-finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", text)
+finish_match = re.search(r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", text)
 if not finish_match:
-    errors.append("AppState.finishTranscriptSession() not found")
+    errors.append("AppState.finishTranscriptSession(saveImmediately:) not found")
 else:
     body = finish_match.group("body")
     if "session.lines = currentTranscriptLines" not in body:

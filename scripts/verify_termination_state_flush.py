@@ -19,7 +19,7 @@ if not flush_match:
 else:
     body = flush_match.group("body")
     for token in [
-        "finishTranscriptSession()",
+        "finishTranscriptSession(saveImmediately: false)",
         "saveAPIKeyImmediately()",
         "saveSettingsImmediately()",
         "saveTranscriptSessionsImmediately()",
@@ -27,17 +27,19 @@ else:
     ]:
         if token not in body:
             errors.append(f"Termination flush must persist pending state through {token}")
-    finish_idx = body.find("finishTranscriptSession()")
+    if "finishTranscriptSession()" in body:
+        errors.append("Termination flush must not use finishTranscriptSession() default persistence because it duplicates transcript writes")
+    finish_idx = body.find("finishTranscriptSession(saveImmediately: false)")
     transcript_save_idx = body.find("saveTranscriptSessionsImmediately()")
     if -1 not in (finish_idx, transcript_save_idx) and not (finish_idx < transcript_save_idx):
         errors.append("Termination flush must finalize the active transcript session before saving transcripts")
 
 finish_match = re.search(
-    r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
+    r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession",
     app_state,
 )
 if not finish_match:
-    errors.append("AppState.finishTranscriptSession() not found")
+    errors.append("AppState.finishTranscriptSession(saveImmediately:) not found")
 else:
     body = finish_match.group("body")
     for token in [
@@ -45,10 +47,11 @@ else:
         "appendDisplayedCaption(line)",
         "appendCurrentTranscriptLine(from: line)",
         "session.endedAt = Date()",
+        "if saveImmediately {",
         "saveTranscriptSessionsImmediately()",
     ]:
         if token not in body:
-            errors.append(f"finishTranscriptSession() must close out live transcript drafts through {token}")
+            errors.append(f"finishTranscriptSession(saveImmediately:) must close out live transcript drafts through {token}")
 
 will_terminate_match = re.search(
     r"func applicationWillTerminate\(_ notification: Notification\) \{(?P<body>[\s\S]*?)\n    \}",

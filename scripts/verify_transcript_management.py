@@ -77,7 +77,7 @@ for token in [
         errors.append(f"AppState must release active transcript state through {token}")
 
 for context, pattern in [
-    ("finishTranscriptSession", r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession"),
+    ("finishTranscriptSession", r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession"),
     ("deleteTranscriptSession", r"func deleteTranscriptSession\(_ session: TranscriptSession\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteAllTranscriptSessions"),
     ("deleteAllTranscriptSessions", r"func deleteAllTranscriptSessions\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func clearActiveTranscriptState"),
 ]:
@@ -173,7 +173,7 @@ else:
     if "saveTranscriptSessions()" in body:
         errors.append("AppState.appendCurrentTranscriptLine must coalesce transcript disk writes instead of saving every sentence")
 
-finish_match = re.search(r"private func finishTranscriptSession\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", app_state_text)
+finish_match = re.search(r"private func finishTranscriptSession\(saveImmediately: Bool = true\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func deleteTranscriptSession", app_state_text)
 if finish_match:
     body = finish_match.group("body")
     if "session.lines = currentTranscriptLines" not in body:
