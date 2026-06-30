@@ -792,7 +792,6 @@ final class AppState: ObservableObject {
 
     func clearLogs() {
         logs.removeAll()
-        appendLog("Logs cleared", level: .info)
     }
 
     func saveSubtitleScreenFrame(_ frame: NSRect) {
