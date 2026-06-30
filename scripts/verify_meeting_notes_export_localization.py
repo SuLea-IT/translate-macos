@@ -72,6 +72,7 @@ for token in [
     "language: .simplifiedChinese",
     "# 会议纪要",
     "## 摘要",
+    "## 重点",
     "## 待办事项",
     "- 未发现待办事项",
     "#expect(markdown.contains(\"# Meeting Notes\") == false)",

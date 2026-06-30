@@ -54,7 +54,7 @@ struct MeetingNotesTests {
 
         #expect(markdown.contains("# 会议纪要"))
         #expect(markdown.contains("## 摘要"))
-        #expect(markdown.contains("## 关键点"))
+        #expect(markdown.contains("## 重点"))
         #expect(markdown.contains("## 待办事项"))
         #expect(markdown.contains("- 未发现待办事项"))
         #expect(markdown.contains("# Meeting Notes") == false)
