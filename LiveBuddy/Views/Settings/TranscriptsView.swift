@@ -77,6 +77,9 @@ struct TranscriptsView: View {
         .onChange(of: appState.transcriptSessions) { _, _ in
             reconcileSelectedSession()
         }
+        .onChange(of: viewMode) { _, _ in
+            refreshMeetingNotesForCurrentMode()
+        }
     }
 
     // MARK: - List View
@@ -356,6 +359,17 @@ struct TranscriptsView: View {
         pendingDeleteSession = nil
         isShowingDeleteTranscriptConfirmation = false
         exportErrorMessage = nil
+    }
+
+    private func refreshMeetingNotesForCurrentMode() {
+        guard generatedMeetingNotes != nil else { return }
+        guard let selectedSession else {
+            generatedMeetingNotes = nil
+            meetingNotesSessionID = nil
+            return
+        }
+        generatedMeetingNotes = meetingNotesGenerator.generate(from: selectedSession, mode: viewMode)
+        meetingNotesSessionID = selectedSession.id
     }
 
     private func prepareExport(session: TranscriptSession, format: TranscriptExportFormat) {
