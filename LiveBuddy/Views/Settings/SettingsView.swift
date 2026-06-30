@@ -672,27 +672,57 @@ struct SettingsView: View {
                 }
             }
 
-            ForEach(display.visibleEntries) { entry in
-                HStack {
-                    Text(entry.sourceTerm)
-                        .font(.callout.weight(.medium))
-                    Image(systemName: "arrow.right")
-                        .foregroundStyle(.secondary)
-                    Text(entry.targetTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? appState.t(.preserveOriginalTerm) : entry.targetTerm)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        deleteGlossaryEntryFromUI(entry)
-                    } label: {
-                        Image(systemName: "trash")
+            if display.matchingEntries.isEmpty {
+                glossaryEmptyState(display: display)
+            } else {
+                ForEach(display.visibleEntries) { entry in
+                    HStack {
+                        Text(entry.sourceTerm)
+                            .font(.callout.weight(.medium))
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(.secondary)
+                        Text(entry.targetTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? appState.t(.preserveOriginalTerm) : entry.targetTerm)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button {
+                            deleteGlossaryEntryFromUI(entry)
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.plain)
+                        .help(appState.t(.deleteTerm))
                     }
-                    .buttonStyle(.plain)
-                    .help(appState.t(.deleteTerm))
                 }
             }
         } header: {
             Text(appState.t(.terminologyGlossary))
         }
+    }
+
+    @ViewBuilder
+    private func glossaryEmptyState(display: GlossaryListDisplay) -> some View {
+        let query = glossarySearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasStoredEntries = !display.entries.isEmpty
+
+        HStack {
+            Spacer()
+            VStack(spacing: 8) {
+                Image(systemName: hasStoredEntries ? "magnifyingglass" : "text.book.closed")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                Text(hasStoredEntries && !query.isEmpty ? appState.t(.glossaryNoSearchResults, query) : appState.t(.glossaryEmptyStateTitle))
+                    .font(.callout.weight(.medium))
+                if !hasStoredEntries {
+                    Text(appState.t(.glossaryEmptyStateMessage))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: 380)
+            Spacer()
+        }
+        .padding(.vertical, 18)
     }
 
     private var selectedGlossaryImportSource: GlossaryImportSource {

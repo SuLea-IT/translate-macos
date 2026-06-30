@@ -128,6 +128,9 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case glossaryImportHelp
     case glossaryEntrySummary
     case searchGlossaryTerms
+    case glossaryEmptyStateTitle
+    case glossaryEmptyStateMessage
+    case glossaryNoSearchResults
     case showAllTerms
     case showFewerTerms
     case test
@@ -452,6 +455,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .glossaryImportHelp: "Download public terminology or import your own CSV, TSV, TBX/XML, TXT, or ZIP glossary.",
         .glossaryEntrySummary: "Showing %d of %d terms.",
         .searchGlossaryTerms: "Search terms",
+        .glossaryEmptyStateTitle: "No glossary terms yet",
+        .glossaryEmptyStateMessage: "Add a term manually, download a public terminology source, or import your own glossary file.",
+        .glossaryNoSearchResults: "No glossary terms match \"%@\"",
         .showAllTerms: "Show all terms",
         .showFewerTerms: "Show fewer",
         .test: "Test",
@@ -744,6 +750,9 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryImportHelp: "下载公开术语库，或导入你自己的 CSV、TSV、TBX/XML、TXT、ZIP 术语表。",
             .glossaryEntrySummary: "已显示 %d / %d 条术语。",
             .searchGlossaryTerms: "搜索术语",
+            .glossaryEmptyStateTitle: "还没有术语",
+            .glossaryEmptyStateMessage: "可以手动添加术语、下载公开术语库，或导入你自己的术语文件。",
+            .glossaryNoSearchResults: "没有匹配“%@”的术语",
             .showAllTerms: "显示全部术语",
             .showFewerTerms: "收起术语",
             .test: "测试",

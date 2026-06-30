@@ -33,6 +33,13 @@ struct InterfaceLanguageTests {
         #expect(InterfaceLanguage.vietnamese.localized(.iateExportSourceDetail).contains("TXT"))
     }
 
+    @Test func localizesGlossaryEmptyStates() {
+        #expect(InterfaceLanguage.english.localized(.glossaryEmptyStateTitle) == "No glossary terms yet")
+        #expect(InterfaceLanguage.simplifiedChinese.localized(.glossaryEmptyStateTitle) == "还没有术语")
+        #expect(InterfaceLanguage.simplifiedChinese.localized(.glossaryEmptyStateMessage).contains("导入你自己的术语文件"))
+        #expect(InterfaceLanguage.simplifiedChinese.localized(.glossaryNoSearchResults, arguments: ["API"]) == "没有匹配“API”的术语")
+    }
+
     @Test func legacySettingsDefaultToEnglishInterface() throws {
         let legacyJSON = #"{"activeProvider":"gemini","apiKey":"test-key","targetLanguageCode":"ja"}"#.data(using: .utf8)!
 

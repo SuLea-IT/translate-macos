@@ -35,6 +35,15 @@ if "glossarySearchText" not in text or ".searchGlossaryTerms" not in text:
     errors.append("Glossary page must provide a search field for large imported glossaries")
 if "query: glossarySearchText" not in text:
     errors.append("GlossaryListDisplay must filter entries by the glossary search text")
+if "glossaryEmptyState" not in text:
+    errors.append("Glossary page must render an explicit empty/no-results state instead of only a 0/0 count")
+for token in [
+    ".glossaryEmptyStateTitle",
+    ".glossaryEmptyStateMessage",
+    ".glossaryNoSearchResults",
+]:
+    if token not in text:
+        errors.append(f"Glossary page must use localized empty-state copy through {token}")
 if "GlossaryExportDocument" not in text:
     errors.append("Glossary page must prepare a FileDocument for CSV export")
 if "prepareGlossaryExport()" not in text:
@@ -61,6 +70,22 @@ app_state = root / "LiveBuddy" / "Models" / "AppState.swift"
 app_state_text = app_state.read_text()
 if "func clearGlossaryEntries()" not in app_state_text:
     errors.append("AppState must expose clearGlossaryEntries() for the glossary UI")
+
+interface_language = root / "LiveBuddy" / "Models" / "InterfaceLanguage.swift"
+language_text = interface_language.read_text()
+for token in [
+    "case glossaryEmptyStateTitle",
+    "case glossaryEmptyStateMessage",
+    "case glossaryNoSearchResults",
+    ".glossaryEmptyStateTitle: \"No glossary terms yet\"",
+    ".glossaryEmptyStateMessage: \"Add a term manually, download a public terminology source, or import your own glossary file.\"",
+    ".glossaryNoSearchResults: \"No glossary terms match \\\"%@\\\"\"",
+    ".glossaryEmptyStateTitle: \"还没有术语\"",
+    ".glossaryEmptyStateMessage: \"可以手动添加术语、下载公开术语库，或导入你自己的术语文件。\"",
+    ".glossaryNoSearchResults: \"没有匹配“%@”的术语\"",
+]:
+    if token not in language_text:
+        errors.append(f"InterfaceLanguage must localize glossary empty states through {token}")
 
 if errors:
     print("Glossary navigation verification failed:")
