@@ -53,28 +53,28 @@ else:
 
 resume_body = method_body("resumeFromUsagePause", "private func runningUsageStatusMessage")
 if resume_body is None:
-    errors.append("AppState.resumeFromUsagePause(replayChunks:) not found")
+    errors.append("AppState.resumeFromUsagePause(replayChunks:generation:) not found")
 else:
-    for token in ["try await newClient.connect()", "guard shouldContinueRuntimeConnection() else", "discardAsyncClient(newClient)", "client = newClient", "client === newClient"]:
+    for token in ["try await newClient.connect()", "usageResumeGeneration == generation", "guard shouldContinueRuntimeConnection() else", "discardAsyncClient(newClient)", "client = newClient", "client === newClient"]:
         if token not in resume_body:
             errors.append(f"resumeFromUsagePause must guard stale resumed WebSocket clients through {token}")
     connect_idx = resume_body.find("try await newClient.connect()")
-    guard_idx = resume_body.find("guard shouldContinueRuntimeConnection() else", connect_idx)
+    guard_idx = resume_body.find("guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else", connect_idx)
     assign_idx = resume_body.find("client = newClient")
     if min(connect_idx, guard_idx, assign_idx) != -1 and not (connect_idx < guard_idx < assign_idx):
         errors.append("resumeFromUsagePause must check cancellation after connect before assigning client")
     loop_idx = resume_body.find("for chunk in replayChunks")
     send_idx = resume_body.find("await newClient.sendAudio(chunk.data)", loop_idx)
-    loop_guard_idx = resume_body.find("guard shouldContinueRuntimeConnection(), client === newClient else", loop_idx)
+    loop_guard_idx = resume_body.find("guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else", loop_idx)
     if min(loop_idx, loop_guard_idx, send_idx) != -1 and not (loop_idx < loop_guard_idx < send_idx):
         errors.append("resumeFromUsagePause must guard before each replay send")
     mark_idx = resume_body.find("usageEngine.markReplaySent(replayChunks)")
-    post_loop_guard_idx = resume_body.find("guard shouldContinueRuntimeConnection(), client === newClient else", send_idx + len("await newClient.sendAudio(chunk.data)") if send_idx != -1 else 0)
+    post_loop_guard_idx = resume_body.find("guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else", send_idx + len("await newClient.sendAudio(chunk.data)") if send_idx != -1 else 0)
     if mark_idx != -1 and not (send_idx < post_loop_guard_idx < mark_idx):
         errors.append("resumeFromUsagePause must guard after replay sends before marking usage resumed")
     catch_idx = resume_body.find("} catch")
     diagnostic_idx = resume_body.find("DiagnosticClassifier.from", catch_idx)
-    catch_guard_idx = resume_body.find("guard shouldContinueRuntimeConnection() else", catch_idx)
+    catch_guard_idx = resume_body.find("guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else", catch_idx)
     if catch_idx != -1 and diagnostic_idx != -1 and not (catch_idx < catch_guard_idx < diagnostic_idx):
         errors.append("resumeFromUsagePause must ignore resume failures from canceled/stopped attempts")
 

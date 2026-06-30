@@ -94,6 +94,7 @@ final class AppState: ObservableObject {
     private var reconnectTask: Task<Void, Never>?
     private var connectionStopTask: Task<Void, Never>?
     private var usageResumeTask: Task<Void, Never>?
+    private var usageResumeGeneration = UUID()
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var setupChecklistRefreshGeneration = UUID()
     private var audioSendTask: Task<Void, Never>?
@@ -206,6 +207,7 @@ final class AppState: ObservableObject {
         reconnectTask = nil
         connectionStopTask?.cancel()
         connectionStopTask = nil
+        usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
         resetAudioSendPipeline()
@@ -249,6 +251,7 @@ final class AppState: ObservableObject {
         reconnectTask = nil
         connectionStopTask?.cancel()
         connectionStopTask = nil
+        usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
@@ -1058,6 +1061,7 @@ final class AppState: ObservableObject {
         reconnectTask = nil
         restartTask?.cancel()
         restartTask = nil
+        usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
         reconnectAttempts = 0
@@ -1275,6 +1279,9 @@ final class AppState: ObservableObject {
     }
 
     private func enterUsagePause(reason: UsageControlPauseReason) {
+        usageResumeGeneration = UUID()
+        usageResumeTask?.cancel()
+        usageResumeTask = nil
         resetAudioSendPipeline()
         client?.close()
         client = nil
@@ -1285,14 +1292,19 @@ final class AppState: ObservableObject {
 
     private func scheduleUsageResume(replayChunks: [BufferedAudioChunk]) {
         guard usageResumeTask == nil else { return }
+        let generation = UUID()
+        usageResumeGeneration = generation
         usageResumeTask = Task { [weak self] in
-            await self?.resumeFromUsagePause(replayChunks: replayChunks)
+            await self?.resumeFromUsagePause(replayChunks: replayChunks, generation: generation)
         }
     }
 
-    private func resumeFromUsagePause(replayChunks: [BufferedAudioChunk]) async {
+    private func resumeFromUsagePause(replayChunks: [BufferedAudioChunk], generation: UUID) async {
+        guard usageResumeGeneration == generation else { return }
         guard shouldContinueRuntimeConnection() else {
-            usageResumeTask = nil
+            if usageResumeGeneration == generation {
+                usageResumeTask = nil
+            }
             return
         }
 
@@ -1300,23 +1312,29 @@ final class AppState: ObservableObject {
         let newClient = makeGeminiClient()
         do {
             try await newClient.connect()
-            guard shouldContinueRuntimeConnection() else {
+            guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else {
                 discardAsyncClient(newClient)
-                usageResumeTask = nil
+                if usageResumeGeneration == generation {
+                    usageResumeTask = nil
+                }
                 return
             }
             client = newClient
             for chunk in replayChunks {
-                guard shouldContinueRuntimeConnection(), client === newClient else {
+                guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else {
                     discardAsyncClient(newClient)
-                    usageResumeTask = nil
+                    if usageResumeGeneration == generation {
+                        usageResumeTask = nil
+                    }
                     return
                 }
                 await newClient.sendAudio(chunk.data)
             }
-            guard shouldContinueRuntimeConnection(), client === newClient else {
+            guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else {
                 discardAsyncClient(newClient)
-                usageResumeTask = nil
+                if usageResumeGeneration == generation {
+                    usageResumeTask = nil
+                }
                 return
             }
             sentChunkCount += replayChunks.count
@@ -1327,8 +1345,10 @@ final class AppState: ObservableObject {
             updateStatus(runningUsageStatusMessage(), level: .running, log: true)
         } catch {
             newClient.close()
-            guard shouldContinueRuntimeConnection() else {
-                usageResumeTask = nil
+            guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else {
+                if usageResumeGeneration == generation {
+                    usageResumeTask = nil
+                }
                 return
             }
             client = nil
@@ -1338,7 +1358,9 @@ final class AppState: ObservableObject {
             setDiagnosticIssue(diagnostic)
             updateStatus(settings.interfaceLanguage.localized(diagnostic.titleKey), level: .error, log: true)
         }
-        usageResumeTask = nil
+        if usageResumeGeneration == generation {
+            usageResumeTask = nil
+        }
     }
 
     private func runningUsageStatusMessage() -> String {

@@ -44,7 +44,7 @@ else:
 
 for context, pattern in [
     ("reconnectGeminiClient", r"private func reconnectGeminiClient\(\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    private func scheduleStopRuntimeAfterConnectionFailure"),
-    ("resumeFromUsagePause", r"private func resumeFromUsagePause\(replayChunks: \[BufferedAudioChunk\]\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    private func runningUsageStatusMessage"),
+    ("resumeFromUsagePause", r"private func resumeFromUsagePause\(replayChunks: \[BufferedAudioChunk\], generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    private func runningUsageStatusMessage"),
 ]:
     match = re.search(pattern, app_state_text)
     if not match:
