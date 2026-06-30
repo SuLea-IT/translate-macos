@@ -20,16 +20,6 @@ struct TranscriptsView: View {
     private let transcriptArchiveExporter = TranscriptArchiveExporter()
     private let meetingNotesGenerator = MeetingNotesGenerator()
 
-    private var filteredSessions: [TranscriptSession] {
-        if searchText.isEmpty {
-            return appState.transcriptSessions
-        }
-        return appState.transcriptSessions.filter {
-            $0.fullText.localizedCaseInsensitiveContains(searchText)
-            || $0.targetLanguage.localizedCaseInsensitiveContains(searchText)
-        }
-    }
-
     var body: some View {
         Group {
             if let session = selectedSession {
@@ -159,9 +149,11 @@ struct TranscriptsView: View {
     }
 
     private var sessionList: some View {
-        ScrollView {
+        let display = TranscriptListDisplay(sessions: appState.transcriptSessions, query: searchText)
+
+        return ScrollView {
             LazyVStack(spacing: 6) {
-                ForEach(filteredSessions) { session in
+                ForEach(display.filteredSessions) { session in
                     SessionCard(session: session)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -181,7 +173,7 @@ struct TranscriptsView: View {
                         }
                 }
 
-                if filteredSessions.isEmpty && !searchText.isEmpty {
+                if display.filteredSessions.isEmpty && !searchText.isEmpty {
                     VStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 24))

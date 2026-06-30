@@ -89,6 +89,27 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
     }
 }
 
+struct TranscriptListDisplay {
+    var sessions: [TranscriptSession]
+    var query: String
+    let filteredSessions: [TranscriptSession]
+
+    init(sessions: [TranscriptSession], query: String) {
+        self.sessions = sessions
+        self.query = query
+        self.filteredSessions = Self.filtered(sessions: sessions, query: query)
+    }
+
+    private static func filtered(sessions: [TranscriptSession], query: String) -> [TranscriptSession] {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return sessions }
+        return sessions.filter { session in
+            session.fullText.localizedCaseInsensitiveContains(normalizedQuery)
+                || session.targetLanguage.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+    }
+}
+
 struct TranscriptLine: Identifiable, Codable, Equatable {
     let id: UUID
     let text: String
