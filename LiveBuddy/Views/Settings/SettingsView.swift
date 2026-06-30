@@ -892,6 +892,11 @@ struct SettingsView: View {
         }
     }
 
+    private func resetGlossaryListViewForImport() {
+        glossarySearchText = ""
+        isGlossaryListExpanded = false
+    }
+
     private func importSelectedGlossarySource() {
         glossaryImportInputMessage = ""
         appState.clearGlossaryImportFeedback()
@@ -899,12 +904,14 @@ struct SettingsView: View {
         let source = selectedGlossaryImportSource
         switch source.kind {
         case .builtIn(let url):
+            resetGlossaryListViewForImport()
             appState.startGlossaryImport(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
         case .customURL, .localFile:
             guard let url = GlossaryImportURLValidator.remoteURL(from: glossaryImportURLString) else {
                 glossaryImportInputMessage = appState.t(.httpsLinksOnly)
                 return
             }
+            resetGlossaryListViewForImport()
             appState.startGlossaryImport(from: url, sourceName: localizedGlossarySourceName(source), importLimit: glossaryImportLimit)
         }
     }
@@ -916,6 +923,7 @@ struct SettingsView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
+            resetGlossaryListViewForImport()
             appState.startGlossaryImportFromLocalFile(url: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
         case .failure(let error):
             if isUserCancelledFileDialog(error) {
