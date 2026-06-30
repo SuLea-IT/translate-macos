@@ -615,6 +615,7 @@ struct SettingsView: View {
                 .onChange(of: selectedGlossaryImportSourceID) { _, _ in
                     clearGlossaryImportSelectionFeedback()
                 }
+                .disabled(appState.isImportingGlossary)
 
                 Text(localizedGlossarySourceDetail(selectedGlossaryImportSource))
                     .font(.caption)
@@ -627,12 +628,14 @@ struct SettingsView: View {
                         .onChange(of: glossaryImportURLString) { _, _ in
                             clearGlossaryImportSelectionFeedback()
                         }
+                        .disabled(appState.isImportingGlossary)
                 }
 
                 Stepper("\(appState.t(.importLimit)): \(glossaryImportLimit)", value: $glossaryImportLimit, in: 1...2_000, step: 50)
                     .onChange(of: glossaryImportLimit) { _, _ in
                         clearGlossaryImportSelectionFeedback()
                     }
+                    .disabled(appState.isImportingGlossary)
 
                 HStack {
                     Button(appState.t(.downloadAndImport)) {
