@@ -212,6 +212,7 @@ final class AppState: ObservableObject {
     func start() async {
         guard !isRunning else { return }
         cancelPreflightTest()
+        preflightTestReport = .idle
 
         let preflight = await runStartPreflight()
         if case .blocked(let issue) = preflight {
@@ -294,6 +295,7 @@ final class AppState: ObservableObject {
             restartTask = nil
         }
         cancelPreflightTest()
+        preflightTestReport = .idle
         resetAudioSendPipeline()
         audioCaptureGeneration = UUID()
         microphoneCapture?.stop()
