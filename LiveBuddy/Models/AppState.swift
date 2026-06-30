@@ -1243,26 +1243,35 @@ final class AppState: ObservableObject {
 
     private func startCapture() async throws {
         let generation = audioCaptureGeneration
-        if settings.audioSource == .microphone || settings.audioSource == .both {
-            let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone, generation: generation))
-            try await mic.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
-            microphoneCapture = mic
-            updateLocalizedStatus(.statusMicrophoneCaptureStarted, level: .connecting, log: true)
-        }
+        do {
+            if settings.audioSource == .microphone || settings.audioSource == .both {
+                let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone, generation: generation))
+                try await mic.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
+                microphoneCapture = mic
+                updateLocalizedStatus(.statusMicrophoneCaptureStarted, level: .connecting, log: true)
+            }
 
-        if settings.audioSource == .screen || settings.audioSource == .both {
-            let screen = ScreenAudioCapture(
-                onAudioChunk: audioSink(source: .screen, generation: generation),
-                onStatus: { [weak self] message in
-                    Task { @MainActor [weak self] in
-                        guard self?.audioCaptureGeneration == generation else { return }
-                        self?.updateStatus(message, level: .error, log: true)
+            if settings.audioSource == .screen || settings.audioSource == .both {
+                let screen = ScreenAudioCapture(
+                    onAudioChunk: audioSink(source: .screen, generation: generation),
+                    onStatus: { [weak self] message in
+                        Task { @MainActor [weak self] in
+                            guard self?.audioCaptureGeneration == generation else { return }
+                            self?.updateStatus(message, level: .error, log: true)
+                        }
                     }
-                }
-            )
-            try await screen.start()
-            screenCapture = screen
-            updateLocalizedStatus(.statusScreenAudioCaptureStarted, level: .connecting, log: true)
+                )
+                try await screen.start()
+                screenCapture = screen
+                updateLocalizedStatus(.statusScreenAudioCaptureStarted, level: .connecting, log: true)
+            }
+        } catch {
+            audioCaptureGeneration = UUID()
+            microphoneCapture?.stop()
+            microphoneCapture = nil
+            await screenCapture?.stop()
+            screenCapture = nil
+            throw error
         }
     }
 
