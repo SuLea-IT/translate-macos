@@ -1002,7 +1002,11 @@ struct SettingsView: View {
     private func copyLogsFromUI() {
         let logText = LogExporter().export(entries: appState.logs, language: appState.settings.interfaceLanguage)
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(logText, forType: .string)
+        let didCopy = NSPasteboard.general.setString(logText, forType: .string)
+        guard didCopy else {
+            logExportErrorMessage = appState.t(.copyFailed)
+            return
+        }
         logExportErrorMessage = nil
     }
 

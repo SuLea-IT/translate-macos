@@ -217,6 +217,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case noLogEntries
     case exportLogs
     case copyLogs
+    case copyFailed
     case clearLogsConfirmationTitle
     case clearLogsConfirmationMessage
     case clear
@@ -544,6 +545,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .noLogEntries: "No log entries.",
         .exportLogs: "Export Logs",
         .copyLogs: "Copy Logs",
+        .copyFailed: "Copy failed. Please try again.",
         .clearLogsConfirmationTitle: "Clear logs?",
         .clearLogsConfirmationMessage: "This will remove all %d runtime log entries. Export a backup first if needed.",
         .clear: "Clear",
@@ -839,6 +841,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "暂无日志。",
             .exportLogs: "导出日志",
             .copyLogs: "复制日志",
+            .copyFailed: "复制失败，请重试。",
             .clearLogsConfirmationTitle: "清空日志？",
             .clearLogsConfirmationMessage: "这将删除全部 %d 条运行日志。如有需要，请先导出备份。",
             .clear: "清除",
@@ -1128,6 +1131,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "ログはありません。",
             .exportLogs: "ログを書き出し",
             .copyLogs: "ログをコピー",
+            .copyFailed: "コピーに失敗しました。もう一度お試しください。",
             .clearLogsConfirmationTitle: "ログを消去しますか？",
             .clearLogsConfirmationMessage: "すべての %d 件の実行ログを削除します。必要な場合は先にバックアップを書き出してください。",
             .clear: "消去",
@@ -1415,6 +1419,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "로그 항목이 없습니다.",
             .exportLogs: "로그 내보내기",
             .copyLogs: "로그 복사",
+            .copyFailed: "복사에 실패했습니다. 다시 시도하세요.",
             .clearLogsConfirmationTitle: "로그를 지울까요?",
             .clearLogsConfirmationMessage: "런타임 로그 %d개가 모두 삭제됩니다. 필요하면 먼저 백업을 내보내세요.",
             .clear: "지우기",
@@ -1701,6 +1706,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "No hay entradas de registro.",
             .exportLogs: "Exportar registros",
             .copyLogs: "Copiar registros",
+            .copyFailed: "No se pudo copiar. Inténtalo de nuevo.",
             .clearLogsConfirmationTitle: "¿Limpiar registros?",
             .clearLogsConfirmationMessage: "Esto eliminará las %d entradas de registro de ejecución. Exporta una copia antes si la necesitas.",
             .clear: "Limpiar",
@@ -1987,6 +1993,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "Aucune entrée de journal.",
             .exportLogs: "Exporter les journaux",
             .copyLogs: "Copier les journaux",
+            .copyFailed: "La copie a échoué. Réessayez.",
             .clearLogsConfirmationTitle: "Effacer les journaux ?",
             .clearLogsConfirmationMessage: "Cela supprimera les %d entrées du journal d’exécution. Exportez une sauvegarde d’abord si nécessaire.",
             .clear: "Effacer",
@@ -2273,6 +2280,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "Keine Logeinträge.",
             .exportLogs: "Logs exportieren",
             .copyLogs: "Logs kopieren",
+            .copyFailed: "Kopieren fehlgeschlagen. Bitte erneut versuchen.",
             .clearLogsConfirmationTitle: "Logs löschen?",
             .clearLogsConfirmationMessage: "Dadurch werden alle %d Laufzeitprotokolleinträge entfernt. Exportieren Sie bei Bedarf zuerst eine Sicherung.",
             .clear: "Löschen",
@@ -2559,6 +2567,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .noLogEntries: "Chưa có mục nhật ký.",
             .exportLogs: "Xuất nhật ký",
             .copyLogs: "Sao chép nhật ký",
+            .copyFailed: "Sao chép thất bại. Vui lòng thử lại.",
             .clearLogsConfirmationTitle: "Xóa nhật ký?",
             .clearLogsConfirmationMessage: "Thao tác này sẽ xóa tất cả %d mục nhật ký chạy. Hãy xuất bản sao lưu trước nếu cần.",
             .clear: "Xóa",
