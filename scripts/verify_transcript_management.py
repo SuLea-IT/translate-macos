@@ -118,14 +118,40 @@ else:
     body = append_caption_match.group("body")
     for token in [
         "let line = CaptionLine(",
-        "captions.append(line)",
+        "appendDisplayedCaption(line)",
         "appendCurrentTranscriptLine(from: line)",
-        "captions.removeFirst(captions.count - 80)",
     ]:
         if token not in body:
             errors.append(f"AppState.appendCaption must keep transcript history independent from display cache through {token}")
-    if body.find("appendCurrentTranscriptLine(from: line)") > body.find("captions.removeFirst(captions.count - 80)"):
-        errors.append("AppState.appendCaption must store full transcript history before trimming caption display cache")
+    if "captions.append(line)" in body:
+        errors.append("AppState.appendCaption must not append directly to the trimmed display cache")
+    if body.find("let line = CaptionLine(") > body.find("appendCurrentTranscriptLine(from: line)"):
+        errors.append("AppState.appendCaption must persist the local line object into full transcript history")
+
+append_display_match = re.search(r"private func appendDisplayedCaption\(_ line: CaptionLine\) -> CaptionLine \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not append_display_match:
+    errors.append("AppState.appendDisplayedCaption(_:) not found for bounded display cache")
+else:
+    body = append_display_match.group("body")
+    for token in [
+        "captions.append(line)",
+        "trimDisplayedCaptions()",
+        "return line",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.appendDisplayedCaption(_:) must centralize live display trimming through {token}")
+
+trim_display_match = re.search(r"private func trimDisplayedCaptions\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not trim_display_match:
+    errors.append("AppState.trimDisplayedCaptions() not found for bounded display cache")
+else:
+    body = trim_display_match.group("body")
+    for token in [
+        "captions.count > Self.maxDisplayedCaptionLines",
+        "captions.removeFirst(captions.count - Self.maxDisplayedCaptionLines)",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.trimDisplayedCaptions() must bound live display cache through {token}")
 
 append_history_match = re.search(r"private func appendCurrentTranscriptLine\(from line: CaptionLine\) \{(?P<body>[\s\S]*?)\n    \}\n\n    var subtitleLines", app_state_text)
 if not append_history_match:
@@ -150,6 +176,8 @@ if finish_match:
     body = finish_match.group("body")
     if "session.lines = currentTranscriptLines" not in body:
         errors.append("AppState.finishTranscriptSession must persist full currentTranscriptLines")
+    if "appendDisplayedCaption(line)" not in body or "appendCurrentTranscriptLine(from: line)" not in body:
+        errors.append("AppState.finishTranscriptSession must flush the final draft through bounded display cache and full transcript history")
     if ".filter { $0.kind == .output }" in body and "captions" in body:
         errors.append("AppState.finishTranscriptSession must not rebuild transcript from trimmed caption display cache")
 

@@ -12,6 +12,7 @@ final class AppState: ObservableObject {
     private static let maxTranscriptDraftCharacters = 4_000
     private static let maxPendingOriginalSentences = 120
     private static let maxPendingOriginalSentenceCharacters = 1_000
+    private static let maxDisplayedCaptionLines = 80
 
     private static func audioDevicePropertyAddress() -> AudioObjectPropertyAddress {
         AudioObjectPropertyAddress(
@@ -1492,6 +1493,18 @@ final class AppState: ObservableObject {
         completedOriginalSentences.removeFirst(completedOriginalSentences.count - Self.maxPendingOriginalSentences)
     }
 
+    @discardableResult
+    private func appendDisplayedCaption(_ line: CaptionLine) -> CaptionLine {
+        captions.append(line)
+        trimDisplayedCaptions()
+        return line
+    }
+
+    private func trimDisplayedCaptions() {
+        guard captions.count > Self.maxDisplayedCaptionLines else { return }
+        captions.removeFirst(captions.count - Self.maxDisplayedCaptionLines)
+    }
+
     private func appendCaption(_ text: String, language: String?, kind: CaptionKind) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1510,14 +1523,11 @@ final class AppState: ObservableObject {
                 original = nil
             }
             let line = CaptionLine(text: sentence, originalText: original, languageCode: language, kind: kind)
-            captions.append(line)
+            appendDisplayedCaption(line)
             appendCurrentTranscriptLine(from: line)
         }
         pending = sentences.remainder
         captionDraft = boundedTranscriptDraft(pending)
-        if captions.count > 80 {
-            captions.removeFirst(captions.count - 80)
-        }
     }
 
     private func appendCurrentTranscriptLine(from line: CaptionLine) {
@@ -1763,15 +1773,14 @@ final class AppState: ObservableObject {
         // Flush any remaining drafts
         if !captionDraft.isEmpty {
             let original = !completedOriginalSentences.isEmpty ? completedOriginalSentences.joined(separator: " ") : originalDraft
-            captions.append(CaptionLine(
+            let line = CaptionLine(
                 text: captionDraft,
                 originalText: original.isEmpty ? nil : original,
                 languageCode: settings.targetLanguageCode,
                 kind: .output
-            ))
-            if let line = captions.last {
-                appendCurrentTranscriptLine(from: line)
-            }
+            )
+            appendDisplayedCaption(line)
+            appendCurrentTranscriptLine(from: line)
             captionDraft = ""
             originalDraft = ""
             completedOriginalSentences.removeAll()
