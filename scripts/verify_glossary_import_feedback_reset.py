@@ -21,7 +21,6 @@ else:
 for name, pattern in [
     ("startGlossaryImport", r"func startGlossaryImport\(from url: URL, sourceName: String, importLimit: Int\) \{(?P<body>[\s\S]*?)\n    \}"),
     ("startGlossaryImportFromLocalFile", r"func startGlossaryImportFromLocalFile\(url: URL, sourceName: String, importLimit: Int\) \{(?P<body>[\s\S]*?)\n    \}"),
-    ("cancelGlossaryImport", r"func cancelGlossaryImport\(\) \{(?P<body>[\s\S]*?)\n    \}"),
 ]:
     match = re.search(pattern, app_state)
     if not match:
@@ -30,6 +29,14 @@ for name, pattern in [
     body = match.group("body")
     if "clearGlossaryImportFeedback()" not in body:
         errors.append(f"AppState.{name} must clear stale import feedback through clearGlossaryImportFeedback()")
+
+cancel_match = re.search(r"func cancelGlossaryImport\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    func importGlossary", app_state)
+if not cancel_match:
+    errors.append("AppState.cancelGlossaryImport not found")
+else:
+    body = cancel_match.group("body")
+    if "glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryImportCanceled)" not in body:
+        errors.append("AppState.cancelGlossaryImport must replace stale import feedback with localized cancellation feedback")
 
 import_selected_match = re.search(r"private func importSelectedGlossarySource\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func handleGlossaryFileImporterResult", settings_view)
 if not import_selected_match:

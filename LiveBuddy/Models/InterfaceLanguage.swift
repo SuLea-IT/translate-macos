@@ -129,6 +129,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case glossaryFileTooLarge
     case glossaryImportFailed
     case glossaryImportEmpty
+    case glossaryImportCanceled
     case httpsLinksOnly
     case importingGlossary
     case glossaryImportHelp
@@ -472,6 +473,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .glossaryFileTooLarge: "The glossary file is too large",
         .glossaryImportFailed: "Glossary import failed",
         .glossaryImportEmpty: "No glossary terms were found",
+        .glossaryImportCanceled: "Glossary import canceled.",
         .httpsLinksOnly: "Only HTTPS glossary links are supported",
         .importingGlossary: "Importing glossary…",
         .glossaryImportHelp: "Download public terminology or import your own CSV, TSV, TBX/XML, TXT, or ZIP glossary.",
@@ -783,6 +785,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "术语文件太大",
             .glossaryImportFailed: "术语导入失败",
             .glossaryImportEmpty: "未找到可导入术语",
+            .glossaryImportCanceled: "已取消术语库导入。",
             .httpsLinksOnly: "仅支持 HTTPS 术语链接",
             .importingGlossary: "正在导入术语表…",
             .glossaryImportHelp: "下载公开术语库，或导入你自己的 CSV、TSV、TBX/XML、TXT、ZIP 术语表。",
@@ -1091,6 +1094,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "用語ファイルが大きすぎます",
             .glossaryImportFailed: "用語集のインポートに失敗しました",
             .glossaryImportEmpty: "インポートできる用語が見つかりません",
+            .glossaryImportCanceled: "用語集のインポートをキャンセルしました。",
             .httpsLinksOnly: "HTTPS の用語リンクのみ対応しています",
             .importingGlossary: "用語集をインポート中…",
             .glossaryImportHelp: "公開用語集をダウンロードするか、CSV、TSV、TBX/XML、TXT、ZIP をインポートします。",
@@ -1399,6 +1403,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "용어 파일이 너무 큽니다",
             .glossaryImportFailed: "용어 가져오기 실패",
             .glossaryImportEmpty: "가져올 용어를 찾지 못했습니다",
+            .glossaryImportCanceled: "용어집 가져오기를 취소했습니다.",
             .httpsLinksOnly: "HTTPS 용어 링크만 지원합니다",
             .importingGlossary: "용어집 가져오는 중…",
             .glossaryImportHelp: "공개 용어를 다운로드하거나 CSV, TSV, TBX/XML, TXT, ZIP 용어집을 가져옵니다。",
@@ -1707,6 +1712,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "El archivo de glosario es demasiado grande",
             .glossaryImportFailed: "Error al importar el glosario",
             .glossaryImportEmpty: "No se encontraron términos",
+            .glossaryImportCanceled: "Importación del glosario cancelada.",
             .httpsLinksOnly: "Solo se admiten enlaces HTTPS",
             .importingGlossary: "Importando glosario…",
             .glossaryImportHelp: "Descarga terminología pública o importa CSV, TSV, TBX/XML, TXT o ZIP.",
@@ -2015,6 +2021,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "Le fichier de glossaire est trop volumineux",
             .glossaryImportFailed: "Échec de l’importation du glossaire",
             .glossaryImportEmpty: "Aucun terme trouvé",
+            .glossaryImportCanceled: "Importation du glossaire annulée.",
             .httpsLinksOnly: "Seuls les liens HTTPS sont pris en charge",
             .importingGlossary: "Importation du glossaire…",
             .glossaryImportHelp: "Téléchargez une terminologie publique ou importez CSV, TSV, TBX/XML, TXT ou ZIP.",
@@ -2323,6 +2330,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "Die Glossardatei ist zu groß",
             .glossaryImportFailed: "Glossarimport fehlgeschlagen",
             .glossaryImportEmpty: "Keine Begriffe gefunden",
+            .glossaryImportCanceled: "Glossarimport abgebrochen.",
             .httpsLinksOnly: "Nur HTTPS-Glossarlinks werden unterstützt",
             .importingGlossary: "Glossar wird importiert…",
             .glossaryImportHelp: "Öffentliche Terminologie laden oder CSV, TSV, TBX/XML, TXT oder ZIP importieren.",
@@ -2631,6 +2639,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .glossaryFileTooLarge: "Tệp bảng thuật ngữ quá lớn",
             .glossaryImportFailed: "Nhập bảng thuật ngữ thất bại",
             .glossaryImportEmpty: "Không tìm thấy thuật ngữ",
+            .glossaryImportCanceled: "Đã hủy nhập bảng thuật ngữ.",
             .httpsLinksOnly: "Chỉ hỗ trợ liên kết HTTPS",
             .importingGlossary: "Đang nhập bảng thuật ngữ…",
             .glossaryImportHelp: "Tải thuật ngữ công khai hoặc nhập CSV, TSV, TBX/XML, TXT, ZIP.",

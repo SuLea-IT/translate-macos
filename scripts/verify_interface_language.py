@@ -67,6 +67,7 @@ else:
         "glossaryEmptyStateTitle",
         "glossaryEmptyStateMessage",
         "glossaryNoSearchResults",
+        "glossaryImportCanceled",
         "runtimeLogs",
         "exportLogs",
         "copyLogs",

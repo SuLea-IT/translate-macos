@@ -571,7 +571,8 @@ final class AppState: ObservableObject {
         glossaryImportTask = nil
         isImportingGlossary = false
         glossaryImportProgress = nil
-        clearGlossaryImportFeedback()
+        glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryImportCanceled)
+        updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
     }
 
     func importGlossary(from url: URL, sourceName: String, importLimit: Int) async {
@@ -666,7 +667,8 @@ final class AppState: ObservableObject {
 
     private func handleGlossaryImportFailure(_ error: Error) {
         if error is CancellationError {
-            glossaryImportMessage = ""
+            glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryImportCanceled)
+            updateStatus(glossaryImportMessage, level: isRunning ? .running : .stopped, log: true)
             return
         }
         if let importError = error as? GlossaryImportError {
