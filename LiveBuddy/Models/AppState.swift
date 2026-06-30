@@ -1959,10 +1959,10 @@ final class AppState: ObservableObject {
             )
             appendDisplayedCaption(line)
             appendCurrentTranscriptLine(from: line)
-            captionDraft = ""
-            originalDraft = ""
-            completedOriginalSentences.removeAll()
         }
+        captionDraft = ""
+        originalDraft = ""
+        completedOriginalSentences.removeAll()
 
         var session = transcriptSessions[index]
         session.lines = currentTranscriptLines
