@@ -476,18 +476,28 @@ final class AppState: ObservableObject {
 
     func startGlossaryImport(from url: URL, sourceName: String, importLimit: Int) {
         guard glossaryImportTask == nil else { return }
-        glossaryImportGeneration = UUID()
+        let generation = UUID()
+        glossaryImportGeneration = generation
         glossaryImportTask = Task { @MainActor [weak self] in
+            defer {
+                if self?.glossaryImportGeneration == generation {
+                    self?.glossaryImportTask = nil
+                }
+            }
             await self?.importGlossary(from: url, sourceName: sourceName, importLimit: importLimit)
-            guard !Task.isCancelled else { return }
-            self?.glossaryImportTask = nil
         }
     }
 
     func startGlossaryImportFromLocalFile(url: URL, sourceName: String, importLimit: Int) {
         guard glossaryImportTask == nil else { return }
-        glossaryImportGeneration = UUID()
+        let generation = UUID()
+        glossaryImportGeneration = generation
         glossaryImportTask = Task { @MainActor [weak self] in
+            defer {
+                if self?.glossaryImportGeneration == generation {
+                    self?.glossaryImportTask = nil
+                }
+            }
             let didStartAccessing = url.startAccessingSecurityScopedResource()
             defer {
                 if didStartAccessing {
@@ -495,8 +505,6 @@ final class AppState: ObservableObject {
                 }
             }
             await self?.importGlossary(fromLocalFile: url, sourceName: sourceName, importLimit: importLimit)
-            guard !Task.isCancelled else { return }
-            self?.glossaryImportTask = nil
         }
     }
 
