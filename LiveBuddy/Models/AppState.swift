@@ -1052,6 +1052,7 @@ final class AppState: ObservableObject {
         client.onAudioChunk = { [weak self, weak client, audioPlayer] data in
             Task { @MainActor [weak self, weak client] in
                 guard let self, let client, self.client === client else { return }
+                guard self.isTranslatedAudioOutputEnabled else { return }
                 audioPlayer.playPCM16(data, sampleRate: 24_000)
             }
         }
@@ -1841,7 +1842,15 @@ final class AppState: ObservableObject {
 
     private func updateAudioPlayerVolume() {
         let volume = settings.audioPlayerMuted ? 0.0 : settings.audioPlayerVolume
+        if volume <= 0 {
+            audioPlayer.stop()
+            return
+        }
         audioPlayer.setVolume(Float(volume))
+    }
+
+    private var isTranslatedAudioOutputEnabled: Bool {
+        !settings.audioPlayerMuted && settings.audioPlayerVolume > 0
     }
 
     private func handleClientStatus(_ message: String) {
