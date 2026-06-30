@@ -1260,9 +1260,10 @@ final class AppState: ObservableObject {
             if settings.audioSource == .screen || settings.audioSource == .both {
                 let screen = ScreenAudioCapture(
                     onAudioChunk: audioSink(source: .screen, generation: generation),
-                    onStatus: { [weak self] message in
+                    onStatus: { [weak self] status in
                         Task { @MainActor [weak self] in
                             guard self?.audioCaptureGeneration == generation else { return }
+                            let message = self?.localizedScreenAudioStatus(status) ?? ""
                             self?.updateStatus(message, level: .error, log: true)
                         }
                     }
@@ -1278,6 +1279,15 @@ final class AppState: ObservableObject {
             await screenCapture?.stop()
             screenCapture = nil
             throw error
+        }
+    }
+
+    private func localizedScreenAudioStatus(_ status: ScreenAudioCaptureStatus) -> String {
+        switch status {
+        case .stopped(let reason):
+            return settings.interfaceLanguage.localized(.statusScreenAudioStopped, arguments: [reason])
+        case .unsupportedFormat(let flags, let bits):
+            return settings.interfaceLanguage.localized(.statusScreenAudioUnsupportedFormat, arguments: [flags, bits])
         }
     }
 

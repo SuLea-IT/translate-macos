@@ -2,16 +2,21 @@ import AVFoundation
 import CoreMedia
 import ScreenCaptureKit
 
+enum ScreenAudioCaptureStatus: Equatable, Sendable {
+    case stopped(String)
+    case unsupportedFormat(flags: UInt32, bits: UInt32)
+}
+
 final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     private let downsampler = PCM16Downsampler()
     private let chunker: PCM16Chunker
-    private let onStatus: (@Sendable (String) -> Void)?
+    private let onStatus: (@Sendable (ScreenAudioCaptureStatus) -> Void)?
     private var stream: SCStream?
     private let audioQueue = DispatchQueue(label: "livebuddy.screen.audio")
     private let videoQueue = DispatchQueue(label: "livebuddy.screen.video")
     nonisolated(unsafe) private var lastFormatStatusAt = Date.distantPast
 
-    init(onAudioChunk: @escaping @Sendable (Data) -> Void, onStatus: (@Sendable (String) -> Void)? = nil) {
+    init(onAudioChunk: @escaping @Sendable (Data) -> Void, onStatus: (@Sendable (ScreenAudioCaptureStatus) -> Void)? = nil) {
         self.onStatus = onStatus
         chunker = PCM16Chunker(onChunk: onAudioChunk)
     }
@@ -130,14 +135,14 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
-        onStatus?("Screen audio stopped: \(error.localizedDescription)")
+        onStatus?(.stopped(error.localizedDescription))
     }
 
     private nonisolated func reportFormatStatusIfNeeded(flags: AudioFormatFlags, bits: UInt32) {
         let now = Date()
         guard now.timeIntervalSince(lastFormatStatusAt) >= 2 else { return }
         lastFormatStatusAt = now
-        onStatus?("Unsupported screen audio format: flags \(flags), bits \(bits)")
+        onStatus?(.unsupportedFormat(flags: UInt32(flags), bits: bits))
     }
 
     private nonisolated func readFloat32Samples(from audioBufferList: UnsafeMutablePointer<AudioBufferList>, channels: Int) -> [Float] {

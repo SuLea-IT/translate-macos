@@ -74,6 +74,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case statusResumingReplay
     case statusMicrophoneCaptureStarted
     case statusScreenAudioCaptureStarted
+    case statusScreenAudioStopped
+    case statusScreenAudioUnsupportedFormat
     case statusIdleWarning
     case statusApiPausedMonitoring
     case statusSessionUsageLimitReached
@@ -402,6 +404,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .statusResumingReplay: "Resuming · replaying buffered audio",
         .statusMicrophoneCaptureStarted: "Microphone capture started",
         .statusScreenAudioCaptureStarted: "Screen audio capture started",
+        .statusScreenAudioStopped: "Screen audio stopped: %@",
+        .statusScreenAudioUnsupportedFormat: "Unsupported screen audio format: flags %d, bits %d",
         .statusIdleWarning: "Idle soon · auto-pause in %ds",
         .statusApiPausedMonitoring: "API paused · monitoring locally",
         .statusSessionUsageLimitReached: "Session usage limit reached · API paused",
@@ -698,6 +702,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "正在恢复 · 回放缓冲音频",
             .statusMicrophoneCaptureStarted: "麦克风采集已启动",
             .statusScreenAudioCaptureStarted: "屏幕音频采集已启动",
+            .statusScreenAudioStopped: "屏幕音频已停止：%@",
+            .statusScreenAudioUnsupportedFormat: "不支持的屏幕音频格式：flags %d，bits %d",
             .statusIdleWarning: "即将空闲暂停 · %d 秒后自动暂停",
             .statusApiPausedMonitoring: "API 已暂停 · 本地继续监听",
             .statusSessionUsageLimitReached: "本次使用上限已达到 · API 已暂停",
@@ -991,6 +997,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "再開中・バッファ音声を再送中",
             .statusMicrophoneCaptureStarted: "マイク収録を開始しました",
             .statusScreenAudioCaptureStarted: "画面音声収録を開始しました",
+            .statusScreenAudioStopped: "画面音声が停止しました：%@",
+            .statusScreenAudioUnsupportedFormat: "未対応の画面音声形式：flags %d、bits %d",
             .statusIdleWarning: "まもなくアイドル一時停止・%d秒後に自動停止",
             .statusApiPausedMonitoring: "APIを一時停止中・ローカルで監視中",
             .statusSessionUsageLimitReached: "今回の使用上限に達しました・APIを一時停止中",
@@ -1281,6 +1289,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "재개 중 · 버퍼 오디오 재생 중",
             .statusMicrophoneCaptureStarted: "마이크 캡처 시작됨",
             .statusScreenAudioCaptureStarted: "화면 오디오 캡처 시작됨",
+            .statusScreenAudioStopped: "화면 오디오가 중지됨: %@",
+            .statusScreenAudioUnsupportedFormat: "지원되지 않는 화면 오디오 형식: flags %d, bits %d",
             .statusIdleWarning: "곧 유휴 일시 중지 · %d초 후 자동 일시 중지",
             .statusApiPausedMonitoring: "API 일시 중지 · 로컬에서 계속 모니터링",
             .statusSessionUsageLimitReached: "이번 사용 한도 도달 · API 일시 중지",
@@ -1568,6 +1578,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "Reanudando · reproduciendo audio en búfer",
             .statusMicrophoneCaptureStarted: "Captura del micrófono iniciada",
             .statusScreenAudioCaptureStarted: "Captura de audio de pantalla iniciada",
+            .statusScreenAudioStopped: "Audio de pantalla detenido: %@",
+            .statusScreenAudioUnsupportedFormat: "Formato de audio de pantalla no compatible: flags %d, bits %d",
             .statusIdleWarning: "Inactividad pronto · pausa automática en %d s",
             .statusApiPausedMonitoring: "API pausada · monitorización local",
             .statusSessionUsageLimitReached: "Límite de esta sesión alcanzado · API pausada",
@@ -1855,6 +1867,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "Reprise · relecture de l’audio en mémoire tampon",
             .statusMicrophoneCaptureStarted: "Capture du microphone démarrée",
             .statusScreenAudioCaptureStarted: "Capture audio de l’écran démarrée",
+            .statusScreenAudioStopped: "Audio de l’écran arrêté : %@",
+            .statusScreenAudioUnsupportedFormat: "Format audio de l’écran non pris en charge : flags %d, bits %d",
             .statusIdleWarning: "Inactivité imminente · pause auto dans %d s",
             .statusApiPausedMonitoring: "API en pause · surveillance locale",
             .statusSessionUsageLimitReached: "Limite de cette session atteinte · API en pause",
@@ -2142,6 +2156,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "Wird fortgesetzt · gepufferte Audiodaten werden wiedergegeben",
             .statusMicrophoneCaptureStarted: "Mikrofonaufnahme gestartet",
             .statusScreenAudioCaptureStarted: "Bildschirm-Audioaufnahme gestartet",
+            .statusScreenAudioStopped: "Bildschirm-Audio gestoppt: %@",
+            .statusScreenAudioUnsupportedFormat: "Nicht unterstütztes Bildschirm-Audioformat: flags %d, bits %d",
             .statusIdleWarning: "Bald inaktiv · automatische Pause in %d s",
             .statusApiPausedMonitoring: "API pausiert · lokale Überwachung läuft",
             .statusSessionUsageLimitReached: "Limit dieser Sitzung erreicht · API pausiert",
@@ -2429,6 +2445,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusResumingReplay: "Đang tiếp tục · phát lại âm thanh đã đệm",
             .statusMicrophoneCaptureStarted: "Đã bắt đầu thu micrô",
             .statusScreenAudioCaptureStarted: "Đã bắt đầu thu âm thanh màn hình",
+            .statusScreenAudioStopped: "Âm thanh màn hình đã dừng: %@",
+            .statusScreenAudioUnsupportedFormat: "Định dạng âm thanh màn hình không được hỗ trợ: flags %d, bits %d",
             .statusIdleWarning: "Sắp rảnh · tự động tạm dừng sau %d giây",
             .statusApiPausedMonitoring: "API đã tạm dừng · tiếp tục giám sát cục bộ",
             .statusSessionUsageLimitReached: "Đã đạt giới hạn phiên · API đã tạm dừng",
