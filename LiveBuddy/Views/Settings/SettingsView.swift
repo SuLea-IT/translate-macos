@@ -37,6 +37,7 @@ struct SettingsView: View {
     @State private var logExportDocument: TranscriptExportDocument?
     @State private var logExportFileName = "LiveBuddy-Logs.txt"
     @State private var logExportErrorMessage: String?
+    @State private var logCopyErrorMessage: String?
     @State private var isShowingClearLogsConfirmation = false
 
     var body: some View {
@@ -937,6 +938,15 @@ struct SettingsView: View {
 
             Divider()
 
+            if let logCopyErrorMessage {
+                Text(logCopyErrorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
             if let logExportErrorMessage {
                 Text(appState.t(.exportFailed, logExportErrorMessage))
                     .font(.caption)
@@ -980,9 +990,11 @@ struct SettingsView: View {
             case .success:
                 logExportDocument = nil
                 logExportErrorMessage = nil
+                logCopyErrorMessage = nil
             case .failure(let error):
                 logExportDocument = nil
                 logExportErrorMessage = error.localizedDescription
+                logCopyErrorMessage = nil
             }
         }
         .confirmationDialog(
@@ -1004,9 +1016,11 @@ struct SettingsView: View {
         NSPasteboard.general.clearContents()
         let didCopy = NSPasteboard.general.setString(logText, forType: .string)
         guard didCopy else {
-            logExportErrorMessage = appState.t(.copyFailed)
+            logCopyErrorMessage = appState.t(.copyFailed)
+            logExportErrorMessage = nil
             return
         }
+        logCopyErrorMessage = nil
         logExportErrorMessage = nil
     }
 
@@ -1016,11 +1030,13 @@ struct SettingsView: View {
         logExportDocument = TranscriptExportDocument(text: logText, contentType: .plainText)
         logExportFileName = exporter.defaultFileName()
         logExportErrorMessage = nil
+        logCopyErrorMessage = nil
     }
 
     private func clearLogsFromUI() {
         appState.clearLogs()
         logExportErrorMessage = nil
+        logCopyErrorMessage = nil
     }
 }
 
