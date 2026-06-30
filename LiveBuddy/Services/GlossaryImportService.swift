@@ -80,7 +80,7 @@ final class GlossaryImportService: @unchecked Sendable {
         downloadedURL = nil
         do {
             let result = try parser.parse(fileURL: destination, sourceName: sourceName, existingEntries: existingEntries, options: options)
-            if result.entries.isEmpty {
+            if shouldTreatImportAsEmpty(result) {
                 throw GlossaryImportError.emptyImport
             }
             return result
@@ -194,10 +194,14 @@ final class GlossaryImportService: @unchecked Sendable {
     ) throws -> GlossaryImportResult {
         try enforceFileSizeLimit(url)
         let result = try parser.parse(fileURL: url, sourceName: sourceName, existingEntries: existingEntries, options: options)
-        if result.entries.isEmpty {
+        if shouldTreatImportAsEmpty(result) {
             throw GlossaryImportError.emptyImport
         }
         return result
+    }
+
+    private func shouldTreatImportAsEmpty(_ result: GlossaryImportResult) -> Bool {
+        result.entries.isEmpty && result.skippedDuplicate == 0
     }
 
     private func enforceFileSizeLimit(_ url: URL) throws {
