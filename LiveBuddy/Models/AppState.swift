@@ -1198,6 +1198,10 @@ final class AppState: ObservableObject {
         }
     }
 
+    private func scheduleStopRuntimeAfterCaptureFailure() {
+        scheduleStopRuntimeAfterConnectionFailure()
+    }
+
     private func scheduleStopRuntimeAfterConnectionFailure() {
         guard connectionStopTask == nil else { return }
         let generation = UUID()
@@ -1287,8 +1291,7 @@ final class AppState: ObservableObject {
                     onStatus: { [weak self] status in
                         Task { @MainActor [weak self] in
                             guard self?.audioCaptureGeneration == generation else { return }
-                            let message = self?.localizedScreenAudioStatus(status) ?? ""
-                            self?.updateStatus(message, level: .error, log: true)
+                            self?.handleScreenAudioStatus(status, generation: generation)
                         }
                     }
                 )
@@ -1304,6 +1307,15 @@ final class AppState: ObservableObject {
             screenCapture = nil
             throw error
         }
+    }
+
+    private func handleScreenAudioStatus(_ status: ScreenAudioCaptureStatus, generation: UUID) {
+        guard audioCaptureGeneration == generation else { return }
+        let message = localizedScreenAudioStatus(status)
+        updateStatus(message, level: .error, log: true)
+        setDiagnosticIssue(DiagnosticClassifier.screenAudioRuntimeFailure(underlyingMessage: message))
+        guard isRunning else { return }
+        scheduleStopRuntimeAfterCaptureFailure()
     }
 
     private func localizedScreenAudioStatus(_ status: ScreenAudioCaptureStatus) -> String {

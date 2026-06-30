@@ -115,6 +115,18 @@ struct DiagnosticClassifier {
         return issue(code, kind: .storage, title: title, message: message, recovery: .diagnosticCheckDiskRecovery, underlying: underlyingMessage, action: nil)
     }
 
+    static func screenAudioRuntimeFailure(underlyingMessage: String) -> DiagnosticIssue {
+        issue(
+            .screenAudioUnavailable,
+            kind: .capture,
+            title: .diagnosticScreenAudioUnavailableTitle,
+            message: .diagnosticScreenAudioUnavailableMessage,
+            recovery: .diagnosticOpenScreenRecordingRecovery,
+            underlying: underlyingMessage,
+            action: .openScreenRecordingSettings
+        )
+    }
+
     private static func classify(message: String, context: DiagnosticContext, fallbackCode: DiagnosticCode? = nil) -> DiagnosticIssue? {
         let normalized = message.lowercased()
         if contains(normalized, ["api key", "api_key_invalid", "apikey", "unauthorized", "forbidden"]) {

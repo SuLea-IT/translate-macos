@@ -43,13 +43,27 @@ else:
     body = capture_match.group(0)
     for token in [
         "onStatus: { [weak self] status in",
-        "let message = self?.localizedScreenAudioStatus(status) ?? \"\"",
-        "self?.updateStatus(message, level: .error, log: true)",
+        "self?.handleScreenAudioStatus(status, generation: generation)",
     ]:
         if token not in body:
             errors.append(f"AppState must localize screen audio status callback through {token}")
     if "onStatus: { [weak self] message in" in body:
         errors.append("AppState must not publish raw screen audio status strings")
+
+handler_match = re.search(
+    r"private func handleScreenAudioStatus\(_ status: ScreenAudioCaptureStatus, generation: UUID\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private func localizedScreenAudioStatus",
+    app_state,
+)
+if not handler_match:
+    errors.append("AppState.handleScreenAudioStatus(_:generation:) not found")
+else:
+    body = handler_match.group("body")
+    for token in [
+        "let message = localizedScreenAudioStatus(status)",
+        "updateStatus(message, level: .error, log: true)",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.handleScreenAudioStatus must publish localized screen audio status through {token}")
 
 helper_match = re.search(r"private func localizedScreenAudioStatus\(_ status: ScreenAudioCaptureStatus\) -> String \{(?P<body>[\s\S]*?)\n    \}\n\n    private func audioSink", app_state)
 if not helper_match:
