@@ -1326,8 +1326,10 @@ final class AppState: ObservableObject {
         recordAudioChunk(source: source, level: level)
 
         let chunk = BufferedAudioChunk(data: data, capturedAt: now)
+        let previousUsageSnapshot = usageSnapshot
         let decision = usageEngine.ingest(chunk: chunk, level: level, now: now)
         usageSnapshot = usageEngine.snapshot
+        logUsageBufferOverflowIfNeeded(previousSnapshot: previousUsageSnapshot)
 
         if let pauseReason = decision.pauseReason {
             enterUsagePause(reason: pauseReason)
@@ -1351,6 +1353,11 @@ final class AppState: ObservableObject {
         }
 
         updateRunningUsageStatus(now: now)
+    }
+
+    private func logUsageBufferOverflowIfNeeded(previousSnapshot: LiveUsageSnapshot) {
+        guard !previousSnapshot.resumeBufferOverflowed, usageSnapshot.resumeBufferOverflowed else { return }
+        appendLog(localizedStatus(.statusResumeBufferLimited), level: .error)
     }
 
     private func recordAudioChunk(source: AudioSource, level: Float) {
