@@ -194,7 +194,7 @@ else:
 for context, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("stop(cancelPendingRestart:)", r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}"),
-    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}"),
 ]:
     match = re.search(pattern, app_state_text)
     if not match:
@@ -238,7 +238,7 @@ else:
 if "resetAudioSendPipeline()" not in stop_cleanup_body:
     errors.append("AppState.stop must cancel queued audio sends through resetAudioSendPipeline()")
 for context, pattern in [
-    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("enterUsagePause", r"private func enterUsagePause\(reason: UsageControlPauseReason\) \{(?P<body>[\s\S]*?)\n    \}"),
     ("scheduleReconnect", r"private func scheduleReconnect\(after event: LiveConnectionEvent\) \{(?P<body>[\s\S]*?)\n    \}"),
 ]:
@@ -263,16 +263,19 @@ else:
     body = schedule_stop_match.group("body")
     for token in [
         "guard connectionStopTask == nil",
+        "let generation = UUID()",
+        "connectionStopGeneration = generation",
         "connectionStopTask = Task",
-        "await self?.stopRuntimeAfterConnectionFailure()",
+        "await self?.stopRuntimeAfterConnectionFailure(generation: generation)",
         "guard !Task.isCancelled else { return }",
+        "connectionStopGeneration == generation",
         "connectionStopTask = nil",
     ]:
         if token not in body:
             errors.append(f"AppState.scheduleStopRuntimeAfterConnectionFailure() must manage stop lifecycle through {token}")
 
-if "Task { await stopRuntimeAfterConnectionFailure() }" in app_state_text:
-    errors.append("AppState must not spawn untracked connection failure stop tasks")
+if "Task { await stopRuntimeAfterConnectionFailure() }" in app_state_text or "await self?.stopRuntimeAfterConnectionFailure()" in app_state_text:
+    errors.append("AppState must not spawn untracked or generation-unscoped connection failure stop tasks")
 
 make_client_match = re.search(r"private func makeGeminiClient\(\) -> GeminiLiveTranslateClient \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not make_client_match:
@@ -302,25 +305,25 @@ else:
         if index == -1 or guard_index == -1:
             errors.append(f"AppState.makeGeminiClient() must guard stale client callbacks before {token}")
 
-for context, pattern in [
-    ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-    ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-]:
-    match = re.search(pattern, app_state_text)
-    if not match:
-        errors.append(f"AppState.{context} not found for connection stop cleanup")
-    elif "connectionStopTask?.cancel()" not in match.group("body"):
-        errors.append(f"AppState.{context} must cancel stale connection stop work")
+start_match = re.search(r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not start_match:
+    errors.append("AppState.start not found for connection stop cleanup")
+elif "connectionStopTask?.cancel()" not in start_match.group("body"):
+    errors.append("AppState.start must cancel stale connection stop work")
 if "connectionStopTask?.cancel()" not in stop_cleanup_body:
     errors.append("AppState.stop must cancel stale connection stop work")
 
-stop_failure_match = re.search(r"private func stopRuntimeAfterConnectionFailure\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+stop_failure_match = re.search(r"private func stopRuntimeAfterConnectionFailure\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if stop_failure_match:
     body = stop_failure_match.group("body")
+    if "guard connectionStopGeneration == generation else { return }" not in body:
+        errors.append("AppState.stopRuntimeAfterConnectionFailure() must reject stale generation before runtime cleanup")
     stop_index = body.find("await screenCapture?.stop()")
-    guard_index = body.find("guard !Task.isCancelled else { return }", stop_index)
+    guard_index = body.find("guard connectionStopGeneration == generation, !Task.isCancelled else { return }", stop_index)
     if stop_index == -1 or guard_index == -1:
         errors.append("AppState.stopRuntimeAfterConnectionFailure() must check Task cancellation after awaited screen capture stop before clearing runtime state")
+    if "connectionStopTask?.cancel()" in body:
+        errors.append("AppState.stopRuntimeAfterConnectionFailure() must not self-cancel the tracked connection stop task")
 
 
 if internal_stop_match:

@@ -94,6 +94,7 @@ final class AppState: ObservableObject {
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
     private var connectionStopTask: Task<Void, Never>?
+    private var connectionStopGeneration = UUID()
     private var usageResumeTask: Task<Void, Never>?
     private var usageResumeGeneration = UUID()
     private var setupChecklistRefreshTask: Task<Void, Never>?
@@ -206,6 +207,7 @@ final class AppState: ObservableObject {
         reconnectAttempts = 0
         reconnectTask?.cancel()
         reconnectTask = nil
+        connectionStopGeneration = UUID()
         connectionStopTask?.cancel()
         connectionStopTask = nil
         usageResumeGeneration = UUID()
@@ -250,6 +252,7 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        connectionStopGeneration = UUID()
         connectionStopTask?.cancel()
         connectionStopTask = nil
         usageResumeGeneration = UUID()
@@ -1050,14 +1053,19 @@ final class AppState: ObservableObject {
 
     private func scheduleStopRuntimeAfterConnectionFailure() {
         guard connectionStopTask == nil else { return }
+        let generation = UUID()
+        connectionStopGeneration = generation
         connectionStopTask = Task { @MainActor [weak self] in
-            await self?.stopRuntimeAfterConnectionFailure()
+            await self?.stopRuntimeAfterConnectionFailure(generation: generation)
             guard !Task.isCancelled else { return }
-            self?.connectionStopTask = nil
+            if self?.connectionStopGeneration == generation {
+                self?.connectionStopTask = nil
+            }
         }
     }
 
-    private func stopRuntimeAfterConnectionFailure() async {
+    private func stopRuntimeAfterConnectionFailure(generation: UUID) async {
+        guard connectionStopGeneration == generation else { return }
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
@@ -1073,7 +1081,7 @@ final class AppState: ObservableObject {
         microphoneCapture?.stop()
         microphoneCapture = nil
         await screenCapture?.stop()
-        guard !Task.isCancelled else { return }
+        guard connectionStopGeneration == generation, !Task.isCancelled else { return }
         screenCapture = nil
         client?.close()
         client = nil
@@ -1082,8 +1090,9 @@ final class AppState: ObservableObject {
         saveUsageLedger()
         audioLevel = 0.0
         isRunning = false
-        connectionStopTask?.cancel()
-        connectionStopTask = nil
+        if connectionStopGeneration == generation {
+            connectionStopTask = nil
+        }
     }
 
     private func connectionEvent(from error: Error) -> LiveConnectionEvent {
