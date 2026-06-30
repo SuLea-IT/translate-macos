@@ -96,6 +96,29 @@ struct UsageControlTests {
         #expect(engine.snapshot.runtimeState == .resuming)
     }
 
+    @Test func pausedBufferOverflowIsReflectedInSnapshot() {
+        var settings = LiveUsageSettings()
+        settings.idlePauseDelaySeconds = 5
+        settings.prerollSeconds = 0
+        settings.resumeBufferLimitSeconds = 2
+        let start = Date(timeIntervalSince1970: 5_500)
+        var engine = UsageControlEngine(settings: settings, now: start, ledger: .empty(for: start))
+
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start), level: 0.08, now: start)
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(6), byte: 1), level: 0.0, now: start.addingTimeInterval(6))
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(7), byte: 2), level: 0.0, now: start.addingTimeInterval(7))
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(8), byte: 3), level: 0.0, now: start.addingTimeInterval(8))
+
+        #expect(engine.snapshot.runtimeState == .paused(reason: .idle))
+        #expect(engine.snapshot.resumeBufferOverflowed)
+
+        let resume = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(9), byte: 4), level: 0.08, now: start.addingTimeInterval(9))
+
+        #expect(resume.shouldResume)
+        #expect(engine.snapshot.runtimeState == .resuming)
+        #expect(engine.snapshot.resumeBufferOverflowed)
+    }
+
     @Test func perSessionLimitPausesBeforeSendingMoreAudio() {
         var settings = LiveUsageSettings()
         settings.perSessionLimitMinutes = 0.05

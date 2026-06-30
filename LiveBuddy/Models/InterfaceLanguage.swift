@@ -81,6 +81,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case statusSessionUsageLimitReached
     case statusDailyUsageLimitReached
     case statusUsageMetrics
+    case statusResumeBufferLimited
     case setupChecklist
     case refreshStatus
     case microphonePermission
@@ -421,6 +422,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .statusSessionUsageLimitReached: "Session usage limit reached · API paused",
         .statusDailyUsageLimitReached: "Daily usage limit reached · API paused",
         .statusUsageMetrics: "mic %d · screen %d · sent %d · API %@",
+        .statusResumeBufferLimited: "Buffered audio limit reached; oldest paused audio may be skipped.",
         .setupChecklist: "Setup Checklist",
         .refreshStatus: "Refresh Status",
         .microphonePermission: "Microphone Permission",
@@ -729,6 +731,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "本次使用上限已达到 · API 已暂停",
             .statusDailyUsageLimitReached: "今日使用上限已达到 · API 已暂停",
             .statusUsageMetrics: "麦克风 %d · 屏幕 %d · 已发送 %d · API %@",
+            .statusResumeBufferLimited: "缓冲音频已达上限，最早的暂停音频可能会被跳过。",
             .setupChecklist: "设置检查清单",
             .refreshStatus: "刷新状态",
             .microphonePermission: "麦克风权限",
@@ -1034,6 +1037,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "今回の使用上限に達しました・APIを一時停止中",
             .statusDailyUsageLimitReached: "本日の使用上限に達しました・APIを一時停止中",
             .statusUsageMetrics: "マイク %d · 画面 %d · 送信 %d · API %@",
+            .statusResumeBufferLimited: "バッファ音声が上限に達しました。古い一時停止中の音声はスキップされる場合があります。",
             .setupChecklist: "セットアップ確認リスト",
             .refreshStatus: "状態を更新",
             .microphonePermission: "マイクの許可",
@@ -1336,6 +1340,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "이번 사용 한도 도달 · API 일시 중지",
             .statusDailyUsageLimitReached: "오늘 사용 한도 도달 · API 일시 중지",
             .statusUsageMetrics: "마이크 %d · 화면 %d · 전송 %d · API %@",
+            .statusResumeBufferLimited: "버퍼 오디오 한도에 도달해 오래된 일시 중지 오디오가 건너뛸 수 있습니다.",
             .setupChecklist: "설정 체크리스트",
             .refreshStatus: "상태 새로 고침",
             .microphonePermission: "마이크 권한",
@@ -1635,6 +1640,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "Límite de esta sesión alcanzado · API pausada",
             .statusDailyUsageLimitReached: "Límite diario alcanzado · API pausada",
             .statusUsageMetrics: "micrófono %d · pantalla %d · enviados %d · API %@",
+            .statusResumeBufferLimited: "Se alcanzó el límite del audio en búfer; el audio pausado más antiguo puede omitirse.",
             .setupChecklist: "Lista de configuración",
             .refreshStatus: "Actualizar estado",
             .microphonePermission: "Permiso de micrófono",
@@ -1934,6 +1940,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "Limite de cette session atteinte · API en pause",
             .statusDailyUsageLimitReached: "Limite quotidienne atteinte · API en pause",
             .statusUsageMetrics: "micro %d · écran %d · envoyés %d · API %@",
+            .statusResumeBufferLimited: "La limite audio en mémoire tampon est atteinte ; l’ancien audio mis en pause peut être ignoré.",
             .setupChecklist: "Liste de configuration",
             .refreshStatus: "Actualiser l’état",
             .microphonePermission: "Autorisation du microphone",
@@ -2233,6 +2240,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "Limit dieser Sitzung erreicht · API pausiert",
             .statusDailyUsageLimitReached: "Tageslimit erreicht · API pausiert",
             .statusUsageMetrics: "Mikro %d · Bildschirm %d · gesendet %d · API %@",
+            .statusResumeBufferLimited: "Das Pufferlimit für Audio wurde erreicht; älteres pausiertes Audio kann übersprungen werden.",
             .setupChecklist: "Einrichtungs-Checkliste",
             .refreshStatus: "Status aktualisieren",
             .microphonePermission: "Mikrofonberechtigung",
@@ -2532,6 +2540,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusSessionUsageLimitReached: "Đã đạt giới hạn phiên · API đã tạm dừng",
             .statusDailyUsageLimitReached: "Đã đạt giới hạn hằng ngày · API đã tạm dừng",
             .statusUsageMetrics: "micrô %d · màn hình %d · đã gửi %d · API %@",
+            .statusResumeBufferLimited: "Bộ đệm âm thanh đã đạt giới hạn; âm thanh tạm dừng cũ nhất có thể bị bỏ qua.",
             .setupChecklist: "Danh sách kiểm tra thiết lập",
             .refreshStatus: "Làm mới trạng thái",
             .microphonePermission: "Quyền micrô",

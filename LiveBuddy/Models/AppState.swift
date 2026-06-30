@@ -1541,16 +1541,21 @@ final class AppState: ObservableObject {
     private func runningUsageStatusMessage() -> String {
         let apiTime = Self.formatUsageDuration(usageSnapshot.sessionSentAudioSeconds)
         let base = localizedStatus(.statusUsageMetrics, arguments: [micChunkCount, screenChunkCount, sentChunkCount, apiTime])
+        let message: String
         switch usageSnapshot.runtimeState {
         case .active:
-            return "\(localizedStatus(.statusListening)) · \(base)"
+            message = "\(localizedStatus(.statusListening)) · \(base)"
         case .idleWarning(let remainingSeconds):
-            return "\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \(base)"
+            message = "\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \(base)"
         case .paused(let reason):
-            return "\(usagePauseLogMessage(reason)) · \(base)"
+            message = "\(usagePauseLogMessage(reason)) · \(base)"
         case .resuming:
-            return "\(localizedStatus(.statusResumingReplay)) · \(base)"
+            message = "\(localizedStatus(.statusResumingReplay)) · \(base)"
         }
+        if usageSnapshot.resumeBufferOverflowed {
+            return "\(message) · \(localizedStatus(.statusResumeBufferLimited))"
+        }
+        return message
     }
 
     private func usagePauseLogMessage(_ reason: UsageControlPauseReason) -> String {

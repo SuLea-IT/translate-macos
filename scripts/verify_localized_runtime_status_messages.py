@@ -23,6 +23,7 @@ for key in [
     "statusSessionUsageLimitReached",
     "statusDailyUsageLimitReached",
     "statusUsageMetrics",
+    "statusResumeBufferLimited",
 ]:
     if f"case {key}" not in interface:
         errors.append(f"InterfaceText must include {key}")
@@ -65,9 +66,10 @@ else:
         if token not in body:
             errors.append(f"usageStatusMessage must compose localized usage metrics through {token}")
     for token in [
-        "return \"\\(localizedStatus(.statusListening)) · \\(base)\"",
-        "return \"\\(localizedStatus(.statusResumingReplay)) · \\(base)\"",
-        "return \"\\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \\(base)\"",
+        "message = \"\\(localizedStatus(.statusListening)) · \\(base)\"",
+        "message = \"\\(localizedStatus(.statusResumingReplay)) · \\(base)\"",
+        "message = \"\\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \\(base)\"",
+        "localizedStatus(.statusResumeBufferLimited)",
     ]:
         if token not in body:
             errors.append(f"usageStatusMessage must compose localized runtime status through {token}")

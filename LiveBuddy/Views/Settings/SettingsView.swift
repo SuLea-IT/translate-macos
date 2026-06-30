@@ -454,6 +454,12 @@ struct SettingsView: View {
                 )
                 .frame(width: 140)
             }
+
+            if appState.usageSnapshot.resumeBufferOverflowed {
+                Text(appState.t(.statusResumeBufferLimited))
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
         }
     }
 
