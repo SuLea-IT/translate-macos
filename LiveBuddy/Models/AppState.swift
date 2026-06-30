@@ -90,6 +90,7 @@ final class AppState: ObservableObject {
     private var runtimeControlTask: Task<Void, Never>?
     private var pendingRuntimeControlRequest: RuntimeControlRequest?
     private var restartTask: Task<Void, Never>?
+    private var restartGeneration = UUID()
     private let connectionRecoveryPolicy = ConnectionRecoveryPolicy.default
     private var reconnectTask: Task<Void, Never>?
     private var connectionStopTask: Task<Void, Never>?
@@ -256,6 +257,7 @@ final class AppState: ObservableObject {
         usageResumeTask = nil
         reconnectAttempts = 0
         if cancelPendingRestart {
+            restartGeneration = UUID()
             restartTask?.cancel()
             restartTask = nil
         }
@@ -1059,6 +1061,7 @@ final class AppState: ObservableObject {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
+        restartGeneration = UUID()
         restartTask?.cancel()
         restartTask = nil
         usageResumeGeneration = UUID()
@@ -1618,6 +1621,8 @@ final class AppState: ObservableObject {
 
     private func rebuildRunningSessionIfNeeded(oldValue: AppSettings) {
         guard isRunning, settings.requiresSessionRestart(comparedTo: oldValue) else { return }
+        let generation = UUID()
+        restartGeneration = generation
         restartTask?.cancel()
         restartTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -1627,11 +1632,15 @@ final class AppState: ObservableObject {
                 return
             }
             guard !Task.isCancelled else { return }
+            guard self.restartGeneration == generation else { return }
             await self.stop(cancelPendingRestart: false)
             guard !Task.isCancelled else { return }
+            guard self.restartGeneration == generation else { return }
             await self.start()
             guard !Task.isCancelled else { return }
-            self.restartTask = nil
+            if self.restartGeneration == generation {
+                self.restartTask = nil
+            }
         }
     }
 
