@@ -79,7 +79,13 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         ]
         do {
             try await sendJSON(message)
+        } catch is CancellationError {
+            return
         } catch {
+            let nsError = error as NSError
+            if Task.isCancelled || (nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled) {
+                return
+            }
             report(.sendFailed(error.localizedDescription))
         }
     }
