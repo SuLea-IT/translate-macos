@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re
 import sys
 
 root = Path(__file__).resolve().parents[1]
@@ -8,16 +7,17 @@ menu_bar = root / "LiveBuddy" / "Views" / "MenuBar" / "MenuBarView.swift"
 text = menu_bar.read_text()
 errors: list[str] = []
 
-if "appState.openWindowAction = openWindow" not in text:
-    errors.append("MenuBarView should still publish the SwiftUI openWindow action while visible")
+if "appState.openWindowAction = openWindow" in text:
+    errors.append("MenuBarView must not publish AppState.openWindowAction from the transient popover content")
 
-on_disappear_match = re.search(r"\.onDisappear \{(?P<body>[\s\S]*?)\n        \}", text)
-if not on_disappear_match:
-    errors.append("MenuBarView must clear AppState.openWindowAction in onDisappear to avoid retaining a stale menu bar window environment")
-else:
-    body = on_disappear_match.group("body")
-    if "appState.openWindowAction = nil" not in body:
-        errors.append("MenuBarView.onDisappear must set appState.openWindowAction = nil")
+if "appState.openWindowAction = nil" in text:
+    errors.append("MenuBarView must not clear the stable app-level openWindowAction when the transient popover disappears")
+
+if "appState.refreshAvailableMicrophones()" not in text:
+    errors.append("MenuBarView should still refresh microphone options when the popover appears")
+
+if "openWindow(id: \"settings\")" not in text:
+    errors.append("MenuBarView gear button should still open settings directly with its local openWindow action")
 
 if errors:
     print("Menu bar openWindow action lifecycle verification failed:", file=sys.stderr)

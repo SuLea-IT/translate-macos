@@ -17,11 +17,31 @@ struct LiveBuddyApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
 
-        MenuBarExtra("LiveBuddy", systemImage: appState.isRunning ? "captions.bubble.fill" : "captions.bubble") {
+        MenuBarExtra {
             MenuBarView()
                 .environmentObject(appState)
+        } label: {
+            Label("LiveBuddy", systemImage: appState.isRunning ? "captions.bubble.fill" : "captions.bubble")
+                .background(
+                    OpenWindowActionInstaller()
+                        .environmentObject(appState)
+                        .frame(width: 0, height: 0)
+                )
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+private struct OpenWindowActionInstaller: View {
+    @Environment(\.openWindow) private var openWindow
+    @EnvironmentObject private var appState: AppState
+
+    var body: some View {
+        Color.clear
+            .accessibilityHidden(true)
+            .onAppear {
+                appState.openWindowAction = openWindow
+            }
     }
 }
 
