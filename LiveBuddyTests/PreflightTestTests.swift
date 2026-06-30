@@ -139,6 +139,33 @@ extension PreflightTestTests {
         #expect(report.steps.first { $0.id == .microphoneAudio }?.state == .warning)
     }
 
+    @Test func runnerLocalizesProviderFailureMessages() async {
+        let runner = PreflightTestRunner(
+            providerCheck: { _ in ProviderHealthStatus.invalid(message: "API_KEY_INVALID: bad key", checkedAt: Date()) },
+            permissionCheck: {
+                PermissionStatusSnapshot(
+                    microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+                    screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+                )
+            },
+            microphoneSampler: { _, analyzer in
+                analyzer.processPCM16(pcm16([0, 8_000, -8_000, 12_000]))
+            },
+            screenSampler: { _, _ in },
+            subtitleCheck: {}
+        )
+        var settings = AppSettings()
+        settings.audioSource = .microphone
+        settings.apiKey = "bad-key"
+
+        let report = await runner.run(settings: settings) { _ in }
+
+        let apiKey = report.steps.first { $0.id == .apiKey }
+        #expect(apiKey?.state == .failed)
+        #expect(apiKey?.messageKey == .diagnosticAPIKeyInvalidTitle)
+        #expect(apiKey?.message.isEmpty == true)
+    }
+
     @Test func runnerPassesSelectedMicrophoneUIDToMicrophoneSampler() async {
         let recorder = SelectedMicrophoneUIDRecorder()
         let runner = PreflightTestRunner(

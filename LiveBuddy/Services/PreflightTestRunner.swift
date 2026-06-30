@@ -57,11 +57,31 @@ struct PreflightTestRunner {
             report = report.updating(.apiKey, state: .failed, messageKey: .preflightAPIKeyMissing)
         case .unchecked, .checking:
             report = report.updating(.apiKey, state: .warning, messageKey: .preflightAPIKeyNotVerified)
-        case .invalid(let message, _), .failed(let message, _):
-            report = report.updating(.apiKey, state: .failed, message: message)
+        case .invalid, .failed:
+            let messageKey = providerFailureMessageKey(status)
+            report = report.updating(.apiKey, state: .failed, messageKey: messageKey)
         }
         await update(report)
         return report
+    }
+
+    private func providerFailureMessageKey(_ status: ProviderHealthStatus) -> InterfaceText {
+        if let issue = DiagnosticClassifier.from(providerStatus: status) {
+            return issue.titleKey
+        }
+
+        switch status {
+        case .invalid:
+            return .diagnosticAPIKeyInvalidTitle
+        case .failed:
+            return .diagnosticProviderErrorTitle
+        case .missing:
+            return .preflightAPIKeyMissing
+        case .unchecked, .checking:
+            return .preflightAPIKeyNotVerified
+        case .valid:
+            return .preflightAPIKeyValid
+        }
     }
 
     private func runPermissions(settings: AppSettings, report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
