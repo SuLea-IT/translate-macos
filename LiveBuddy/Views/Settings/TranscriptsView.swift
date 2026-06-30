@@ -80,6 +80,7 @@ struct TranscriptsView: View {
     private var listView: some View {
         VStack(spacing: 0) {
             listHeader
+            transcriptListExportErrorFeedback
             Divider()
 
             if appState.transcriptSessions.isEmpty {
@@ -126,6 +127,19 @@ struct TranscriptsView: View {
             Button(appState.t(.cancel), role: .cancel) {}
         } message: {
             Text(appState.t(.clearTranscriptsConfirmationMessage, appState.transcriptSessions.count))
+        }
+    }
+
+    private var transcriptListExportErrorFeedback: some View {
+        Group {
+            if let exportErrorMessage {
+                Text(appState.t(.exportFailed, exportErrorMessage))
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+            }
         }
     }
 
