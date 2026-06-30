@@ -24,13 +24,14 @@ else:
             "let filteredSessions: [TranscriptSession]",
             "self.filteredSessions = Self.filtered(sessions: sessions, query: query)",
             "private static func filtered(sessions: [TranscriptSession], query: String) -> [TranscriptSession]",
-            "session.fullText.localizedCaseInsensitiveContains(normalizedQuery)",
-            "session.targetLanguage.localizedCaseInsensitiveContains(normalizedQuery)",
+            "session.matchesSearch(normalizedQuery)",
         ]:
             if token not in body:
                 errors.append(f"TranscriptListDisplay must cache search results through {token}")
         if "var filteredSessions: [TranscriptSession] {" in body:
             errors.append("TranscriptListDisplay.filteredSessions must be cached in init, not recomputed as a property")
+        if "session.fullText.localizedCaseInsensitiveContains" in body:
+            errors.append("TranscriptListDisplay must not allocate fullText while filtering cached search results")
 
 if "private var filteredSessions: [TranscriptSession]" in view_text:
     errors.append("TranscriptsView must not keep a computed filteredSessions property that can be evaluated multiple times per render")

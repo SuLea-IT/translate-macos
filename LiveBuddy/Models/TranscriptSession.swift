@@ -52,6 +52,18 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
         lines.reduce(0) { $0 + $1.text.split(separator: " ").count + ($1.originalText?.split(separator: " ").count ?? 0) }
     }
 
+    func matchesSearch(_ query: String) -> Bool {
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return true }
+        if targetLanguage.localizedCaseInsensitiveContains(normalizedQuery) {
+            return true
+        }
+        return lines.contains { line in
+            line.text.localizedCaseInsensitiveContains(normalizedQuery)
+                || (line.originalText?.localizedCaseInsensitiveContains(normalizedQuery) ?? false)
+        }
+    }
+
     var shareText: String {
         textForMode(.both)
     }
@@ -104,8 +116,7 @@ struct TranscriptListDisplay {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedQuery.isEmpty else { return sessions }
         return sessions.filter { session in
-            session.fullText.localizedCaseInsensitiveContains(normalizedQuery)
-                || session.targetLanguage.localizedCaseInsensitiveContains(normalizedQuery)
+            session.matchesSearch(normalizedQuery)
         }
     }
 }
