@@ -35,6 +35,7 @@ final class AppState: ObservableObject {
             configureGlobalShortcutsIfNeeded(oldValue: oldValue)
             updateAudioPlayerVolumeIfNeeded(oldValue: oldValue)
             updateUsageControlSettingsIfNeeded(oldValue: oldValue)
+            resetDiagnosticIssueIfNeeded(oldValue: oldValue)
             resetPreflightTestReportIfNeeded(oldValue: oldValue)
             refreshSetupChecklistIfNeeded(oldValue: oldValue)
         }
@@ -710,6 +711,27 @@ final class AppState: ObservableObject {
         case .toggleMute:
             updateSetting(\.audioPlayerMuted, to: !settings.audioPlayerMuted)
         }
+    }
+
+    private func resetDiagnosticIssueIfNeeded(oldValue: AppSettings) {
+        guard let issue = currentDiagnosticIssue else { return }
+        let providerInputsChanged =
+            oldValue.activeProvider != settings.activeProvider ||
+            oldValue.apiKey != settings.apiKey
+        let captureInputsChanged =
+            oldValue.audioSource != settings.audioSource ||
+            oldValue.selectedMicrophoneDeviceUID != settings.selectedMicrophoneDeviceUID
+
+        switch issue.kind {
+        case .provider:
+            guard providerInputsChanged else { return }
+        case .permission, .capture:
+            guard captureInputsChanged else { return }
+        default:
+            return
+        }
+
+        setDiagnosticIssue(nil)
     }
 
     private func resetPreflightTestReportIfNeeded(oldValue: AppSettings) {
