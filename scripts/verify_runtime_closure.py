@@ -586,7 +586,7 @@ if not start_token_match:
     errors.append("SettingsView.startTokenCheck() not found")
 else:
     body = start_token_match.group("body")
-    for token in ["tokenCheckTask?.cancel()", "tokenCheckTask = Task", "try await appState.verifyGeminiToken()", "guard !Task.isCancelled else { return }", "tokenCheckTask = nil"]:
+    for token in ["tokenCheckTask?.cancel()", "tokenCheckTask = Task", "try await appState.verifyGeminiToken()", "guard tokenCheckGeneration == generation, !Task.isCancelled else { return }", "tokenCheckTask = nil"]:
         if token not in body:
             errors.append(f"SettingsView.startTokenCheck() must manage token check lifecycle through {token}")
 

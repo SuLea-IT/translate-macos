@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var isTokenValid: Bool? = nil
     @State private var tokenCheckError: String? = nil
     @State private var tokenCheckTask: Task<Void, Never>?
+    @State private var tokenCheckGeneration = UUID()
     @State private var recordingShortcutAction: GlobalShortcutAction?
     @State private var newGlossarySourceTerm = ""
     @State private var newGlossaryTargetTerm = ""
@@ -711,26 +712,31 @@ struct SettingsView: View {
 
     private func startTokenCheck() {
         tokenCheckTask?.cancel()
+        let generation = UUID()
+        tokenCheckGeneration = generation
         isCheckingToken = true
         isTokenValid = nil
         tokenCheckError = nil
         tokenCheckTask = Task { @MainActor in
             do {
                 try await appState.verifyGeminiToken()
-                guard !Task.isCancelled else { return }
+                guard tokenCheckGeneration == generation, !Task.isCancelled else { return }
                 isTokenValid = true
             } catch {
-                guard !Task.isCancelled else { return }
+                guard tokenCheckGeneration == generation, !Task.isCancelled else { return }
                 isTokenValid = false
                 tokenCheckError = error.localizedDescription
             }
-            guard !Task.isCancelled else { return }
+            guard tokenCheckGeneration == generation, !Task.isCancelled else { return }
             isCheckingToken = false
-            tokenCheckTask = nil
+            if tokenCheckGeneration == generation {
+                tokenCheckTask = nil
+            }
         }
     }
 
     private func cancelTokenCheck() {
+        tokenCheckGeneration = UUID()
         tokenCheckTask?.cancel()
         tokenCheckTask = nil
         isCheckingToken = false
