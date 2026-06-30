@@ -196,13 +196,13 @@ struct SubtitleColor: Codable, Equatable, Hashable {
         Color(red: red, green: green, blue: blue, opacity: alpha)
     }
 
-    static let presets: [(name: String, color: SubtitleColor)] = [
-        ("White", .white),
-        ("Yellow", .yellow),
-        ("Cyan", .cyan),
-        ("Green", .green),
-        ("Orange", .orange),
-        ("Pink", .pink),
+    static let presets: [(id: String, titleKey: InterfaceText, color: SubtitleColor)] = [
+        ("white", .subtitleColorWhite, .white),
+        ("yellow", .subtitleColorYellow, .yellow),
+        ("cyan", .subtitleColorCyan, .cyan),
+        ("green", .subtitleColorGreen, .green),
+        ("orange", .subtitleColorOrange, .orange),
+        ("pink", .subtitleColorPink, .pink),
     ]
 }
 

@@ -370,7 +370,7 @@ struct SettingsView: View {
                 HStack(spacing: 8) {
                     Text(appState.t(.color))
                     Spacer()
-                    ForEach(SubtitleColor.presets, id: \.name) { preset in
+                    ForEach(SubtitleColor.presets, id: \.id) { preset in
                         Button {
                             appState.updateSetting(\.subtitleColor, to: preset.color)
                         } label: {
@@ -384,7 +384,7 @@ struct SettingsView: View {
                                 )
                         }
                         .buttonStyle(.plain)
-                        .help(preset.name)
+                        .help(appState.t(preset.titleKey))
                     }
                 }
 
