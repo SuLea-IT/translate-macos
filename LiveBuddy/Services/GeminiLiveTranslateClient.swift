@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     var onInputTranscript: (@Sendable (String, String?) -> Void)?
     var onOutputTranscript: (@Sendable (String, String?) -> Void)?
@@ -25,7 +26,9 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     deinit {
-        close()
+        MainActor.assumeIsolated {
+            close()
+        }
     }
 
     func connect() async throws {
@@ -47,12 +50,12 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
                 try Task.checkCancellation()
                 try await waitForSetupComplete()
                 receiveLoop()
-            } catch {
+        } catch {
                 close()
                 throw error
             }
         } onCancel: { [weak self] in
-            DispatchQueue.main.async { [weak self] in
+            Task { @MainActor [weak self] in
                 self?.close()
             }
         }
@@ -167,7 +170,13 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         }
     }
 
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+    nonisolated func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        Task { @MainActor [weak self] in
+            self?.handleSocketOpened()
+        }
+    }
+
+    private func handleSocketOpened() {
         guard !isClosed else { return }
         isOpen = true
         report(.socketOpened)
@@ -175,18 +184,24 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         openContinuation = nil
     }
 
-    func urlSession(
+    nonisolated func urlSession(
         _ session: URLSession,
         webSocketTask: URLSessionWebSocketTask,
         didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
         reason: Data?
     ) {
-        guard !isClosed else { return }
-        isOpen = false
         let reasonText = reason.flatMap { String(data: $0, encoding: .utf8) }
         let message = [String(describing: closeCode), reasonText]
             .compactMap { $0 }
             .joined(separator: ": ")
+        Task { @MainActor [weak self] in
+            self?.handleSocketClosed(message: message)
+        }
+    }
+
+    private func handleSocketClosed(message: String) {
+        guard !isClosed else { return }
+        isOpen = false
         openContinuation?.resume(throwing: LiveTranslateError.socketClosed(message))
         openContinuation = nil
         report(.socketClosed(message))
@@ -261,19 +276,21 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     private func receiveLoop() {
         guard !isClosed, let webSocket else { return }
         webSocket.receive { [weak self, weak webSocket] result in
-            guard let self, let webSocket, !self.isClosed, self.webSocket === webSocket else { return }
-            switch result {
-            case .success(let message):
-                do {
-                    let root = try self.decodedObject(from: message)
-                    self.handle(root)
-                } catch {
-                    self.report(.parseFailed(error.localizedDescription))
+            Task { @MainActor [weak self, weak webSocket] in
+                guard let self, let webSocket, !self.isClosed, self.webSocket === webSocket else { return }
+                switch result {
+                case .success(let message):
+                    do {
+                        let root = try self.decodedObject(from: message)
+                        self.handle(root)
+                    } catch {
+                        self.report(.parseFailed(error.localizedDescription))
+                    }
+                    guard !self.isClosed, self.webSocket === webSocket else { return }
+                    self.receiveLoop()
+                case .failure(let error):
+                    self.report(.disconnected(error.localizedDescription))
                 }
-                guard !self.isClosed, self.webSocket === webSocket else { return }
-                self.receiveLoop()
-            case .failure(let error):
-                self.report(.disconnected(error.localizedDescription))
             }
         }
     }

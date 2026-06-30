@@ -2250,7 +2250,9 @@ final class AppState: ObservableObject {
                 await screenCaptureForDeinit.stop()
             }
         }
-        client?.close()
+        MainActor.assumeIsolated {
+            client?.close()
+        }
         audioPlayer.stop()
         globalShortcutRegistrar.unregisterAll()
         MainActor.assumeIsolated {

@@ -52,18 +52,24 @@ else:
             if token not in body:
                 errors.append(f"clearCallbacks() must release closure captures through {token}")
 
-if "deinit {\n        close()\n    }" not in client:
-    errors.append("GeminiLiveTranslateClient.deinit must call close() for defensive cleanup")
+if "deinit {\n        MainActor.assumeIsolated {\n            close()\n        }\n    }" not in client:
+    errors.append("GeminiLiveTranslateClient.deinit must call close() inside MainActor.assumeIsolated for defensive cleanup")
 
-for method_name in ["urlSession", "report"]:
-    index = client.find(f"func {method_name}") if method_name == "urlSession" else client.find("private func report(")
-    if index == -1:
-        errors.append(f"{method_name} callback/report method not found")
-    else:
-        body_end = client.find("\n    }\n", index)
-        body = client[index:body_end if body_end != -1 else len(client)]
-        if "guard !isClosed else { return }" not in body:
-            errors.append(f"{method_name} must ignore late websocket callbacks/reports after close")
+for helper_name in ["handleSocketOpened", "handleSocketClosed"]:
+    helper_match = re.search(rf"private func {helper_name}[\s\S]*?\{{(?P<body>[\s\S]*?)\n    \}}", client)
+    if not helper_match:
+        errors.append(f"{helper_name} callback helper not found")
+    elif "guard !isClosed else { return }" not in helper_match.group("body"):
+        errors.append(f"{helper_name} must ignore late websocket callbacks after close")
+
+report_index = client.find("private func report(")
+if report_index == -1:
+    errors.append("report callback method not found")
+else:
+    body_end = client.find("\n    }\n", report_index)
+    body = client[report_index:body_end if body_end != -1 else len(client)]
+    if "guard !isClosed else { return }" not in body:
+        errors.append("report must ignore late websocket callbacks/reports after close")
 
 if errors:
     print("Live client session lifecycle verification failed:")
