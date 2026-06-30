@@ -426,6 +426,7 @@ for token in [
     "private var preflightTestTask: Task<Void, Never>?",
     "private var preflightTestGeneration = UUID()",
     "private var temporaryTestCaptionTask: Task<Void, Never>?",
+    "private var temporaryTestCaptionGeneration = UUID()",
     "func startPreflightTest()",
 ]:
     if token not in app_state_text:
@@ -459,7 +460,7 @@ if "private func cancelPreflightTest()" not in app_state_text:
 else:
     cancel_match = re.search(r"private func cancelPreflightTest\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
     body = cancel_match.group("body") if cancel_match else ""
-    for token in ["preflightTestGeneration = UUID()", "preflightTestTask?.cancel()", "preflightTestTask = nil", "temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = nil", "isRunningPreflightTest = false"]:
+    for token in ["preflightTestGeneration = UUID()", "preflightTestTask?.cancel()", "preflightTestTask = nil", "temporaryTestCaptionGeneration = UUID()", "temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = nil", "isRunningPreflightTest = false"]:
         if token not in body:
             errors.append(f"AppState.cancelPreflightTest() must release preflight resource through {token}")
 
@@ -478,7 +479,7 @@ if not show_caption_match:
     errors.append("AppState.showTemporaryTestCaption() not found")
 else:
     body = show_caption_match.group("body")
-    for token in ["temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = Task", "try? await Task.sleep", "guard !Task.isCancelled else { return }", "temporaryTestCaptionTask = nil"]:
+    for token in ["temporaryTestCaptionTask?.cancel()", "let generation = UUID()", "temporaryTestCaptionGeneration = generation", "temporaryTestCaptionTask = Task", "try? await Task.sleep", "guard !Task.isCancelled else { return }", "guard self.temporaryTestCaptionGeneration == generation else { return }", "temporaryTestCaptionTask = nil"]:
         if token not in body:
             errors.append(f"AppState.showTemporaryTestCaption() must manage temporary caption restoration through {token}")
 

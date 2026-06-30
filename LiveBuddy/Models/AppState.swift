@@ -107,6 +107,7 @@ final class AppState: ObservableObject {
     private var preflightTestTask: Task<Void, Never>?
     private var preflightTestGeneration = UUID()
     private var temporaryTestCaptionTask: Task<Void, Never>?
+    private var temporaryTestCaptionGeneration = UUID()
     private var temporaryTestCaptionPreviousDraft: String?
     private var glossaryImportTask: Task<Void, Never>?
     private var transcriptSaveTask: Task<Void, Never>?
@@ -780,6 +781,8 @@ final class AppState: ObservableObject {
         temporaryTestCaptionTask?.cancel()
         temporaryTestCaptionTask = nil
         restoreTemporaryTestCaptionIfNeeded()
+        let generation = UUID()
+        temporaryTestCaptionGeneration = generation
         let previousDraft = captionDraft
         temporaryTestCaptionPreviousDraft = previousDraft
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
@@ -788,8 +791,11 @@ final class AppState: ObservableObject {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
+            guard self.temporaryTestCaptionGeneration == generation else { return }
             self.restoreTemporaryTestCaptionIfNeeded()
-            temporaryTestCaptionTask = nil
+            if self.temporaryTestCaptionGeneration == generation {
+                self.temporaryTestCaptionTask = nil
+            }
         }
         await temporaryTestCaptionTask?.value
     }
@@ -798,6 +804,7 @@ final class AppState: ObservableObject {
         preflightTestGeneration = UUID()
         preflightTestTask?.cancel()
         preflightTestTask = nil
+        temporaryTestCaptionGeneration = UUID()
         temporaryTestCaptionTask?.cancel()
         temporaryTestCaptionTask = nil
         restoreTemporaryTestCaptionIfNeeded()
