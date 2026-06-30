@@ -144,11 +144,30 @@ struct PreflightTestRunner {
         } catch is CancellationError {
             return report
         } catch {
-            report = report.updating(id, state: .failed, message: error.localizedDescription)
+            let messageKey = audioFailureMessageKey(id: id, error: error)
+            report = report.updating(id, state: .failed, messageKey: messageKey)
         }
         guard !Task.isCancelled else { return report }
         await update(report)
         return report
+    }
+
+    private func audioFailureMessageKey(id: PreflightTestStepID, error: Error) -> InterfaceText {
+        if error is MicrophoneCaptureError {
+            return .diagnosticMicrophoneUnavailableTitle
+        }
+        if error is ScreenAudioCaptureError {
+            return .diagnosticScreenAudioUnavailableTitle
+        }
+
+        switch id {
+        case .microphoneAudio:
+            return .diagnosticMicrophoneUnavailableTitle
+        case .screenAudio:
+            return .diagnosticScreenAudioUnavailableTitle
+        case .apiKey, .permissions, .subtitleWindow:
+            return .testFailed
+        }
     }
 
     private func runSubtitle(report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
