@@ -762,12 +762,13 @@ final class AppState: ObservableObject {
             let permissions = await self.permissionStatusService.refreshStatuses()
             guard self.setupChecklistRefreshGeneration == generation else { return }
             guard !Task.isCancelled else { return }
-            self.setupChecklist = SetupChecklistState.derive(
+            let checklist = SetupChecklistState.derive(
                 audioSource: self.settings.audioSource,
                 apiKey: self.providerHealthStatusForCurrentKey,
                 microphone: permissions.microphone,
                 screenRecording: permissions.screenRecording
             )
+            self.publishSetupChecklist(checklist)
             if self.setupChecklistRefreshGeneration == generation {
                 self.setupChecklistRefreshTask = nil
             }
@@ -783,7 +784,7 @@ final class AppState: ObservableObject {
             screenRecording: permissions.screenRecording
         )
         setupChecklistRefreshGeneration = UUID()
-        setupChecklist = checklist
+        publishSetupChecklist(checklist)
         return SetupPreflightResult.from(checklist)
     }
 
@@ -960,12 +961,52 @@ final class AppState: ObservableObject {
     }
 
     private func updateSetupChecklist(apiKeyStatus: ProviderHealthStatus) {
-        setupChecklist = SetupChecklistState.derive(
-            audioSource: settings.audioSource,
-            apiKey: apiKeyStatus,
-            microphone: permissionStatus(from: setupChecklist.microphone),
-            screenRecording: permissionStatus(from: setupChecklist.screenRecording)
+        publishSetupChecklist(
+            SetupChecklistState.derive(
+                audioSource: settings.audioSource,
+                apiKey: apiKeyStatus,
+                microphone: permissionStatus(from: setupChecklist.microphone),
+                screenRecording: permissionStatus(from: setupChecklist.screenRecording)
+            )
         )
+    }
+
+    private func publishSetupChecklist(_ checklist: SetupChecklistState) {
+        setupChecklist = checklist
+        clearResolvedSetupFeedback(using: checklist)
+    }
+
+    private func clearResolvedSetupFeedback(using checklist: SetupChecklistState) {
+        if let currentUserFacingError, setupErrorIsResolved(currentUserFacingError, by: checklist) {
+            self.currentUserFacingError = nil
+        }
+        if let currentDiagnosticIssue, setupIssueIsResolved(currentDiagnosticIssue, by: checklist) {
+            setDiagnosticIssue(nil)
+        }
+    }
+
+    private func setupIssueIsResolved(_ issue: DiagnosticIssue, by checklist: SetupChecklistState) -> Bool {
+        switch issue.code {
+        case .apiKeyMissing, .apiKeyInvalid:
+            return !checklist.blockingIssues.contains(.apiKeyMissing) && !checklist.blockingIssues.contains(.apiKeyInvalid)
+        case .microphonePermissionMissing:
+            return !checklist.blockingIssues.contains(.microphonePermissionMissing)
+        case .screenRecordingPermissionMissing:
+            return !checklist.blockingIssues.contains(.screenRecordingPermissionMissing)
+        default:
+            return false
+        }
+    }
+
+    private func setupErrorIsResolved(_ error: UserFacingError, by checklist: SetupChecklistState) -> Bool {
+        switch error.kind {
+        case .provider:
+            return !checklist.blockingIssues.contains(.apiKeyMissing) && !checklist.blockingIssues.contains(.apiKeyInvalid)
+        case .permission:
+            return !checklist.blockingIssues.contains(.microphonePermissionMissing) && !checklist.blockingIssues.contains(.screenRecordingPermissionMissing)
+        default:
+            return false
+        }
     }
 
     private func permissionStatus(from item: PermissionChecklistItem) -> PermissionStatus {
