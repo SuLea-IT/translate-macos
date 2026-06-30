@@ -11,13 +11,18 @@ final class PCM16Chunker {
     }
 
     nonisolated func append(_ data: Data) {
+        var chunks: [Data] = []
         lock.lock()
-        defer { lock.unlock() }
         pending.append(data)
         while pending.count >= chunkSize {
             let chunk = pending.prefix(chunkSize)
-            onChunk(Data(chunk))
+            chunks.append(Data(chunk))
             pending.removeFirst(chunkSize)
+        }
+        lock.unlock()
+
+        for chunk in chunks {
+            onChunk(chunk)
         }
     }
 
