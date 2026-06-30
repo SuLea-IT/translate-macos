@@ -54,8 +54,7 @@ struct MenuBarView: View {
 
                 if !appState.setupChecklist.canStart {
                     Button {
-                        openWindow(id: "settings")
-                        NSApp.activate(ignoringOtherApps: true)
+                        appState.openProviderSettings()
                     } label: {
                         Label(appState.t(.setupIncomplete), systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
