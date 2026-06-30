@@ -526,9 +526,7 @@ struct SettingsView: View {
                 TextField(appState.t(.sourceTerm), text: $newGlossarySourceTerm)
                 TextField(appState.t(.preferredTranslation), text: $newGlossaryTargetTerm)
                 Button(appState.t(.addTerm)) {
-                    appState.addGlossaryEntry(sourceTerm: newGlossarySourceTerm, targetTerm: newGlossaryTargetTerm)
-                    newGlossarySourceTerm = ""
-                    newGlossaryTargetTerm = ""
+                    addGlossaryEntryFromUI()
                 }
                 .disabled(newGlossarySourceTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -675,7 +673,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button {
-                        appState.deleteGlossaryEntry(entry)
+                        deleteGlossaryEntryFromUI(entry)
                     } label: {
                         Image(systemName: "trash")
                     }
@@ -754,6 +752,11 @@ struct SettingsView: View {
         ].compactMap { $0 }
     }
 
+    private func clearGlossaryExportFeedback() {
+        glossaryExportDocument = nil
+        glossaryExportErrorMessage = nil
+    }
+
     private func prepareGlossaryExport() {
         let exporter = GlossaryExporter()
         glossaryExportDocument = GlossaryExportDocument(csvText: exporter.export(entries: appState.settings.glossaryEntries))
@@ -761,11 +764,23 @@ struct SettingsView: View {
         glossaryExportErrorMessage = nil
     }
 
+    private func addGlossaryEntryFromUI() {
+        appState.addGlossaryEntry(sourceTerm: newGlossarySourceTerm, targetTerm: newGlossaryTargetTerm)
+        newGlossarySourceTerm = ""
+        newGlossaryTargetTerm = ""
+        clearGlossaryExportFeedback()
+    }
+
+    private func deleteGlossaryEntryFromUI(_ entry: GlossaryEntry) {
+        appState.deleteGlossaryEntry(entry)
+        clearGlossaryExportFeedback()
+    }
+
     private func clearGlossaryEntriesFromUI() {
         appState.clearGlossaryEntries()
         glossarySearchText = ""
         isGlossaryListExpanded = false
-        glossaryExportErrorMessage = nil
+        clearGlossaryExportFeedback()
     }
 
     private func localizedGlossarySourceName(_ source: GlossaryImportSource) -> String {
@@ -797,6 +812,7 @@ struct SettingsView: View {
     private func importSelectedGlossarySource() {
         glossaryImportInputMessage = ""
         appState.clearGlossaryImportFeedback()
+        clearGlossaryExportFeedback()
         let source = selectedGlossaryImportSource
         switch source.kind {
         case .builtIn(let url):
@@ -813,6 +829,7 @@ struct SettingsView: View {
     private func handleGlossaryFileImporterResult(_ result: Result<[URL], Error>) {
         glossaryImportInputMessage = ""
         appState.clearGlossaryImportFeedback()
+        clearGlossaryExportFeedback()
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
