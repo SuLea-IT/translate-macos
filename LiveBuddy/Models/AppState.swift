@@ -38,12 +38,13 @@ final class AppState: ObservableObject {
             resetDiagnosticIssueIfNeeded(oldValue: oldValue)
             resetPreflightTestReportIfNeeded(oldValue: oldValue)
             refreshSetupChecklistIfNeeded(oldValue: oldValue)
+            refreshStatusMessageLanguageIfNeeded(oldValue: oldValue)
         }
     }
     @Published private(set) var captions: [CaptionLine] = []
     @Published private(set) var captionDraft = ""
     @Published private(set) var isRunning = false
-    @Published private(set) var statusMessage = "Ready"
+    @Published private(set) var statusMessage: String
     @Published private(set) var statusLevel: LiveStatusLevel = .stopped
     @Published private(set) var transcriptSessions: [TranscriptSession] = []
     @Published private(set) var logs: [LogEntry] = []
@@ -64,6 +65,7 @@ final class AppState: ObservableObject {
     var openWindowAction: OpenWindowAction?
 
     
+    private var localizedStatusKey: InterfaceText? = .statusReady
     private var propertyListenerBlock: AudioObjectPropertyListenerBlock?
 
     var isProviderConfigured: Bool {
@@ -182,6 +184,7 @@ final class AppState: ObservableObject {
         }
 
         settings = loadedSettings
+        statusMessage = loadedSettings.interfaceLanguage.localized(.statusReady)
         let now = Date()
         usageEngine = UsageControlEngine(
             settings: loadedSettings.usageControls,
@@ -240,7 +243,7 @@ final class AppState: ObservableObject {
         currentTranscriptLines.removeAll()
         resetAudioCounters()
         resetUsageSession()
-        updateStatus("Connecting", level: .connecting, log: true)
+        updateLocalizedStatus(.statusConnecting, level: .connecting, log: true)
 
         let client = makeGeminiClient()
 
@@ -250,7 +253,7 @@ final class AppState: ObservableObject {
             try await startCapture()
             beginTranscriptSession()
             isRunning = true
-            updateStatus("Listening", level: .running, log: true)
+            updateLocalizedStatus(.statusListening, level: .running, log: true)
         } catch {
             await stop()
             let diagnostic = DiagnosticClassifier.from(error: error, context: .startup)
@@ -293,7 +296,7 @@ final class AppState: ObservableObject {
         saveUsageLedger()
         audioLevel = 0.0
         isRunning = false
-        updateStatus("Stopped", level: .stopped, log: true)
+        updateLocalizedStatus(.statusStopped, level: .stopped, log: true)
     }
 
     func requestStart() {
@@ -1432,7 +1435,7 @@ final class AppState: ObservableObject {
             return
         }
 
-        updateStatus("Resuming · replaying buffered audio", level: .connecting, log: true)
+        updateLocalizedStatus(.statusResumingReplay, level: .connecting, log: true)
         let newClient = makeGeminiClient()
         do {
             try await newClient.connect()
@@ -1492,13 +1495,13 @@ final class AppState: ObservableObject {
         let base = "mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount) · API \(apiTime)"
         switch usageSnapshot.runtimeState {
         case .active:
-            return "Listening · \(base)"
+            return "\(localizedStatus(.statusListening)) · \(base)"
         case .idleWarning(let remainingSeconds):
             return "Idle soon · auto-pause in \(remainingSeconds)s · \(base)"
         case .paused(let reason):
             return "\(usagePauseLogMessage(reason)) · \(base)"
         case .resuming:
-            return "Resuming · replaying buffered audio · \(base)"
+            return "\(localizedStatus(.statusResumingReplay)) · \(base)"
         }
     }
 
@@ -1801,14 +1804,40 @@ final class AppState: ObservableObject {
         let lowered = message.lowercased()
         if lowered.contains("error") || lowered.contains("failed") || lowered.contains("closed") || lowered.contains("disconnected") {
             updateStatus(message, level: .error, log: true)
-        } else if lowered.contains("ready") || lowered.contains("listening") || lowered.contains("receiving") {
-            updateStatus(message, level: .running, log: false)
+        } else if lowered.contains("socket opened") {
+            updateLocalizedStatus(.statusConnecting, level: .connecting, log: false)
+        } else if lowered.contains("ready") || lowered.contains("listening") {
+            updateLocalizedStatus(.statusListening, level: .running, log: false)
+        } else if lowered.contains("receiving translated audio") {
+            localizedStatusKey = .statusListening
+            statusMessage = runningUsageStatusMessage()
+            statusLevel = .running
         } else {
             updateStatus(message, level: isRunning ? .running : .connecting, log: false)
         }
     }
 
+    private func localizedStatus(_ key: InterfaceText) -> String {
+        settings.interfaceLanguage.localized(key)
+    }
+
+    private func updateLocalizedStatus(_ key: InterfaceText, level: LiveStatusLevel, log: Bool) {
+        updateStatus(localizedStatus(key), level: level, log: log)
+        localizedStatusKey = key
+    }
+
+    private func refreshStatusMessageLanguageIfNeeded(oldValue: AppSettings) {
+        guard oldValue.interfaceLanguage != settings.interfaceLanguage else { return }
+        guard let localizedStatusKey else { return }
+        if isRunning, statusLevel == .running || statusLevel == .connecting {
+            statusMessage = runningUsageStatusMessage()
+        } else {
+            statusMessage = localizedStatus(localizedStatusKey)
+        }
+    }
+
     private func updateStatus(_ message: String, level: LiveStatusLevel, log: Bool) {
+        localizedStatusKey = nil
         statusMessage = message
         statusLevel = level
         if log {
