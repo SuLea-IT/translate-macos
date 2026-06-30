@@ -56,6 +56,19 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
         }.joined(separator: "\n")
     }
 
+    func localizedAudioSource(language: InterfaceLanguage) -> String {
+        switch audioSource.trimmingCharacters(in: .whitespacesAndNewlines) {
+        case AudioSource.screen.title:
+            return AudioSource.screen.localizedTitle(language: language)
+        case AudioSource.microphone.title:
+            return AudioSource.microphone.localizedTitle(language: language)
+        case AudioSource.both.title:
+            return AudioSource.both.localizedTitle(language: language)
+        default:
+            return audioSource
+        }
+    }
+
     var wordCount: Int {
         lines.reduce(0) { $0 + $1.text.split(separator: " ").count + ($1.originalText?.split(separator: " ").count ?? 0) }
     }
@@ -82,7 +95,7 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
         formatter.timeStyle = .short
         let header = """
         \(language.localized(.transcriptExportTitle)): \(formatter.string(from: startedAt))
-        \(language.localized(.meetingNotesSource)): \(audioSource)
+        \(language.localized(.meetingNotesSource)): \(localizedAudioSource(language: language))
         \(language.localized(.meetingNotesTargetLanguage)): \(targetLanguage)
         \(language.localized(.meetingNotesDuration)): \(formattedDuration(language: language))
         \(language.localized(.transcriptExportMode)): \(mode.localizedTitle(language: language))

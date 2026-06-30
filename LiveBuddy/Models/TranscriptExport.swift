@@ -129,7 +129,7 @@ struct TranscriptExporter {
             "# \(language.localized(.transcriptExportTitle))",
             "",
             "- \(language.localized(.meetingNotesStarted)): \(formattedSessionDate(session.startedAt))",
-            "- \(language.localized(.meetingNotesSource)): \(session.audioSource)",
+            "- \(language.localized(.meetingNotesSource)): \(session.localizedAudioSource(language: language))",
             "- \(language.localized(.meetingNotesTargetLanguage)): \(session.targetLanguage)",
             "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration(language: language))",
             "- \(language.localized(.transcriptExportMode)): \(mode.localizedTitle(language: language))",

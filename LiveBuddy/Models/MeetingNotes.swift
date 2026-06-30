@@ -59,7 +59,7 @@ struct MeetingNotesGenerator {
             "# \(language.localized(.meetingNotes))",
             "",
             "- \(language.localized(.meetingNotesStarted)): \(MeetingNotesFormatter.sessionDate(session.startedAt))",
-            "- \(language.localized(.meetingNotesSource)): \(session.audioSource)",
+            "- \(language.localized(.meetingNotesSource)): \(session.localizedAudioSource(language: language))",
             "- \(language.localized(.meetingNotesTargetLanguage)): \(session.targetLanguage)",
             "- \(language.localized(.meetingNotesDuration)): \(session.formattedDuration(language: language))",
             "",

@@ -88,4 +88,41 @@ struct TranscriptSessionTests {
 
         #expect(session.formattedDuration(language: .simplifiedChinese) == "进行中")
     }
+
+    @Test func localizedAudioSourceMapsKnownLegacyAudioSourceTitles() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let screen = TranscriptSession(id: UUID(), startedAt: start, endedAt: start, targetLanguage: "English", audioSource: "Screen audio", lines: [])
+        let microphone = TranscriptSession(id: UUID(), startedAt: start, endedAt: start, targetLanguage: "English", audioSource: "Microphone", lines: [])
+        let both = TranscriptSession(id: UUID(), startedAt: start, endedAt: start, targetLanguage: "English", audioSource: "Screen + Mic", lines: [])
+        let custom = TranscriptSession(id: UUID(), startedAt: start, endedAt: start, targetLanguage: "English", audioSource: "Custom Aggregate Device", lines: [])
+
+        #expect(screen.localizedAudioSource(language: .simplifiedChinese) == "屏幕音频")
+        #expect(microphone.localizedAudioSource(language: .simplifiedChinese) == "麦克风")
+        #expect(both.localizedAudioSource(language: .simplifiedChinese) == "屏幕 + 麦克风")
+        #expect(custom.localizedAudioSource(language: .simplifiedChinese) == "Custom Aggregate Device")
+    }
+
+    @Test func textForModeLocalizesStoredAudioSource() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let session = TranscriptSession(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000025")!,
+            startedAt: start,
+            endedAt: start.addingTimeInterval(10),
+            targetLanguage: "English",
+            audioSource: "Screen audio",
+            lines: [
+                TranscriptLine(
+                    text: "Hello world",
+                    originalText: "你好 世界",
+                    languageCode: "en",
+                    timestamp: start.addingTimeInterval(1)
+                )
+            ]
+        )
+
+        let text = session.textForMode(.both, language: .simplifiedChinese)
+
+        #expect(text.contains("来源: 屏幕音频"))
+        #expect(text.contains("来源: Screen audio") == false)
+    }
 }

@@ -228,7 +228,7 @@ struct TranscriptsView: View {
                     Label(session.targetLanguage, systemImage: "globe")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Label(session.audioSource, systemImage: "waveform")
+                    Label(session.localizedAudioSource(language: appState.settings.interfaceLanguage), systemImage: "waveform")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -547,7 +547,7 @@ struct SessionCard: View {
 
             HStack(spacing: 10) {
                 Label(session.targetLanguage, systemImage: "globe")
-                Label(session.audioSource, systemImage: "waveform")
+                Label(session.localizedAudioSource(language: appState.settings.interfaceLanguage), systemImage: "waveform")
                 Spacer()
                 Text(appState.t(.linesFormat, session.lines.count))
 
