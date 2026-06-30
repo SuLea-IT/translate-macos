@@ -1,9 +1,9 @@
 import Foundation
 
 struct PreflightTestRunner {
-    typealias ProviderCheck = @Sendable () async -> ProviderHealthStatus
+    typealias ProviderCheck = @Sendable (_ apiKey: String) async -> ProviderHealthStatus
     typealias PermissionCheck = @Sendable () async -> PermissionStatusSnapshot
-    typealias AudioSampler = @Sendable (_ analyzer: inout AudioLevelAnalyzer) async throws -> Void
+    typealias AudioSampler = @Sendable (_ selectedDeviceUID: String?, _ analyzer: inout AudioLevelAnalyzer) async throws -> Void
     typealias SubtitleCheck = @Sendable () async -> Void
     typealias ReportUpdate = @MainActor (PreflightTestReport) -> Void
 
@@ -32,7 +32,7 @@ struct PreflightTestRunner {
         await update(report)
         guard !Task.isCancelled else { return report }
 
-        report = await runProvider(report: report, update: update)
+        report = await runProvider(settings: settings, report: report, update: update)
         guard !Task.isCancelled else { return report }
         report = await runPermissions(settings: settings, report: report, update: update)
         guard !Task.isCancelled else { return report }
@@ -45,10 +45,10 @@ struct PreflightTestRunner {
         return report
     }
 
-    private func runProvider(report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
+    private func runProvider(settings: AppSettings, report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
         var report = report.updating(.apiKey, state: .running, message: "Checking API key")
         await update(report)
-        let status = await providerCheck()
+        let status = await providerCheck(settings.apiKey)
         guard !Task.isCancelled else { return report }
         switch status {
         case .valid:
@@ -88,7 +88,13 @@ struct PreflightTestRunner {
         var report = report
         guard !Task.isCancelled else { return report }
         if settings.audioSource == .microphone || settings.audioSource == .both {
-            report = await runAudioStep(.microphoneAudio, sampler: microphoneSampler, report: report, update: update)
+            report = await runAudioStep(
+                .microphoneAudio,
+                selectedDeviceUID: settings.selectedMicrophoneDeviceUID,
+                sampler: microphoneSampler,
+                report: report,
+                update: update
+            )
         } else {
             report = report.updating(.microphoneAudio, state: .passed, message: "Not needed for selected audio source")
             await update(report)
@@ -96,7 +102,13 @@ struct PreflightTestRunner {
         guard !Task.isCancelled else { return report }
 
         if settings.audioSource == .screen || settings.audioSource == .both {
-            report = await runAudioStep(.screenAudio, sampler: screenSampler, report: report, update: update)
+            report = await runAudioStep(
+                .screenAudio,
+                selectedDeviceUID: nil,
+                sampler: screenSampler,
+                report: report,
+                update: update
+            )
         } else {
             report = report.updating(.screenAudio, state: .passed, message: "Not needed for selected audio source")
             await update(report)
@@ -107,6 +119,7 @@ struct PreflightTestRunner {
 
     private func runAudioStep(
         _ id: PreflightTestStepID,
+        selectedDeviceUID: String?,
         sampler: AudioSampler,
         report: PreflightTestReport,
         update: ReportUpdate
@@ -116,7 +129,7 @@ struct PreflightTestRunner {
         guard !Task.isCancelled else { return report }
         var analyzer = AudioLevelAnalyzer()
         do {
-            try await sampler(&analyzer)
+            try await sampler(selectedDeviceUID, &analyzer)
             guard !Task.isCancelled else { return report }
             let summary = analyzer.summary()
             if summary.totalSampleCount == 0 {
@@ -152,37 +165,37 @@ struct PreflightTestRunner {
 
 extension PreflightTestRunner {
     static func live(
-        settings: AppSettings,
+        settings _: AppSettings,
         providerHealthService: ProviderHealthService = .geminiDefault,
         permissionStatusService: PermissionStatusService = PermissionStatusService(),
         sampleDuration: TimeInterval = 3,
         subtitleCheck: @escaping SubtitleCheck
     ) -> PreflightTestRunner {
         PreflightTestRunner(
-            providerCheck: {
-                await providerHealthService.verify(apiKey: settings.apiKey)
+            providerCheck: { apiKey in
+                await providerHealthService.verify(apiKey: apiKey)
             },
             permissionCheck: {
                 await permissionStatusService.refreshStatuses()
             },
-            microphoneSampler: { analyzer in
-                try await sampleMicrophone(settings: settings, duration: sampleDuration, analyzer: &analyzer)
+            microphoneSampler: { selectedDeviceUID, analyzer in
+                try await sampleMicrophone(selectedDeviceUID: selectedDeviceUID, duration: sampleDuration, analyzer: &analyzer)
             },
-            screenSampler: { analyzer in
+            screenSampler: { _, analyzer in
                 try await sampleScreen(duration: sampleDuration, analyzer: &analyzer)
             },
             subtitleCheck: subtitleCheck
         )
     }
 
-    private static func sampleMicrophone(settings: AppSettings, duration: TimeInterval, analyzer: inout AudioLevelAnalyzer) async throws {
+    private static func sampleMicrophone(selectedDeviceUID: String?, duration: TimeInterval, analyzer: inout AudioLevelAnalyzer) async throws {
         try Task.checkCancellation()
         let box = AudioLevelAnalyzerBox(analyzer)
         let capture = MicrophoneCapture { data in
             box.process(data)
         }
         do {
-            try await capture.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
+            try await capture.start(selectedDeviceUID: selectedDeviceUID)
             try Task.checkCancellation()
             try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
         } catch {

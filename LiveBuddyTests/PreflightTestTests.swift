@@ -63,17 +63,17 @@ struct PreflightTestTests {
 extension PreflightTestTests {
     @Test func runnerMarksNormalAudioAsPassed() async {
         let runner = PreflightTestRunner(
-            providerCheck: { .valid(checkedAt: Date()) },
+            providerCheck: { _ in .valid(checkedAt: Date()) },
             permissionCheck: {
                 PermissionStatusSnapshot(
                     microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
                     screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
                 )
             },
-            microphoneSampler: { analyzer in
+            microphoneSampler: { _, analyzer in
                 analyzer.processPCM16(pcm16([0, 8_000, -8_000, 12_000]))
             },
-            screenSampler: { _ in },
+            screenSampler: { _, _ in },
             subtitleCheck: {}
         )
         var settings = AppSettings()
@@ -89,17 +89,17 @@ extension PreflightTestTests {
 
     @Test func runnerMarksQuietAudioAsWarning() async {
         let runner = PreflightTestRunner(
-            providerCheck: { .valid(checkedAt: Date()) },
+            providerCheck: { _ in .valid(checkedAt: Date()) },
             permissionCheck: {
                 PermissionStatusSnapshot(
                     microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
                     screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
                 )
             },
-            microphoneSampler: { analyzer in
+            microphoneSampler: { _, analyzer in
                 analyzer.processPCM16(pcm16([0, 0, 10, -10]))
             },
-            screenSampler: { _ in },
+            screenSampler: { _, _ in },
             subtitleCheck: {}
         )
         var settings = AppSettings()
@@ -111,4 +111,39 @@ extension PreflightTestTests {
         #expect(report.steps.first { $0.id == .microphoneAudio }?.state == .warning)
     }
 
+    @Test func runnerPassesSelectedMicrophoneUIDToMicrophoneSampler() async {
+        let recorder = SelectedMicrophoneUIDRecorder()
+        let runner = PreflightTestRunner(
+            providerCheck: { _ in .valid(checkedAt: Date()) },
+            permissionCheck: {
+                PermissionStatusSnapshot(
+                    microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+                    screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+                )
+            },
+            microphoneSampler: { selectedDeviceUID, analyzer in
+                await recorder.record(selectedDeviceUID)
+                analyzer.processPCM16(pcm16([0, 8_000, -8_000, 12_000]))
+            },
+            screenSampler: { _, _ in },
+            subtitleCheck: {}
+        )
+        var settings = AppSettings()
+        settings.audioSource = .microphone
+        settings.apiKey = "test-key"
+        settings.selectedMicrophoneDeviceUID = "mic-uid-123"
+
+        _ = await runner.run(settings: settings) { _ in }
+
+        #expect(await recorder.value == "mic-uid-123")
+    }
+
+}
+
+private actor SelectedMicrophoneUIDRecorder {
+    private(set) var value: String?
+
+    func record(_ value: String?) {
+        self.value = value
+    }
 }

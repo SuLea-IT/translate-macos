@@ -37,7 +37,7 @@ if not provider_match:
     errors.append("PreflightTestRunner.runProvider not found")
 else:
     body = provider_match.group("body")
-    status_idx = body.find("let status = await providerCheck()")
+    status_idx = body.find("let status = await providerCheck(settings.apiKey)")
     guard_idx = body.find(cancel_guard, status_idx)
     if status_idx == -1 or guard_idx == -1:
         errors.append("PreflightTestRunner.runProvider must ignore provider results if the task was cancelled")
@@ -67,7 +67,7 @@ if not run_audio_step_match:
     errors.append("PreflightTestRunner.runAudioStep not found")
 else:
     body = run_audio_step_match.group("body")
-    sampler_idx = body.find("try await sampler(&analyzer)")
+    sampler_idx = body.find("try await sampler(selectedDeviceUID, &analyzer)")
     guard_before = body.rfind(cancel_guard, 0, sampler_idx)
     guard_after = body.find(cancel_guard, sampler_idx)
     if sampler_idx == -1 or guard_before == -1:
