@@ -354,6 +354,7 @@ struct TranscriptsView: View {
         guard let selectedSession else { return }
         if let refreshedSession = appState.transcriptSessions.first(where: { $0.id == selectedSession.id }) {
             self.selectedSession = refreshedSession
+            refreshMeetingNotesIfVisible(for: refreshedSession)
             return
         }
         self.selectedSession = nil
@@ -371,8 +372,13 @@ struct TranscriptsView: View {
             meetingNotesSessionID = nil
             return
         }
-        generatedMeetingNotes = meetingNotesGenerator.generate(from: selectedSession, mode: viewMode)
-        meetingNotesSessionID = selectedSession.id
+        refreshMeetingNotesIfVisible(for: selectedSession)
+    }
+
+    private func refreshMeetingNotesIfVisible(for session: TranscriptSession) {
+        guard generatedMeetingNotes != nil, meetingNotesSessionID == session.id else { return }
+        generatedMeetingNotes = meetingNotesGenerator.generate(from: session, mode: viewMode)
+        meetingNotesSessionID = session.id
     }
 
     private func clearTranscriptDetailFeedbackForSelectionChange() {
