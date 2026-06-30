@@ -67,7 +67,7 @@ struct TranscriptExportTests {
         let markdown = TranscriptExporter().export(session: sampleSession(), mode: .both, format: .markdown, language: .simplifiedChinese)
 
         #expect(markdown.contains("# 转录记录"))
-        #expect(markdown.contains("- 来源: Screen audio"))
+        #expect(markdown.contains("- 来源: 屏幕音频"))
         #expect(markdown.contains("- 目标语言: English"))
         #expect(markdown.contains("- 时长: 10s"))
         #expect(markdown.contains("- 模式: 双语"))
@@ -134,7 +134,7 @@ struct TranscriptExportTests {
         #expect(archive.contains("- 会话数: 1"))
         #expect(archive.contains("- 模式: 双语"))
         #expect(archive.contains("# 转录记录"))
-        #expect(archive.contains("- 来源: Screen audio"))
+        #expect(archive.contains("- 来源: 屏幕音频"))
         #expect(archive.contains("# LiveBuddy Transcript Archive") == false)
         #expect(archive.contains("- Sessions:") == false)
         #expect(archive.contains("- Mode:") == false)

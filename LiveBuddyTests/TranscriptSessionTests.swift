@@ -64,7 +64,7 @@ struct TranscriptSessionTests {
         let text = session.textForMode(.both, language: .simplifiedChinese)
 
         #expect(text.contains("转录记录:"))
-        #expect(text.contains("来源: Screen audio"))
+        #expect(text.contains("来源: 屏幕音频"))
         #expect(text.contains("目标语言: English"))
         #expect(text.contains("时长: 10s"))
         #expect(text.contains("模式: 双语"))

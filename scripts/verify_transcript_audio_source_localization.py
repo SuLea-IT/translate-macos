@@ -8,11 +8,13 @@ view_path = root / "LiveBuddy" / "Views" / "Settings" / "TranscriptsView.swift"
 export_path = root / "LiveBuddy" / "Models" / "TranscriptExport.swift"
 notes_path = root / "LiveBuddy" / "Models" / "MeetingNotes.swift"
 tests_path = root / "LiveBuddyTests" / "TranscriptSessionTests.swift"
+export_tests_path = root / "LiveBuddyTests" / "TranscriptExportTests.swift"
 session = session_path.read_text()
 view = view_path.read_text()
 export = export_path.read_text()
 notes = notes_path.read_text()
 tests = tests_path.read_text()
+export_tests = export_tests_path.read_text()
 errors: list[str] = []
 
 for token in [
@@ -63,6 +65,25 @@ for token in [
 ]:
     if token not in tests:
         errors.append(f"TranscriptSessionTests must cover localized audio source through {token}")
+
+for file_name, test_source in [
+    ("TranscriptSessionTests.swift", tests),
+    ("TranscriptExportTests.swift", export_tests),
+]:
+    for forbidden in [
+        '#expect(text.contains("来源: Screen audio"))',
+        '#expect(markdown.contains("- 来源: Screen audio"))',
+        '#expect(archive.contains("- 来源: Screen audio"))',
+    ]:
+        if forbidden in test_source:
+            errors.append(f"{file_name} must not keep stale Chinese-language assertions for English stored audio source: {forbidden}")
+
+for token in [
+    '"来源: 屏幕音频"',
+    '"- 来源: 屏幕音频"',
+]:
+    if token not in tests and token not in export_tests:
+        errors.append(f"Tests must assert localized Chinese audio source metadata through {token}")
 
 if errors:
     print("Transcript audio source localization verification failed:", file=sys.stderr)
