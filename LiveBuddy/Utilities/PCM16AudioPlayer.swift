@@ -2,21 +2,30 @@ import AVFoundation
 import Foundation
 
 final class PCM16AudioPlayer: @unchecked Sendable {
+    private static let playbackQueueKey = DispatchSpecificKey<Bool>()
+    private static let playbackQueueValue = true
     nonisolated(unsafe) private let engine = AVAudioEngine()
     nonisolated(unsafe) private let player = AVAudioPlayerNode()
     private let queue = DispatchQueue(label: "livebuddy.audio.playback")
     private let maxPendingPlaybackBuffers = 120
     nonisolated(unsafe) private var isPrepared = false
     nonisolated(unsafe) private var isAttached = false
+    nonisolated(unsafe) private var isShuttingDown = false
     nonisolated(unsafe) private var pendingPlaybackBuffers = 0
     nonisolated(unsafe) private var playbackGeneration = UUID()
 
+    init() {
+        queue.setSpecific(key: Self.playbackQueueKey, value: Self.playbackQueueValue)
+    }
+
     deinit {
-        player.stop()
-        player.reset()
-        engine.stop()
-        isPrepared = false
-        pendingPlaybackBuffers = 0
+        if DispatchQueue.getSpecific(key: Self.playbackQueueKey) == Self.playbackQueueValue {
+            teardownPlaybackResources()
+        } else {
+            queue.sync {
+                teardownPlaybackResources()
+            }
+        }
     }
 
     nonisolated func playPCM16(_ data: Data, sampleRate: Double) {
@@ -29,22 +38,20 @@ final class PCM16AudioPlayer: @unchecked Sendable {
     nonisolated func stop() {
         queue.async { [weak self] in
             guard let self else { return }
-            playbackGeneration = UUID()
-            pendingPlaybackBuffers = 0
-            player.stop()
-            player.reset()
-            engine.stop()
-            isPrepared = false
+            self.stopOnPlaybackQueue()
         }
     }
 
     nonisolated func setVolume(_ volume: Float) {
         queue.async { [weak self] in
-            self?.player.volume = volume
+            guard let self else { return }
+            guard !isShuttingDown else { return }
+            self.player.volume = volume
         }
     }
 
     private nonisolated func enqueue(_ data: Data, sampleRate: Double) {
+        guard !isShuttingDown else { return }
         guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else { return }
         do {
             try prepare(sampleRate: sampleRate)
@@ -73,6 +80,24 @@ final class PCM16AudioPlayer: @unchecked Sendable {
         })
         if !player.isPlaying {
             player.play()
+        }
+    }
+
+    private nonisolated func stopOnPlaybackQueue() {
+        playbackGeneration = UUID()
+        pendingPlaybackBuffers = 0
+        player.stop()
+        player.reset()
+        engine.stop()
+        isPrepared = false
+    }
+
+    private nonisolated func teardownPlaybackResources() {
+        isShuttingDown = true
+        stopOnPlaybackQueue()
+        if isAttached {
+            engine.detach(player)
+            isAttached = false
         }
     }
 

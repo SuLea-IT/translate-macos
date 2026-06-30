@@ -21,9 +21,17 @@ if not stop_match:
     errors.append("PCM16AudioPlayer.stop() not found")
 else:
     body = stop_match.group("body")
+    if "self.stopOnPlaybackQueue()" not in body:
+        errors.append("PCM16AudioPlayer.stop() must clear queued playback through stopOnPlaybackQueue()")
+
+stop_helper_match = re.search(r"private nonisolated func stopOnPlaybackQueue\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private nonisolated func teardownPlaybackResources", text)
+if not stop_helper_match:
+    errors.append("PCM16AudioPlayer.stopOnPlaybackQueue() not found")
+else:
+    body = stop_helper_match.group("body")
     for token in ["playbackGeneration = UUID()", "pendingPlaybackBuffers = 0", "player.reset()"]:
         if token not in body:
-            errors.append(f"PCM16AudioPlayer.stop() must clear queued playback through {token}")
+            errors.append(f"PCM16AudioPlayer.stopOnPlaybackQueue() must clear queued playback through {token}")
 
 enqueue_match = re.search(r"private nonisolated func enqueue\(_ data: Data, sampleRate: Double\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private nonisolated func prepare", text)
 if not enqueue_match:
@@ -60,9 +68,17 @@ if not deinit_match:
     errors.append("PCM16AudioPlayer.deinit not found")
 else:
     body = deinit_match.group("body")
-    for token in ["player.stop()", "player.reset()", "pendingPlaybackBuffers = 0"]:
+    if "teardownPlaybackResources()" not in body:
+        errors.append("PCM16AudioPlayer.deinit must release queued playback through serialized teardownPlaybackResources()")
+
+teardown_match = re.search(r"private nonisolated func teardownPlaybackResources\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private nonisolated func finishBufferPlayback", text)
+if not teardown_match:
+    errors.append("PCM16AudioPlayer.teardownPlaybackResources() not found")
+else:
+    body = teardown_match.group("body")
+    for token in ["stopOnPlaybackQueue()", "isShuttingDown = true"]:
         if token not in body:
-            errors.append(f"PCM16AudioPlayer.deinit must release queued playback through {token}")
+            errors.append(f"PCM16AudioPlayer.teardownPlaybackResources() must release queued playback through {token}")
 
 if errors:
     print("Audio player backpressure verification failed:", file=sys.stderr)

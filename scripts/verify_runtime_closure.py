@@ -637,9 +637,27 @@ if not player_deinit_match:
     errors.append("PCM16AudioPlayer.deinit must stop AVAudio playback resources")
 else:
     body = player_deinit_match.group("body")
+    for token in ["teardownPlaybackResources()", "queue.sync"]:
+        if token not in body:
+            errors.append(f"PCM16AudioPlayer.deinit must release playback resources through serialized {token}")
+
+player_stop_helper_match = re.search(r"private nonisolated func stopOnPlaybackQueue\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private nonisolated func teardownPlaybackResources", audio_player_text)
+if not player_stop_helper_match:
+    errors.append("PCM16AudioPlayer.stopOnPlaybackQueue() must centralize playback resource release")
+else:
+    body = player_stop_helper_match.group("body")
     for token in ["player.stop()", "engine.stop()", "isPrepared = false"]:
         if token not in body:
-            errors.append(f"PCM16AudioPlayer.deinit must release playback resource through {token}")
+            errors.append(f"PCM16AudioPlayer.stopOnPlaybackQueue() must release playback resource through {token}")
+
+player_teardown_match = re.search(r"private nonisolated func teardownPlaybackResources\(\) \{(?P<body>[\s\S]*?)\n    \}\n\n    private nonisolated func finishBufferPlayback", audio_player_text)
+if not player_teardown_match:
+    errors.append("PCM16AudioPlayer.teardownPlaybackResources() must close playback resources")
+else:
+    body = player_teardown_match.group("body")
+    for token in ["isShuttingDown = true", "stopOnPlaybackQueue()"]:
+        if token not in body:
+            errors.append(f"PCM16AudioPlayer.teardownPlaybackResources() must close playback resource through {token}")
 
 screen_deinit_match = re.search(r"deinit \{(?P<body>[\s\S]*?)\n    \}", screen_audio_text)
 if not screen_deinit_match:
