@@ -44,7 +44,7 @@ else:
         "let gate = TerminationStopGate()",
         "let timeout = Self.terminationStopTimeoutNanoseconds",
         "terminationStopTask = Task { @MainActor [weak appState, gate] in",
-        "await appState?.stop()",
+        "await appState?.stopForTermination()",
         "gate.finish(.stopped)",
         "terminationTimeoutTask = Task { [gate, timeout] in",
         "try? await Task.sleep(nanoseconds: timeout)",
@@ -56,6 +56,8 @@ else:
     ]:
         if token not in body:
             errors.append(f"waitForRuntimeStopBeforeTermination must race stop with timeout through {token}")
+    if "await appState?.stop()" in body or "await appState.stop()" in body:
+        errors.append("waitForRuntimeStopBeforeTermination must use stopForTermination() so transcript persistence is deferred to applicationWillTerminate")
 
 clear_match = re.search(r"private func clearTerminationStopTasks\(\) \{(?P<body>[\s\S]*?)\n    \}", text)
 if not clear_match:

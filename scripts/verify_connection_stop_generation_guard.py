@@ -79,7 +79,7 @@ else:
 
 for name, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func stop"),
-    ("stop(cancelPendingRestart:)", r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func requestStart"),
+    ("stop(cancelPendingRestart:saveTranscriptImmediately:)", r"private func stop\(cancelPendingRestart: Bool, saveTranscriptImmediately: Bool = true\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func requestStart"),
 ]:
     match = re.search(pattern, text)
     if not match:

@@ -269,10 +269,14 @@ final class AppState: ObservableObject {
     }
 
     func stop() async {
-        await stop(cancelPendingRestart: true)
+        await stop(cancelPendingRestart: true, saveTranscriptImmediately: true)
     }
 
-    private func stop(cancelPendingRestart: Bool) async {
+    func stopForTermination() async {
+        await stop(cancelPendingRestart: true, saveTranscriptImmediately: false)
+    }
+
+    private func stop(cancelPendingRestart: Bool, saveTranscriptImmediately: Bool = true) async {
         userInitiatedStop = true
         reconnectTask?.cancel()
         reconnectTask = nil
@@ -299,7 +303,7 @@ final class AppState: ObservableObject {
         client?.close()
         client = nil
         audioPlayer.stop()
-        finishTranscriptSession()
+        finishTranscriptSession(saveImmediately: saveTranscriptImmediately)
         saveUsageLedger()
         audioLevel = 0.0
         isRunning = false

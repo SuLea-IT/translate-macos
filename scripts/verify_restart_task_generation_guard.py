@@ -41,7 +41,7 @@ else:
         errors.append("rebuildRunningSessionIfNeeded must not clear restartTask unconditionally")
 
 for name, pattern in [
-    ("stop(cancelPendingRestart:)", r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func requestStart"),
+    ("stop(cancelPendingRestart:saveTranscriptImmediately:)", r"private func stop\(cancelPendingRestart: Bool, saveTranscriptImmediately: Bool = true\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func requestStart"),
     ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    private func connectionEvent"),
 ]:
     match = re.search(pattern, text)

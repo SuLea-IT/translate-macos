@@ -24,11 +24,11 @@ app_delegate_text = app_delegate.read_text()
 global_shortcut_text = global_shortcut_registrar.read_text()
 
 public_stop_match = re.search(r"func stop\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
-internal_stop_match = re.search(r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+internal_stop_match = re.search(r"private func stop\(cancelPendingRestart: Bool, saveTranscriptImmediately: Bool = true\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if internal_stop_match:
     stop_cleanup_body = internal_stop_match.group("body")
-    if not public_stop_match or "await stop(cancelPendingRestart: true)" not in public_stop_match.group("body"):
-        errors.append("AppState.stop() must delegate to stop(cancelPendingRestart: true)")
+    if not public_stop_match or "await stop(cancelPendingRestart: true, saveTranscriptImmediately: true)" not in public_stop_match.group("body"):
+        errors.append("AppState.stop() must delegate to stop(cancelPendingRestart: true, saveTranscriptImmediately: true)")
 else:
     stop_cleanup_body = public_stop_match.group("body") if public_stop_match else ""
     if not public_stop_match:
@@ -193,7 +193,7 @@ else:
 
 for context, pattern in [
     ("start", r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}"),
-    ("stop(cancelPendingRestart:)", r"private func stop\(cancelPendingRestart: Bool\) async \{(?P<body>[\s\S]*?)\n    \}"),
+    ("stop(cancelPendingRestart:saveTranscriptImmediately:)", r"private func stop\(cancelPendingRestart: Bool, saveTranscriptImmediately: Bool = true\) async \{(?P<body>[\s\S]*?)\n    \}"),
     ("stopRuntimeAfterConnectionFailure", r"private func stopRuntimeAfterConnectionFailure\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}"),
 ]:
     match = re.search(pattern, app_state_text)
@@ -342,7 +342,7 @@ if stop_failure_match:
 
 if internal_stop_match:
     if "if cancelPendingRestart" not in stop_cleanup_body or "restartTask?.cancel()" not in stop_cleanup_body:
-        errors.append("AppState.stop(cancelPendingRestart:) must only cancel scheduled restarts when requested")
+        errors.append("AppState.stop(cancelPendingRestart:saveTranscriptImmediately:) must only cancel scheduled restarts when requested")
 if stop_failure_match and "restartTask?.cancel()" not in stop_failure_match.group("body"):
     errors.append("AppState.stopRuntimeAfterConnectionFailure() must cancel scheduled restart work")
 

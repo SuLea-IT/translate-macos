@@ -118,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let timeout = Self.terminationStopTimeoutNanoseconds
 
         terminationStopTask = Task { @MainActor [weak appState, gate] in
-            await appState?.stop()
+            await appState?.stopForTermination()
             guard !Task.isCancelled else { return }
             gate.finish(.stopped)
         }
