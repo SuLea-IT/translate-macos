@@ -158,6 +158,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case preflightPermissionsMissing
     case preflightNotNeededForAudioSource
     case preflightSamplingAudio
+    case preflightAudioLevelReadout
     case preflightNoAudioCaptured
     case preflightShowingSubtitleTest
     case preflightSubtitleWindowShown
@@ -502,6 +503,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .preflightPermissionsMissing: "Required permissions need attention",
         .preflightNotNeededForAudioSource: "Not needed for selected audio source",
         .preflightSamplingAudio: "Sampling audio",
+        .preflightAudioLevelReadout: "RMS %d%% · Peak %d%%",
         .preflightNoAudioCaptured: "No audio samples were captured",
         .preflightShowingSubtitleTest: "Showing subtitle test",
         .preflightSubtitleWindowShown: "Subtitle window test shown",
@@ -814,6 +816,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "所需权限需要处理",
             .preflightNotNeededForAudioSource: "当前音频来源不需要",
             .preflightSamplingAudio: "正在采样音频",
+            .preflightAudioLevelReadout: "均方根 %d%% · 峰值 %d%%",
             .preflightNoAudioCaptured: "未采集到音频样本",
             .preflightShowingSubtitleTest: "正在显示字幕测试",
             .preflightSubtitleWindowShown: "已显示字幕窗口测试",
@@ -1123,6 +1126,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "必要な権限に対応が必要です",
             .preflightNotNeededForAudioSource: "選択中の音声ソースでは不要です",
             .preflightSamplingAudio: "音声をサンプリング中",
+            .preflightAudioLevelReadout: "RMS %d%%・ピーク %d%%",
             .preflightNoAudioCaptured: "音声サンプルを取得できませんでした",
             .preflightShowingSubtitleTest: "字幕テストを表示中",
             .preflightSubtitleWindowShown: "字幕ウィンドウのテストを表示しました",
@@ -1432,6 +1436,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "필요한 권한을 확인해야 합니다",
             .preflightNotNeededForAudioSource: "선택한 오디오 소스에는 필요하지 않습니다",
             .preflightSamplingAudio: "오디오 샘플링 중",
+            .preflightAudioLevelReadout: "RMS %d%% · 피크 %d%%",
             .preflightNoAudioCaptured: "오디오 샘플을 캡처하지 못했습니다",
             .preflightShowingSubtitleTest: "자막 테스트 표시 중",
             .preflightSubtitleWindowShown: "자막 창 테스트가 표시됨",
@@ -1741,6 +1746,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "Los permisos necesarios requieren atención",
             .preflightNotNeededForAudioSource: "No es necesario para la fuente de audio seleccionada",
             .preflightSamplingAudio: "Muestreando audio",
+            .preflightAudioLevelReadout: "RMS %d%% · Pico %d%%",
             .preflightNoAudioCaptured: "No se capturaron muestras de audio",
             .preflightShowingSubtitleTest: "Mostrando prueba de subtítulos",
             .preflightSubtitleWindowShown: "Prueba de ventana de subtítulos mostrada",
@@ -2050,6 +2056,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "Les permissions requises nécessitent une action",
             .preflightNotNeededForAudioSource: "Non requis pour la source audio sélectionnée",
             .preflightSamplingAudio: "Échantillonnage audio",
+            .preflightAudioLevelReadout: "RMS %d%% · Pic %d%%",
             .preflightNoAudioCaptured: "Aucun échantillon audio capturé",
             .preflightShowingSubtitleTest: "Affichage du test de sous-titres",
             .preflightSubtitleWindowShown: "Test de la fenêtre de sous-titres affiché",
@@ -2359,6 +2366,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "Erforderliche Berechtigungen benötigen Aufmerksamkeit",
             .preflightNotNeededForAudioSource: "Für die gewählte Audioquelle nicht erforderlich",
             .preflightSamplingAudio: "Audio wird erfasst",
+            .preflightAudioLevelReadout: "RMS %d%% · Spitze %d%%",
             .preflightNoAudioCaptured: "Keine Audiosamples erfasst",
             .preflightShowingSubtitleTest: "Untertiteltest wird angezeigt",
             .preflightSubtitleWindowShown: "Untertitel-Fenstertest angezeigt",
@@ -2668,6 +2676,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .preflightPermissionsMissing: "Các quyền cần thiết cần được xử lý",
             .preflightNotNeededForAudioSource: "Không cần cho nguồn âm thanh đã chọn",
             .preflightSamplingAudio: "Đang lấy mẫu âm thanh",
+            .preflightAudioLevelReadout: "RMS %d%% · Đỉnh %d%%",
             .preflightNoAudioCaptured: "Không thu được mẫu âm thanh",
             .preflightShowingSubtitleTest: "Đang hiển thị thử nghiệm phụ đề",
             .preflightSubtitleWindowShown: "Đã hiển thị thử nghiệm cửa sổ phụ đề",

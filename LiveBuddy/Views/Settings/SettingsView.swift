@@ -1170,7 +1170,7 @@ private struct PreflightTestStepRow: View {
                 }
                 if let audio = step.audio {
                     ProgressView(value: Double(audio.rms), total: 1) {
-                        Text("RMS \(Int(audio.rms * 100))% · Peak \(Int(audio.peak * 100))%")
+                        Text(audioLevelText(audio))
                             .font(.caption2)
                     }
                 }
@@ -1185,6 +1185,13 @@ private struct PreflightTestStepRow: View {
             return language.localized(key)
         }
         return step.message
+    }
+
+    private func audioLevelText(_ audio: AudioLevelSummary) -> String {
+        language.localized(
+            .preflightAudioLevelReadout,
+            arguments: [Int(audio.rms * 100), Int(audio.peak * 100)]
+        )
     }
 
     private var title: String {
