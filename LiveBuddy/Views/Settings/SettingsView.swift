@@ -139,7 +139,7 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(appState.settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canUseRuntimeToolbarButton)
                     .padding(.horizontal, 16)
                 }
             }
@@ -151,6 +151,11 @@ struct SettingsView: View {
             cancelTokenCheck()
             recordingShortcutAction = nil
         }
+    }
+
+    private var canUseRuntimeToolbarButton: Bool {
+        let apiKeyIsEmpty = appState.settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return appState.isRunning || !apiKeyIsEmpty
     }
 
     private var providerForm: some View {
