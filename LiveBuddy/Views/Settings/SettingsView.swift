@@ -970,7 +970,7 @@ struct SettingsView: View {
     }
 
     private func copyLogsFromUI() {
-        let logText = LogExporter().export(entries: appState.logs)
+        let logText = LogExporter().export(entries: appState.logs, language: appState.settings.interfaceLanguage)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(logText, forType: .string)
         logExportErrorMessage = nil
@@ -978,7 +978,7 @@ struct SettingsView: View {
 
     private func exportLogsFromUI() {
         let exporter = LogExporter()
-        let logText = exporter.export(entries: appState.logs)
+        let logText = exporter.export(entries: appState.logs, language: appState.settings.interfaceLanguage)
         logExportDocument = TranscriptExportDocument(text: logText, contentType: .plainText)
         logExportFileName = exporter.defaultFileName()
         logExportErrorMessage = nil

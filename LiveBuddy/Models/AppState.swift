@@ -2119,15 +2119,16 @@ struct LogEntry: Identifiable, Equatable {
 }
 
 struct LogExporter {
-    func export(entries: [LogEntry]) -> String {
+    func export(entries: [LogEntry], language: InterfaceLanguage = .english) -> String {
+        let title = language.localized(.runtimeLogs)
         guard !entries.isEmpty else {
-            return "# Runtime Logs\n\nNo log entries.\n"
+            return "# \(title)\n\n\(language.localized(.noLogEntries))\n"
         }
 
         let lines = entries.map { entry in
             "[\(formattedTimestamp(entry.timestamp))] \(levelText(entry.level)) \(entry.message)"
         }
-        return "# Runtime Logs\n\n\(lines.joined(separator: "\n"))\n"
+        return "# \(title)\n\n\(lines.joined(separator: "\n"))\n"
     }
 
     func defaultFileName(date: Date = Date()) -> String {

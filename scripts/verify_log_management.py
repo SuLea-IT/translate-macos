@@ -38,7 +38,7 @@ if "appState.clearLogs()" in view_text and "private func clearLogsFromUI()" not 
 
 if "struct LogExporter" not in app_state_text:
     errors.append("AppState.swift must provide LogExporter for reusable log formatting")
-for token in ["func export(entries:", "func defaultFileName(date:", "Runtime Logs", "ERROR", "INFO"]:
+for token in ["func export(entries:", "func defaultFileName(date:", "language.localized(.runtimeLogs)", "ERROR", "INFO"]:
     if token not in app_state_text:
         errors.append(f"LogExporter must include {token}")
 

@@ -211,6 +211,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case subtitleColorPink
     case previewText
     case runtimeLogs
+    case noLogEntries
     case exportLogs
     case copyLogs
     case clearLogsConfirmationTitle
@@ -534,6 +535,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .subtitleColorPink: "Pink",
         .previewText: "Preview text",
         .runtimeLogs: "Runtime Logs",
+        .noLogEntries: "No log entries.",
         .exportLogs: "Export Logs",
         .copyLogs: "Copy Logs",
         .clearLogsConfirmationTitle: "Clear logs?",
@@ -825,6 +827,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "粉色",
             .previewText: "预览文本",
             .runtimeLogs: "运行日志",
+            .noLogEntries: "暂无日志。",
             .exportLogs: "导出日志",
             .copyLogs: "复制日志",
             .clearLogsConfirmationTitle: "清空日志？",
@@ -1113,6 +1116,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "ピンク",
             .previewText: "プレビューテキスト",
             .runtimeLogs: "実行ログ",
+            .noLogEntries: "ログはありません。",
             .exportLogs: "ログを書き出し",
             .copyLogs: "ログをコピー",
             .clearLogsConfirmationTitle: "ログを消去しますか？",
@@ -1399,6 +1403,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "분홍색",
             .previewText: "미리보기 텍스트",
             .runtimeLogs: "런타임 로그",
+            .noLogEntries: "로그 항목이 없습니다.",
             .exportLogs: "로그 내보내기",
             .copyLogs: "로그 복사",
             .clearLogsConfirmationTitle: "로그를 지울까요?",
@@ -1684,6 +1689,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "Rosa",
             .previewText: "Texto de vista previa",
             .runtimeLogs: "Registros de ejecución",
+            .noLogEntries: "No hay entradas de registro.",
             .exportLogs: "Exportar registros",
             .copyLogs: "Copiar registros",
             .clearLogsConfirmationTitle: "¿Limpiar registros?",
@@ -1969,6 +1975,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "Rose",
             .previewText: "Texte d’aperçu",
             .runtimeLogs: "Journaux d’exécution",
+            .noLogEntries: "Aucune entrée de journal.",
             .exportLogs: "Exporter les journaux",
             .copyLogs: "Copier les journaux",
             .clearLogsConfirmationTitle: "Effacer les journaux ?",
@@ -2254,6 +2261,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "Pink",
             .previewText: "Vorschautext",
             .runtimeLogs: "Laufzeitprotokolle",
+            .noLogEntries: "Keine Logeinträge.",
             .exportLogs: "Logs exportieren",
             .copyLogs: "Logs kopieren",
             .clearLogsConfirmationTitle: "Logs löschen?",
@@ -2539,6 +2547,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleColorPink: "Hồng",
             .previewText: "Văn bản xem trước",
             .runtimeLogs: "Nhật ký chạy",
+            .noLogEntries: "Chưa có mục nhật ký.",
             .exportLogs: "Xuất nhật ký",
             .copyLogs: "Sao chép nhật ký",
             .clearLogsConfirmationTitle: "Xóa nhật ký?",

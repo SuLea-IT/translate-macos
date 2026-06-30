@@ -33,6 +33,30 @@ struct LogExportTests {
         #expect(text.contains("No log entries."))
     }
 
+    @Test func exporterUsesSelectedInterfaceLanguageForTitleAndEmptyState() {
+        let emptyText = LogExporter().export(entries: [], language: .simplifiedChinese)
+
+        #expect(emptyText.hasPrefix("# 运行日志\n"))
+        #expect(emptyText.contains("暂无日志。"))
+        #expect(emptyText.contains("# Runtime Logs") == false)
+        #expect(emptyText.contains("No log entries.") == false)
+
+        let text = LogExporter().export(
+            entries: [
+                LogEntry(
+                    timestamp: Date(timeIntervalSince1970: 1_700_000_000),
+                    message: "应用已就绪",
+                    level: .info
+                )
+            ],
+            language: .simplifiedChinese
+        )
+
+        #expect(text.hasPrefix("# 运行日志\n"))
+        #expect(text.contains("INFO 应用已就绪"))
+        #expect(text.contains("# Runtime Logs") == false)
+    }
+
     @Test func exporterDefaultFileNameIsExtensionSafe() {
         let fileName = LogExporter().defaultFileName(date: Date(timeIntervalSince1970: 1_700_000_000))
 
