@@ -63,12 +63,20 @@ final class GlossaryImportService: @unchecked Sendable {
             throw GlossaryImportError.downloadFailed("HTTP \(httpResponse.statusCode)")
         }
 
+        var downloadedURL: URL? = temporaryURL
+        defer {
+            if let downloadedURL {
+                try? FileManager.default.removeItem(at: downloadedURL)
+            }
+        }
+
         try enforceFileSizeLimit(temporaryURL)
         let destination = cacheURL(for: url, sourceID: sourceName)
         if FileManager.default.fileExists(atPath: destination.path) {
             try FileManager.default.removeItem(at: destination)
         }
         try FileManager.default.moveItem(at: temporaryURL, to: destination)
+        downloadedURL = nil
         do {
             await progress?(GlossaryImportProgress(fractionCompleted: 1).switchingToProcessing())
             let result = try parser.parse(fileURL: destination, sourceName: sourceName, existingEntries: existingEntries, options: options)
