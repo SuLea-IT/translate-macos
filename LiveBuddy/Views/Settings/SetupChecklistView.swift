@@ -70,9 +70,16 @@ struct SetupChecklistView: View {
             return appState.t(.checking)
         case .valid:
             return appState.t(.apiKeyValid)
-        case .invalid(let message, _), .failed(let message, _):
-            return message
+        case .invalid, .failed:
+            return localizedProviderIssueDetail(for: appState.setupChecklist.apiKey)
         }
+    }
+
+    private func localizedProviderIssueDetail(for status: ProviderHealthStatus) -> String {
+        if let issue = DiagnosticClassifier.from(providerStatus: status) {
+            return appState.t(issue.messageKey)
+        }
+        return appState.t(.verificationFailed)
     }
 
     private func detail(for item: PermissionChecklistItem) -> String {
