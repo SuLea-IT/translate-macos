@@ -101,6 +101,7 @@ final class AppState: ObservableObject {
     private var setupChecklistRefreshGeneration = UUID()
     private var audioSendTask: Task<Void, Never>?
     private var apiKeySaveTask: Task<Void, Never>?
+    private var apiKeySaveGeneration = UUID()
     private var settingsSaveTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
     private var preflightTestGeneration = UUID()
@@ -425,25 +426,35 @@ final class AppState: ObservableObject {
     private func scheduleAPIKeySave(_ apiKey: String) {
         pendingAPIKeyForKeychain = apiKey
         apiKeySaveTask?.cancel()
+        let generation = UUID()
+        apiKeySaveGeneration = generation
         apiKeySaveTask = Task { @MainActor [weak self] in
             do {
                 try await Task.sleep(nanoseconds: Self.apiKeySaveDebounceNanoseconds)
             } catch {
-                self?.apiKeySaveTask = nil
+                if self?.apiKeySaveGeneration == generation {
+                    self?.apiKeySaveTask = nil
+                }
                 return
             }
             guard !Task.isCancelled else {
-                self?.apiKeySaveTask = nil
+                if self?.apiKeySaveGeneration == generation {
+                    self?.apiKeySaveTask = nil
+                }
                 return
             }
             guard let self else { return }
+            guard self.apiKeySaveGeneration == generation else { return }
             self.savePendingAPIKeyToKeychain()
-            self.apiKeySaveTask = nil
+            if self.apiKeySaveGeneration == generation {
+                self.apiKeySaveTask = nil
+            }
         }
     }
 
     private func saveAPIKeyImmediately() {
         pendingAPIKeyForKeychain = settings.apiKey
+        apiKeySaveGeneration = UUID()
         apiKeySaveTask?.cancel()
         apiKeySaveTask = nil
         savePendingAPIKeyToKeychain()
