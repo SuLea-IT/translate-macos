@@ -13,6 +13,9 @@ final class AppState: ObservableObject {
     private static let maxPendingOriginalSentences = 120
     private static let maxPendingOriginalSentenceCharacters = 1_000
     private static let maxDisplayedCaptionLines = 80
+    private static let maxLogEntries = 400
+    private static let maxLogMessageCharacters = 2_000
+    private static let truncatedLogSuffix = "… [truncated]"
 
     private static func audioDevicePropertyAddress() -> AudioObjectPropertyAddress {
         AudioObjectPropertyAddress(
@@ -1853,12 +1856,21 @@ final class AppState: ObservableObject {
         currentDiagnosticIssue = issue
     }
 
-    private func appendLog(_ message: String, level: LogLevel) {
+    private static func boundedLogMessage(_ message: String) -> String {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        logs.append(LogEntry(message: trimmed, level: level))
-        if logs.count > 400 {
-            logs.removeFirst(logs.count - 400)
+        guard trimmed.count <= maxLogMessageCharacters else {
+            let keepCount = max(0, maxLogMessageCharacters - truncatedLogSuffix.count)
+            return String(trimmed.prefix(keepCount)) + truncatedLogSuffix
+        }
+        return trimmed
+    }
+
+    private func appendLog(_ message: String, level: LogLevel) {
+        let boundedMessage = Self.boundedLogMessage(message)
+        guard !boundedMessage.isEmpty else { return }
+        logs.append(LogEntry(message: boundedMessage, level: level))
+        if logs.count > Self.maxLogEntries {
+            logs.removeFirst(logs.count - Self.maxLogEntries)
         }
     }
 
