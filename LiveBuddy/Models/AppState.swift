@@ -593,18 +593,26 @@ final class AppState: ObservableObject {
         }
 
         do {
-            let result = try await glossaryImportService.importRemote(
-                url: url,
-                sourceName: sourceName,
-                existingEntries: settings.glossaryEntries,
-                options: glossaryImportOptions(importLimit: importLimit),
-                progress: { [weak self] progress in
-                    await MainActor.run {
+            let service = glossaryImportService
+            let existingEntries = settings.glossaryEntries
+            let options = glossaryImportOptions(importLimit: importLimit)
+            let importTask = Task.detached(priority: .userInitiated) {
+                try await service.importRemote(
+                    url: url,
+                    sourceName: sourceName,
+                    existingEntries: existingEntries,
+                    options: options,
+                    progress: { @MainActor [weak self] progress in
                         guard self?.glossaryImportGeneration == generation else { return }
                         self?.glossaryImportProgress = progress
                     }
-                }
-            )
+                )
+            }
+            let result = try await withTaskCancellationHandler {
+                try await importTask.value
+            } onCancel: {
+                importTask.cancel()
+            }
             guard !Task.isCancelled else { return }
             guard glossaryImportGeneration == generation else { return }
             applyGlossaryImportResult(result)
