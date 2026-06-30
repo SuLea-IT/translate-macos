@@ -46,17 +46,17 @@ struct PreflightTestRunner {
     }
 
     private func runProvider(settings: AppSettings, report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
-        var report = report.updating(.apiKey, state: .running, message: "Checking API key")
+        var report = report.updating(.apiKey, state: .running, messageKey: .preflightCheckingAPIKey)
         await update(report)
         let status = await providerCheck(settings.apiKey)
         guard !Task.isCancelled else { return report }
         switch status {
         case .valid:
-            report = report.updating(.apiKey, state: .passed, message: "API key is valid")
+            report = report.updating(.apiKey, state: .passed, messageKey: .preflightAPIKeyValid)
         case .missing:
-            report = report.updating(.apiKey, state: .failed, message: "API key is missing")
+            report = report.updating(.apiKey, state: .failed, messageKey: .preflightAPIKeyMissing)
         case .unchecked, .checking:
-            report = report.updating(.apiKey, state: .warning, message: "API key was not verified")
+            report = report.updating(.apiKey, state: .warning, messageKey: .preflightAPIKeyNotVerified)
         case .invalid(let message, _), .failed(let message, _):
             report = report.updating(.apiKey, state: .failed, message: message)
         }
@@ -65,7 +65,7 @@ struct PreflightTestRunner {
     }
 
     private func runPermissions(settings: AppSettings, report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
-        var report = report.updating(.permissions, state: .running, message: "Checking permissions")
+        var report = report.updating(.permissions, state: .running, messageKey: .preflightCheckingPermissions)
         await update(report)
         let permissions = await permissionCheck()
         guard !Task.isCancelled else { return report }
@@ -76,9 +76,9 @@ struct PreflightTestRunner {
             screenRecording: permissions.screenRecording
         )
         if checklist.blockingIssues.isEmpty {
-            report = report.updating(.permissions, state: .passed, message: "Required permissions are available")
+            report = report.updating(.permissions, state: .passed, messageKey: .preflightPermissionsAvailable)
         } else {
-            report = report.updating(.permissions, state: .failed, message: checklist.blockingIssues.map(\.rawValue).joined(separator: ", "))
+            report = report.updating(.permissions, state: .failed, messageKey: .preflightPermissionsMissing)
         }
         await update(report)
         return report
@@ -96,7 +96,7 @@ struct PreflightTestRunner {
                 update: update
             )
         } else {
-            report = report.updating(.microphoneAudio, state: .passed, message: "Not needed for selected audio source")
+            report = report.updating(.microphoneAudio, state: .passed, messageKey: .preflightNotNeededForAudioSource)
             await update(report)
         }
         guard !Task.isCancelled else { return report }
@@ -110,7 +110,7 @@ struct PreflightTestRunner {
                 update: update
             )
         } else {
-            report = report.updating(.screenAudio, state: .passed, message: "Not needed for selected audio source")
+            report = report.updating(.screenAudio, state: .passed, messageKey: .preflightNotNeededForAudioSource)
             await update(report)
         }
         guard !Task.isCancelled else { return report }
@@ -124,7 +124,7 @@ struct PreflightTestRunner {
         report: PreflightTestReport,
         update: ReportUpdate
     ) async -> PreflightTestReport {
-        var report = report.updating(id, state: .running, message: "Sampling audio")
+        var report = report.updating(id, state: .running, messageKey: .preflightSamplingAudio)
         await update(report)
         guard !Task.isCancelled else { return report }
         var analyzer = AudioLevelAnalyzer()
@@ -133,13 +133,13 @@ struct PreflightTestRunner {
             guard !Task.isCancelled else { return report }
             let summary = analyzer.summary()
             if summary.totalSampleCount == 0 {
-                report = report.updating(id, state: .failed, message: "No audio samples were captured", audio: summary)
+                report = report.updating(id, state: .failed, messageKey: .preflightNoAudioCaptured, audio: summary)
             } else if summary.isClipping {
-                report = report.updating(id, state: .warning, message: "Audio clipping detected", audio: summary)
+                report = report.updating(id, state: .warning, messageKey: .audioClippingDetected, audio: summary)
             } else if summary.isSilent {
-                report = report.updating(id, state: .warning, message: "Audio is too quiet", audio: summary)
+                report = report.updating(id, state: .warning, messageKey: .audioTooQuiet, audio: summary)
             } else {
-                report = report.updating(id, state: .passed, message: "Audio detected", audio: summary)
+                report = report.updating(id, state: .passed, messageKey: .audioDetected, audio: summary)
             }
         } catch is CancellationError {
             return report
@@ -152,12 +152,12 @@ struct PreflightTestRunner {
     }
 
     private func runSubtitle(report: PreflightTestReport, update: ReportUpdate) async -> PreflightTestReport {
-        var report = report.updating(.subtitleWindow, state: .running, message: "Showing subtitle test")
+        var report = report.updating(.subtitleWindow, state: .running, messageKey: .preflightShowingSubtitleTest)
         await update(report)
         guard !Task.isCancelled else { return report }
         await subtitleCheck()
         guard !Task.isCancelled else { return report }
-        report = report.updating(.subtitleWindow, state: .passed, message: "Subtitle window test shown")
+        report = report.updating(.subtitleWindow, state: .passed, messageKey: .preflightSubtitleWindowShown)
         await update(report)
         return report
     }

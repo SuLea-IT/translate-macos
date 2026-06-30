@@ -1003,8 +1003,8 @@ private struct PreflightTestStepRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                if !step.message.isEmpty {
-                    Text(step.message)
+                if !messageText.isEmpty {
+                    Text(messageText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1018,6 +1018,13 @@ private struct PreflightTestStepRow: View {
 
             Spacer()
         }
+    }
+
+    private var messageText: String {
+        if let key = step.messageKey {
+            return language.localized(key)
+        }
+        return step.message
     }
 
     private var title: String {

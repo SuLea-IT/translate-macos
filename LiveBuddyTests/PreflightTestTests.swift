@@ -61,6 +61,34 @@ struct PreflightTestTests {
 }
 
 extension PreflightTestTests {
+    @Test func runnerPublishesMessageKeysForFixedStatuses() async {
+        let runner = PreflightTestRunner(
+            providerCheck: { _ in .valid(checkedAt: Date()) },
+            permissionCheck: {
+                PermissionStatusSnapshot(
+                    microphone: PermissionStatus(requirement: .microphone, state: .granted, checkedAt: Date()),
+                    screenRecording: PermissionStatus(requirement: .screenRecording, state: .granted, checkedAt: Date())
+                )
+            },
+            microphoneSampler: { _, analyzer in
+                analyzer.processPCM16(pcm16([0, 8_000, -8_000, 12_000]))
+            },
+            screenSampler: { _, _ in },
+            subtitleCheck: {}
+        )
+        var settings = AppSettings()
+        settings.audioSource = .microphone
+        settings.apiKey = "test-key"
+
+        let report = await runner.run(settings: settings) { _ in }
+
+        #expect(report.steps.first { $0.id == .apiKey }?.messageKey == .preflightAPIKeyValid)
+        #expect(report.steps.first { $0.id == .permissions }?.messageKey == .preflightPermissionsAvailable)
+        #expect(report.steps.first { $0.id == .microphoneAudio }?.messageKey == .audioDetected)
+        #expect(report.steps.first { $0.id == .screenAudio }?.messageKey == .preflightNotNeededForAudioSource)
+        #expect(report.steps.first { $0.id == .subtitleWindow }?.messageKey == .preflightSubtitleWindowShown)
+    }
+
     @Test func runnerMarksNormalAudioAsPassed() async {
         let runner = PreflightTestRunner(
             providerCheck: { _ in .valid(checkedAt: Date()) },

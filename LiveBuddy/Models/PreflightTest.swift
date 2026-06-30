@@ -42,12 +42,14 @@ struct PreflightTestStep: Identifiable, Codable, Equatable {
     var id: PreflightTestStepID
     var state: PreflightTestStepState
     var message: String
+    var messageKey: InterfaceText?
     var audio: AudioLevelSummary?
 
-    init(id: PreflightTestStepID, state: PreflightTestStepState = .pending, message: String = "", audio: AudioLevelSummary? = nil) {
+    init(id: PreflightTestStepID, state: PreflightTestStepState = .pending, message: String = "", messageKey: InterfaceText? = nil, audio: AudioLevelSummary? = nil) {
         self.id = id
         self.state = state
         self.message = message
+        self.messageKey = messageKey
         self.audio = audio
     }
 }
@@ -79,6 +81,16 @@ struct PreflightTestReport: Codable, Equatable {
             copy.steps[index] = PreflightTestStep(id: id, state: state, message: message, audio: audio)
         } else {
             copy.steps.append(PreflightTestStep(id: id, state: state, message: message, audio: audio))
+        }
+        return copy
+    }
+
+    func updating(_ id: PreflightTestStepID, state: PreflightTestStepState, messageKey: InterfaceText, audio: AudioLevelSummary? = nil) -> PreflightTestReport {
+        var copy = self
+        if let index = copy.steps.firstIndex(where: { $0.id == id }) {
+            copy.steps[index] = PreflightTestStep(id: id, state: state, messageKey: messageKey, audio: audio)
+        } else {
+            copy.steps.append(PreflightTestStep(id: id, state: state, messageKey: messageKey, audio: audio))
         }
         return copy
     }
