@@ -218,6 +218,7 @@ struct TranscriptsView: View {
                             Button(appState.t(.copyTranscript)) {
                                 copyTranscriptTextToPasteboard(session.textForMode(.both, language: appState.settings.interfaceLanguage))
                             }
+                            .disabled(!transcriptHasContent(session))
                             Divider()
                             Button(appState.t(.delete), role: .destructive) {
                                 requestDeleteTranscriptSession(session)
@@ -265,7 +266,9 @@ struct TranscriptsView: View {
 
 
     private func detailContent(_ session: TranscriptSession) -> some View {
-        VStack(spacing: 0) {
+        let hasTranscriptContent = transcriptHasContent(session)
+
+        return VStack(spacing: 0) {
             // Session metadata
             VStack(spacing: 8) {
                 HStack {
@@ -311,12 +314,14 @@ struct TranscriptsView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
+                    .disabled(!hasTranscriptContent)
 
                     ShareLink(item: session.textForMode(viewMode, language: appState.settings.interfaceLanguage)) {
                         Label(appState.t(.share), systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
+                    .disabled(!hasTranscriptContent)
 
                     Button {
                         toggleMeetingNotes(for: session)
@@ -341,6 +346,7 @@ struct TranscriptsView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
+                    .disabled(!hasTranscriptContent)
                 }
 
                 transcriptDetailFeedback
@@ -386,6 +392,10 @@ struct TranscriptsView: View {
                 }
             }
         }
+    }
+
+    private func transcriptHasContent(_ session: TranscriptSession) -> Bool {
+        !session.lines.isEmpty
     }
 
     private func reconcileSelectedSession() {
