@@ -33,7 +33,7 @@ else:
         "copyErrorMessage = appState.t(.copyFailed)",
         "exportErrorMessage = nil",
         "return",
-        "copyErrorMessage = nil",
+        "copyErrorMessage = nil\n        exportErrorMessage = nil",
     ]:
         if token not in body:
             errors.append(f"copyTranscriptTextToPasteboard(_:) must handle pasteboard failures through {token}")

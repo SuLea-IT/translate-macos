@@ -476,6 +476,7 @@ struct TranscriptsView: View {
             return
         }
         copyErrorMessage = nil
+        exportErrorMessage = nil
     }
 
     private func exportMeetingNotes(_ notes: MeetingNotes, session: TranscriptSession) {
