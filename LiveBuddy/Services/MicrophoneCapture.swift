@@ -19,7 +19,10 @@ final class MicrophoneCapture {
         try await requestPermissionIfNeeded()
         let input = engine.inputNode
 
-        if let uid = selectedDeviceUID, let deviceID = AudioDeviceManager.getDeviceID(for: uid) {
+        if let uid = selectedDeviceUID?.trimmingCharacters(in: .whitespacesAndNewlines), !uid.isEmpty {
+            guard let deviceID = AudioDeviceManager.getDeviceID(for: uid) else {
+                throw MicrophoneCaptureError.selectedDeviceUnavailable
+            }
             guard let inputAudioUnit = input.audioUnit else {
                 throw MicrophoneCaptureError.audioUnitUnavailable
             }
@@ -35,8 +38,8 @@ final class MicrophoneCapture {
                 size
             )
 
-            if status != noErr {
-                print("Failed to set audio input device status: \(status)")
+            guard status == noErr else {
+                throw MicrophoneCaptureError.deviceSelectionFailed(status)
             }
         }
 
@@ -81,11 +84,15 @@ final class MicrophoneCapture {
 enum MicrophoneCaptureError: LocalizedError {
     case permissionDenied
     case audioUnitUnavailable
+    case selectedDeviceUnavailable
+    case deviceSelectionFailed(OSStatus)
 
     var errorDescription: String? {
         switch self {
         case .permissionDenied: "Microphone permission is required. Enable it in System Settings > Privacy & Security > Microphone."
         case .audioUnitUnavailable: "Audio unit is unavailable for the selected microphone."
+        case .selectedDeviceUnavailable: "Selected microphone is no longer available."
+        case .deviceSelectionFailed(let status): "Failed to use the selected microphone (status \(status))."
         }
     }
 }
