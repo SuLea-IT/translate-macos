@@ -342,6 +342,7 @@ final class AppState: ObservableObject {
     }
 
     func flushPendingStateBeforeTermination() {
+        finishTranscriptSession()
         saveAPIKeyImmediately()
         saveSettingsImmediately()
         saveTranscriptSessionsImmediately()
@@ -1925,6 +1926,9 @@ final class AppState: ObservableObject {
     }
 
     deinit {
+        MainActor.assumeIsolated {
+            flushPendingStateBeforeTermination()
+        }
         runtimeControlTask?.cancel()
         pendingRuntimeControlRequest = nil
         restartTask?.cancel()
