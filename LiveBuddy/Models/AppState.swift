@@ -103,6 +103,7 @@ final class AppState: ObservableObject {
     private var apiKeySaveTask: Task<Void, Never>?
     private var apiKeySaveGeneration = UUID()
     private var settingsSaveTask: Task<Void, Never>?
+    private var settingsSaveGeneration = UUID()
     private var preflightTestTask: Task<Void, Never>?
     private var preflightTestGeneration = UUID()
     private var temporaryTestCaptionTask: Task<Void, Never>?
@@ -1585,24 +1586,34 @@ final class AppState: ObservableObject {
 
     private func scheduleSettingsSave() {
         guard settingsSaveTask == nil else { return }
+        let generation = UUID()
+        settingsSaveGeneration = generation
         settingsSaveTask = Task { @MainActor [weak self] in
             do {
                 try await Task.sleep(nanoseconds: Self.settingsSaveDebounceNanoseconds)
             } catch {
-                self?.settingsSaveTask = nil
+                if self?.settingsSaveGeneration == generation {
+                    self?.settingsSaveTask = nil
+                }
                 return
             }
             guard !Task.isCancelled else {
-                self?.settingsSaveTask = nil
+                if self?.settingsSaveGeneration == generation {
+                    self?.settingsSaveTask = nil
+                }
                 return
             }
             guard let self else { return }
+            guard self.settingsSaveGeneration == generation else { return }
             self.saveSettings()
-            self.settingsSaveTask = nil
+            if self.settingsSaveGeneration == generation {
+                self.settingsSaveTask = nil
+            }
         }
     }
 
     private func saveSettingsImmediately() {
+        settingsSaveGeneration = UUID()
         settingsSaveTask?.cancel()
         settingsSaveTask = nil
         saveSettings()
