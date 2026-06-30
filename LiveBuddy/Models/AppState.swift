@@ -100,6 +100,7 @@ final class AppState: ObservableObject {
     private var settingsSaveTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
     private var temporaryTestCaptionTask: Task<Void, Never>?
+    private var temporaryTestCaptionPreviousDraft: String?
     private var glossaryImportTask: Task<Void, Never>?
     private var transcriptSaveTask: Task<Void, Never>?
     private var glossaryImportGeneration = UUID()
@@ -727,16 +728,17 @@ final class AppState: ObservableObject {
 
     func showTemporaryTestCaption() async {
         temporaryTestCaptionTask?.cancel()
+        temporaryTestCaptionTask = nil
+        restoreTemporaryTestCaptionIfNeeded()
         let previousDraft = captionDraft
+        temporaryTestCaptionPreviousDraft = previousDraft
         NotificationCenter.default.post(name: .showCaptionWindow, object: nil)
         captionDraft = settings.interfaceLanguage.localized(.subtitleTestMessage)
-        temporaryTestCaptionTask = Task { @MainActor [weak self, previousDraft] in
+        temporaryTestCaptionTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
-            if !isRunning {
-                captionDraft = previousDraft
-            }
+            self.restoreTemporaryTestCaptionIfNeeded()
             temporaryTestCaptionTask = nil
         }
         await temporaryTestCaptionTask?.value
@@ -747,7 +749,16 @@ final class AppState: ObservableObject {
         preflightTestTask = nil
         temporaryTestCaptionTask?.cancel()
         temporaryTestCaptionTask = nil
+        restoreTemporaryTestCaptionIfNeeded()
         isRunningPreflightTest = false
+    }
+
+    private func restoreTemporaryTestCaptionIfNeeded() {
+        guard let previousDraft = temporaryTestCaptionPreviousDraft else { return }
+        if !isRunning {
+            captionDraft = previousDraft
+        }
+        temporaryTestCaptionPreviousDraft = nil
     }
 
     func openMicrophoneSettings() {
