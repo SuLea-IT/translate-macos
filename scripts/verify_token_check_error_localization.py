@@ -18,7 +18,15 @@ if not helper:
     errors.append("localizedTokenCheckError(_:) must live near token-check helpers")
 else:
     body = helper.group("body")
+    diagnostic_idx = body.find("if let issue = appState.currentDiagnosticIssue")
+    message_idx = body.find("let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)")
+    if diagnostic_idx == -1:
+        errors.append("localizedTokenCheckError(_:) must prefer the localized currentDiagnosticIssue from provider verification failures")
+    elif message_idx == -1 or diagnostic_idx > message_idx:
+        errors.append("localizedTokenCheckError(_:) must read currentDiagnosticIssue before falling back to raw error.localizedDescription")
     for token in [
+        "issue.kind == .provider || issue.kind == .network",
+        "return appState.t(issue.messageKey)",
         "let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)",
         'message == "Verification failed"',
         "return appState.t(.verificationFailed)",

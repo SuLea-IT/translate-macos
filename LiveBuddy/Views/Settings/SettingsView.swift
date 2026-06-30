@@ -797,6 +797,9 @@ struct SettingsView: View {
     }
 
     private func localizedTokenCheckError(_ error: Error) -> String {
+        if let issue = appState.currentDiagnosticIssue, issue.kind == .provider || issue.kind == .network {
+            return appState.t(issue.messageKey)
+        }
         let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         if message == "Verification failed" {
             return appState.t(.verificationFailed)
