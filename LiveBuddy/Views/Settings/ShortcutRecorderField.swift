@@ -4,11 +4,15 @@ import SwiftUI
 struct ShortcutRecorderField: View {
     @EnvironmentObject private var appState: AppState
     let action: GlobalShortcutAction
-    @State private var isRecording = false
+    @Binding var recordingAction: GlobalShortcutAction?
     @State private var validationResult: GlobalShortcutValidationResult = .valid
 
     private var shortcut: GlobalShortcut? {
         appState.settings.globalShortcuts.shortcut(for: action)
+    }
+
+    private var isRecording: Bool {
+        recordingAction == action
     }
 
     var body: some View {
@@ -23,7 +27,7 @@ struct ShortcutRecorderField: View {
 
                 Button(appState.t(.recordShortcut)) {
                     validationResult = .valid
-                    isRecording = true
+                    recordingAction = action
                 }
                 .controlSize(.small)
 
@@ -40,7 +44,7 @@ struct ShortcutRecorderField: View {
                 .controlSize(.small)
             }
             .background(
-                ShortcutRecorderMonitor(isRecording: $isRecording) { event in
+                ShortcutRecorderMonitor(isRecording: isRecordingBinding) { event in
                     handle(event)
                 }
                 .frame(width: 0, height: 0)
@@ -54,15 +58,28 @@ struct ShortcutRecorderField: View {
         }
     }
 
+    private var isRecordingBinding: Binding<Bool> {
+        Binding(
+            get: { recordingAction == action },
+            set: { isRecording in
+                if isRecording {
+                    recordingAction = action
+                } else if recordingAction == action {
+                    recordingAction = nil
+                }
+            }
+        )
+    }
+
     private func handle(_ event: NSEvent) {
         if event.keyCode == 53 {
-            isRecording = false
+            recordingAction = nil
             return
         }
         if event.keyCode == 51 || event.keyCode == 117 {
             appState.clearGlobalShortcut(action)
             validationResult = .valid
-            isRecording = false
+            recordingAction = nil
             return
         }
 
@@ -74,7 +91,7 @@ struct ShortcutRecorderField: View {
         )
         validationResult = appState.updateGlobalShortcut(shortcut)
         if validationResult == .valid {
-            isRecording = false
+            recordingAction = nil
         }
     }
 

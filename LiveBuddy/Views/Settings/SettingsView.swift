@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var isTokenValid: Bool? = nil
     @State private var tokenCheckError: String? = nil
     @State private var tokenCheckTask: Task<Void, Never>?
+    @State private var recordingShortcutAction: GlobalShortcutAction?
     @State private var newGlossarySourceTerm = ""
     @State private var newGlossaryTargetTerm = ""
     @State private var selectedGlossaryImportSourceID = GlossaryImportSource.microsoftTerminology.id
@@ -145,6 +146,7 @@ struct SettingsView: View {
         }
         .onDisappear {
             cancelTokenCheck()
+            recordingShortcutAction = nil
         }
     }
 
@@ -309,7 +311,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
 
                 ForEach(GlobalShortcutAction.allCases) { action in
-                    ShortcutRecorderField(action: action)
+                    ShortcutRecorderField(action: action, recordingAction: $recordingShortcutAction)
                 }
 
                 Button(appState.t(.resetAllShortcuts)) {
