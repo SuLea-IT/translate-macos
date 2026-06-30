@@ -21,11 +21,14 @@ if not run_match:
     errors.append("AppState.runPreflightTest(generation:) not found")
 else:
     body = run_match.group("body")
-    expected = "message: settings.interfaceLanguage.localized(.preflightStopTranslationBeforeDiagnostics)"
+    expected = "messageKey: .preflightStopTranslationBeforeDiagnostics"
     if expected not in body:
-        errors.append(f"runPreflightTest must localize busy diagnostic message through {expected}")
+        errors.append(f"runPreflightTest must store the busy diagnostic message as a key through {expected} so it follows interface language changes")
+    if "message: settings.interfaceLanguage.localized(.preflightStopTranslationBeforeDiagnostics)" in body:
+        errors.append("runPreflightTest must not freeze the busy diagnostic message as a pre-localized string")
     if 'message: "Stop translation before running diagnostics"' in body:
         errors.append("runPreflightTest must not expose hard-coded English busy diagnostic message")
+
 
 if errors:
     print("Preflight busy message localization verification failed:", file=sys.stderr)
