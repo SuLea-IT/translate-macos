@@ -153,10 +153,23 @@ struct SettingsView: View {
         .onChange(of: appState.providerSettingsFocusRequest) { _, _ in
             applyProviderSettingsFocusRequest()
         }
+        .onChange(of: appState.settings.interfaceLanguage) { _, _ in
+            clearLocalizedTransientFeedback()
+        }
         .onDisappear {
             cancelTokenCheck()
             recordingShortcutAction = nil
         }
+    }
+
+    private func clearLocalizedTransientFeedback() {
+        tokenCheckError = nil
+        glossaryImportInputMessage = ""
+        appState.clearGlossaryImportFeedback()
+        clearGlossaryExportFeedback()
+        logExportErrorMessage = nil
+        logCopyErrorMessage = nil
+        logCopySuccessMessage = nil
     }
 
     private func applyProviderSettingsFocusRequest() {

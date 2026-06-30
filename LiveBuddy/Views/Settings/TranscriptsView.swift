@@ -83,6 +83,9 @@ struct TranscriptsView: View {
             clearTranscriptOperationFeedback()
             refreshMeetingNotesForCurrentMode()
         }
+        .onChange(of: appState.settings.interfaceLanguage) { _, _ in
+            clearTranscriptOperationFeedback()
+        }
         .onChange(of: selectedSession?.id) { _, _ in
             clearTranscriptDetailFeedbackForSelectionChange()
         }
