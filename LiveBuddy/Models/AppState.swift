@@ -1901,7 +1901,11 @@ final class AppState: ObservableObject {
     private func loadTranscriptSessions() {
         guard let data = try? Data(contentsOf: transcriptsURL),
               let decoded = try? JSONDecoder().decode([TranscriptSession].self, from: data) else { return }
-        transcriptSessions = decoded
+        let finalized = decoded.map { $0.finalizedIfNeeded() }
+        transcriptSessions = finalized
+        if finalized != decoded {
+            saveTranscriptSessionsImmediately()
+        }
     }
 
     func refreshAvailableMicrophones() {

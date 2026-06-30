@@ -20,6 +20,14 @@ struct TranscriptSession: Identifiable, Codable, Equatable {
         return endedAt.timeIntervalSince(startedAt)
     }
 
+    func finalizedIfNeeded() -> TranscriptSession {
+        guard endedAt == nil else { return self }
+        var copy = self
+        let lastLineTimestamp = lines.map(\.timestamp).max()
+        copy.endedAt = max(startedAt, lastLineTimestamp ?? startedAt)
+        return copy
+    }
+
     var formattedDuration: String {
         guard let duration else { return "In progress…" }
         let minutes = Int(duration) / 60
