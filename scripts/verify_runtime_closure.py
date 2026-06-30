@@ -220,11 +220,25 @@ else:
         "await client.sendAudio(data)",
         "return true",
         "Date()",
-        "timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5",
-        "lastAudioSendBackpressureLogAt = now",
+        "reportAudioSendBackpressure(now: now)",
     ]:
         if token not in body:
             errors.append(f"AppState.enqueueAudioSend(_:) must serialize/bound send work through {token}")
+
+backpressure_match = re.search(r"private func reportAudioSendBackpressure\(now: Date\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+if not backpressure_match:
+    errors.append("AppState.reportAudioSendBackpressure(now:) must exist to throttle and localize dropped-audio feedback")
+else:
+    body = backpressure_match.group("body")
+    for token in [
+        "timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5",
+        "lastAudioSendBackpressureLogAt = now",
+        "localizedStatus(.statusAudioSendBackpressure)",
+        "updateStatus(message, level: .error, log: true)",
+        "lastAudioStatusAt = now",
+    ]:
+        if token not in body:
+            errors.append(f"AppState.reportAudioSendBackpressure(now:) must throttle/localize dropped-audio feedback through {token}")
 
 reset_audio_send_match = re.search(r"private func resetAudioSendPipeline\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not reset_audio_send_match:

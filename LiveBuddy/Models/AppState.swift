@@ -1402,10 +1402,7 @@ final class AppState: ObservableObject {
         guard !data.isEmpty, let client else { return false }
         guard pendingAudioSendChunks < maxPendingAudioSendChunks else {
             let now = Date()
-            if now.timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5 {
-                lastAudioSendBackpressureLogAt = now
-                appendLog("Audio send queue is full; dropping live audio chunks to keep latency bounded", level: .error)
-            }
+            reportAudioSendBackpressure(now: now)
             return false
         }
 
@@ -1438,6 +1435,14 @@ final class AppState: ObservableObject {
             await client.sendAudio(data)
         }
         return true
+    }
+
+    private func reportAudioSendBackpressure(now: Date) {
+        guard now.timeIntervalSince(lastAudioSendBackpressureLogAt) >= 5 else { return }
+        lastAudioSendBackpressureLogAt = now
+        let message = localizedStatus(.statusAudioSendBackpressure)
+        updateStatus(message, level: .error, log: true)
+        lastAudioStatusAt = now
     }
 
     private func resetAudioSendPipeline() {
