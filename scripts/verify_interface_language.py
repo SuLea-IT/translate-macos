@@ -26,6 +26,7 @@ else:
         "translationAndAudio",
         "terminologyGlossary",
         "publicTerminologySources",
+        "backToTranscriptsList",
         "glossaryImportSource",
         "microsoftTerminology",
         "iateExportSource",
@@ -63,6 +64,9 @@ else:
         "autoDetectLanguage",
         "detectedSourceLanguage",
         "transcripts",
+        "glossaryEmptyStateTitle",
+        "glossaryEmptyStateMessage",
+        "glossaryNoSearchResults",
         "runtimeLogs",
         "exportLogs",
         "copyLogs",
@@ -154,6 +158,8 @@ else:
         "checking",
         "apiKeyUnchecked",
         "apiKeyValid",
+        "tokenValid",
+        "verificationFailed",
         "setupIncomplete",
     ]
     for key in required_keys:
