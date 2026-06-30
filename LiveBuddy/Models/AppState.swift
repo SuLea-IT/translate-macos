@@ -1492,7 +1492,7 @@ final class AppState: ObservableObject {
 
     private func runningUsageStatusMessage() -> String {
         let apiTime = Self.formatUsageDuration(usageSnapshot.sessionSentAudioSeconds)
-        let base = "mic \(micChunkCount) · screen \(screenChunkCount) · sent \(sentChunkCount) · API \(apiTime)"
+        let base = localizedStatus(.statusUsageMetrics, arguments: [micChunkCount, screenChunkCount, sentChunkCount, apiTime])
         switch usageSnapshot.runtimeState {
         case .active:
             return "\(localizedStatus(.statusListening)) · \(base)"

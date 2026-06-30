@@ -20,6 +20,7 @@ for key in [
     "statusApiPausedMonitoring",
     "statusSessionUsageLimitReached",
     "statusDailyUsageLimitReached",
+    "statusUsageMetrics",
 ]:
     if f"case {key}" not in interface:
         errors.append(f"InterfaceText must include {key}")
@@ -55,6 +56,11 @@ if not usage_match:
 else:
     body = usage_match.group("body")
     for token in [
+        "let base = localizedStatus(.statusUsageMetrics, arguments: [micChunkCount, screenChunkCount, sentChunkCount, apiTime])",
+    ]:
+        if token not in body:
+            errors.append(f"usageStatusMessage must compose localized usage metrics through {token}")
+    for token in [
         "return \"\\(localizedStatus(.statusListening)) · \\(base)\"",
         "return \"\\(localizedStatus(.statusResumingReplay)) · \\(base)\"",
         "return \"\\(localizedStatus(.statusIdleWarning, arguments: [remainingSeconds])) · \\(base)\"",
@@ -65,6 +71,9 @@ else:
         "Listening ·",
         "Resuming · replaying buffered audio ·",
         "Idle soon · auto-pause",
+        "mic \\(",
+        "screen \\(",
+        "sent \\(",
     ]:
         if old in body:
             errors.append(f"usageStatusMessage must not use hard-coded prefix {old}")
