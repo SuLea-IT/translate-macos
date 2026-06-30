@@ -56,8 +56,10 @@ final class ScreenAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     func stop() async {
         chunker.reset()
         guard let stream else { return }
-        try? await stream.stopCapture()
         self.stream = nil
+        try? stream.removeStreamOutput(self, type: .audio)
+        try? stream.removeStreamOutput(self, type: .screen)
+        try? await stream.stopCapture()
     }
 
     private func cleanupFailedStart(_ stream: SCStream) async {
