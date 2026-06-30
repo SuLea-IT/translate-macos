@@ -1990,8 +1990,15 @@ final class AppState: ObservableObject {
         localizedStatusKey = key
     }
 
+    private func refreshTemporaryTestCaptionLanguageIfNeeded() {
+        guard temporaryTestCaptionPreviousDraft != nil else { return }
+        guard temporaryTestCaptionTask != nil else { return }
+        captionDraft = settings.interfaceLanguage.localized(.subtitleTestMessage)
+    }
+
     private func refreshStatusMessageLanguageIfNeeded(oldValue: AppSettings) {
         guard oldValue.interfaceLanguage != settings.interfaceLanguage else { return }
+        refreshTemporaryTestCaptionLanguageIfNeeded()
         guard let localizedStatusKey else { return }
         if isRunning && (statusLevel == .running || statusLevel == .connecting) {
             statusMessage = runningUsageStatusMessage()
