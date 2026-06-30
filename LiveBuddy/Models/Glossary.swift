@@ -120,28 +120,17 @@ struct GlossaryListDisplay {
     var query: String
     var isExpanded: Bool
     var collapsedLimit: Int = 20
+    let matchingEntries: [GlossaryEntry]
+    let visibleEntries: [GlossaryEntry]
 
     init(entries: [GlossaryEntry], query: String = "", isExpanded: Bool, collapsedLimit: Int = 20) {
         self.entries = entries
         self.query = query
         self.isExpanded = isExpanded
         self.collapsedLimit = collapsedLimit
-    }
-
-    var matchingEntries: [GlossaryEntry] {
-        let normalizedQuery = normalized(query).lowercased()
-        guard !normalizedQuery.isEmpty else { return entries }
-        return entries.filter { entry in
-            normalized(entry.sourceTerm).lowercased().contains(normalizedQuery)
-                || normalized(entry.targetTerm).lowercased().contains(normalizedQuery)
-                || normalized(entry.note).lowercased().contains(normalizedQuery)
-        }
-    }
-
-    var visibleEntries: [GlossaryEntry] {
-        let matches = matchingEntries
-        guard !isExpanded else { return matches }
-        return Array(matches.prefix(max(collapsedLimit, 0)))
+        let matches = Self.filtered(entries: entries, query: query)
+        self.matchingEntries = matches
+        self.visibleEntries = isExpanded ? matches : Array(matches.prefix(max(collapsedLimit, 0)))
     }
 
     var hiddenCount: Int {
@@ -152,7 +141,17 @@ struct GlossaryListDisplay {
         matchingEntries.count > max(collapsedLimit, 0)
     }
 
-    private func normalized(_ value: String) -> String {
+    private static func filtered(entries: [GlossaryEntry], query: String) -> [GlossaryEntry] {
+        let normalizedQuery = normalized(query).lowercased()
+        guard !normalizedQuery.isEmpty else { return entries }
+        return entries.filter { entry in
+            normalized(entry.sourceTerm).lowercased().contains(normalizedQuery)
+                || normalized(entry.targetTerm).lowercased().contains(normalizedQuery)
+                || normalized(entry.note).lowercased().contains(normalizedQuery)
+        }
+    }
+
+    private static func normalized(_ value: String) -> String {
         value
             .split { character in
                 character == " " || character == "\t" || character == "\n" || character == "\r"
