@@ -50,6 +50,16 @@ final class CaptionPanelController: NSObject, NSWindowDelegate {
         )
     }
 
+    deinit {
+        titleCancellable?.cancel()
+        titleCancellable = nil
+        MainActor.assumeIsolated {
+            panel.orderOut(nil)
+            panel.contentView = nil
+            panel.delegate = nil
+        }
+    }
+
     func show() {
         panel.orderFrontRegardless()
     }
