@@ -80,6 +80,7 @@ struct TranscriptsView: View {
             reconcileSelectedSession()
         }
         .onChange(of: viewMode) { _, _ in
+            clearTranscriptOperationFeedback()
             refreshMeetingNotesForCurrentMode()
         }
         .onChange(of: selectedSession?.id) { _, _ in
@@ -415,6 +416,13 @@ struct TranscriptsView: View {
         guard generatedMeetingNotes != nil, meetingNotesSessionID == session.id else { return }
         generatedMeetingNotes = meetingNotesGenerator.generate(from: session, mode: viewMode)
         meetingNotesSessionID = session.id
+    }
+
+    private func clearTranscriptOperationFeedback() {
+        exportDocument = nil
+        exportErrorMessage = nil
+        copyErrorMessage = nil
+        copySuccessMessage = nil
     }
 
     private func clearTranscriptDetailFeedbackForSelectionChange() {
