@@ -71,6 +71,7 @@ for token in [
     "language: .simplifiedChinese",
     "# 转录记录",
     "# 转录归档",
+    "- 时长: 10s",
     "- 模式: 双语",
 ]:
     if token not in tests:

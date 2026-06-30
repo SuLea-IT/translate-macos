@@ -69,7 +69,7 @@ struct TranscriptExportTests {
         #expect(markdown.contains("# 转录记录"))
         #expect(markdown.contains("- 来源: Screen audio"))
         #expect(markdown.contains("- 目标语言: English"))
-        #expect(markdown.contains("- 时长: 00:10"))
+        #expect(markdown.contains("- 时长: 10s"))
         #expect(markdown.contains("- 模式: 双语"))
         #expect(markdown.contains("# Transcript") == false)
         #expect(markdown.contains("- Source:") == false)
