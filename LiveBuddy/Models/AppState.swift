@@ -1247,7 +1247,7 @@ final class AppState: ObservableObject {
             let mic = MicrophoneCapture(onAudioChunk: audioSink(source: .microphone, generation: generation))
             try await mic.start(selectedDeviceUID: settings.selectedMicrophoneDeviceUID)
             microphoneCapture = mic
-            updateStatus("Microphone capture started", level: .connecting, log: true)
+            updateLocalizedStatus(.statusMicrophoneCaptureStarted, level: .connecting, log: true)
         }
 
         if settings.audioSource == .screen || settings.audioSource == .both {
@@ -1262,7 +1262,7 @@ final class AppState: ObservableObject {
             )
             try await screen.start()
             screenCapture = screen
-            updateStatus("Screen audio capture started", level: .connecting, log: true)
+            updateLocalizedStatus(.statusScreenAudioCaptureStarted, level: .connecting, log: true)
         }
     }
 

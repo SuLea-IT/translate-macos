@@ -72,6 +72,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case statusStopped
     case statusError
     case statusResumingReplay
+    case statusMicrophoneCaptureStarted
+    case statusScreenAudioCaptureStarted
     case statusIdleWarning
     case statusApiPausedMonitoring
     case statusSessionUsageLimitReached
@@ -372,6 +374,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .statusStopped: "Stopped",
         .statusError: "Error",
         .statusResumingReplay: "Resuming · replaying buffered audio",
+        .statusMicrophoneCaptureStarted: "Microphone capture started",
+        .statusScreenAudioCaptureStarted: "Screen audio capture started",
         .statusIdleWarning: "Idle soon · auto-pause in %ds",
         .statusApiPausedMonitoring: "API paused · monitoring locally",
         .statusSessionUsageLimitReached: "Session usage limit reached · API paused",
@@ -640,6 +644,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "已停止",
             .statusError: "错误",
             .statusResumingReplay: "正在恢复 · 回放缓冲音频",
+            .statusMicrophoneCaptureStarted: "麦克风采集已启动",
+            .statusScreenAudioCaptureStarted: "屏幕音频采集已启动",
             .statusIdleWarning: "即将空闲暂停 · %d 秒后自动暂停",
             .statusApiPausedMonitoring: "API 已暂停 · 本地继续监听",
             .statusSessionUsageLimitReached: "本次使用上限已达到 · API 已暂停",
@@ -905,6 +911,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "停止しました",
             .statusError: "エラー",
             .statusResumingReplay: "再開中・バッファ音声を再送中",
+            .statusMicrophoneCaptureStarted: "マイク収録を開始しました",
+            .statusScreenAudioCaptureStarted: "画面音声収録を開始しました",
             .statusIdleWarning: "まもなくアイドル一時停止・%d秒後に自動停止",
             .statusApiPausedMonitoring: "APIを一時停止中・ローカルで監視中",
             .statusSessionUsageLimitReached: "今回の使用上限に達しました・APIを一時停止中",
@@ -1170,6 +1178,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "중지됨",
             .statusError: "오류",
             .statusResumingReplay: "재개 중 · 버퍼 오디오 재생 중",
+            .statusMicrophoneCaptureStarted: "마이크 캡처 시작됨",
+            .statusScreenAudioCaptureStarted: "화면 오디오 캡처 시작됨",
             .statusIdleWarning: "곧 유휴 일시 중지 · %d초 후 자동 일시 중지",
             .statusApiPausedMonitoring: "API 일시 중지 · 로컬에서 계속 모니터링",
             .statusSessionUsageLimitReached: "이번 사용 한도 도달 · API 일시 중지",
@@ -1432,6 +1442,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "Detenido",
             .statusError: "Error",
             .statusResumingReplay: "Reanudando · reproduciendo audio en búfer",
+            .statusMicrophoneCaptureStarted: "Captura del micrófono iniciada",
+            .statusScreenAudioCaptureStarted: "Captura de audio de pantalla iniciada",
             .statusIdleWarning: "Inactividad pronto · pausa automática en %d s",
             .statusApiPausedMonitoring: "API pausada · monitorización local",
             .statusSessionUsageLimitReached: "Límite de esta sesión alcanzado · API pausada",
@@ -1694,6 +1706,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "Arrêté",
             .statusError: "Erreur",
             .statusResumingReplay: "Reprise · relecture de l’audio en mémoire tampon",
+            .statusMicrophoneCaptureStarted: "Capture du microphone démarrée",
+            .statusScreenAudioCaptureStarted: "Capture audio de l’écran démarrée",
             .statusIdleWarning: "Inactivité imminente · pause auto dans %d s",
             .statusApiPausedMonitoring: "API en pause · surveillance locale",
             .statusSessionUsageLimitReached: "Limite de cette session atteinte · API en pause",
@@ -1956,6 +1970,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "Gestoppt",
             .statusError: "Fehler",
             .statusResumingReplay: "Wird fortgesetzt · gepufferte Audiodaten werden wiedergegeben",
+            .statusMicrophoneCaptureStarted: "Mikrofonaufnahme gestartet",
+            .statusScreenAudioCaptureStarted: "Bildschirm-Audioaufnahme gestartet",
             .statusIdleWarning: "Bald inaktiv · automatische Pause in %d s",
             .statusApiPausedMonitoring: "API pausiert · lokale Überwachung läuft",
             .statusSessionUsageLimitReached: "Limit dieser Sitzung erreicht · API pausiert",
@@ -2218,6 +2234,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .statusStopped: "Đã dừng",
             .statusError: "Lỗi",
             .statusResumingReplay: "Đang tiếp tục · phát lại âm thanh đã đệm",
+            .statusMicrophoneCaptureStarted: "Đã bắt đầu thu micrô",
+            .statusScreenAudioCaptureStarted: "Đã bắt đầu thu âm thanh màn hình",
             .statusIdleWarning: "Sắp rảnh · tự động tạm dừng sau %d giây",
             .statusApiPausedMonitoring: "API đã tạm dừng · tiếp tục giám sát cục bộ",
             .statusSessionUsageLimitReached: "Đã đạt giới hạn phiên · API đã tạm dừng",

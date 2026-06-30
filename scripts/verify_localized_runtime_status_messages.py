@@ -16,6 +16,8 @@ for key in [
     "statusListening",
     "statusStopped",
     "statusResumingReplay",
+    "statusMicrophoneCaptureStarted",
+    "statusScreenAudioCaptureStarted",
     "statusIdleWarning",
     "statusApiPausedMonitoring",
     "statusSessionUsageLimitReached",
@@ -44,6 +46,8 @@ for old, expected in [
     ('updateStatus("Listening", level: .running, log: true)', 'updateLocalizedStatus(.statusListening, level: .running, log: true)'),
     ('updateStatus("Stopped", level: .stopped, log: true)', 'updateLocalizedStatus(.statusStopped, level: .stopped, log: true)'),
     ('updateStatus("Resuming · replaying buffered audio", level: .connecting, log: true)', 'updateLocalizedStatus(.statusResumingReplay, level: .connecting, log: true)'),
+    ('updateStatus("Microphone capture started", level: .connecting, log: true)', 'updateLocalizedStatus(.statusMicrophoneCaptureStarted, level: .connecting, log: true)'),
+    ('updateStatus("Screen audio capture started", level: .connecting, log: true)', 'updateLocalizedStatus(.statusScreenAudioCaptureStarted, level: .connecting, log: true)'),
 ]:
     if old in app_state:
         errors.append(f"AppState must not use hard-coded runtime status {old}")
