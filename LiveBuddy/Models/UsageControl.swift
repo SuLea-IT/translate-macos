@@ -127,6 +127,11 @@ struct UsageControlEngine {
 
     mutating func reevaluatePauseAfterSettingsChange(now: Date) -> UsageControlDecision {
         resetLedgerIfNeeded(now: now)
+        if let limitReason = currentLimitReason() {
+            pausedReason = limitReason
+            refreshSnapshot(runtimeState: .paused(reason: limitReason))
+            return .pause(limitReason)
+        }
         guard let pausedReason else {
             refreshSnapshot(runtimeState: snapshot.runtimeState)
             return .hold
@@ -296,6 +301,16 @@ struct UsageControlEngine {
             return .sessionLimit
         }
         if settings.dailyLimitMinutes > 0, projectedToday > settings.dailyLimitMinutes * 60 {
+            return .dailyLimit
+        }
+        return nil
+    }
+
+    private func currentLimitReason() -> UsageControlPauseReason? {
+        if settings.perSessionLimitMinutes > 0, sessionSentAudioSeconds >= settings.perSessionLimitMinutes * 60 {
+            return .sessionLimit
+        }
+        if settings.dailyLimitMinutes > 0, ledger.sentAudioSeconds >= settings.dailyLimitMinutes * 60 {
             return .dailyLimit
         }
         return nil

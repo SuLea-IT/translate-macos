@@ -1489,9 +1489,25 @@ final class AppState: ObservableObject {
 
     private func updateUsageControlSettings() {
         let now = Date()
+        let previousUsageSnapshot = usageSnapshot
         usageEngine.updateSettings(settings.usageControls, now: now)
         let decision = usageEngine.reevaluatePauseAfterSettingsChange(now: now)
         usageSnapshot = usageEngine.snapshot
+        if let pauseReason = decision.pauseReason {
+            if isRunning {
+                let wasAlreadyPausedForSameReason: Bool
+                if case .paused(let previousReason) = previousUsageSnapshot.runtimeState, previousReason == pauseReason {
+                    wasAlreadyPausedForSameReason = true
+                } else {
+                    wasAlreadyPausedForSameReason = false
+                }
+                if !wasAlreadyPausedForSameReason {
+                    enterUsagePause(reason: pauseReason)
+                }
+                updateRunningUsageStatus(now: now, force: true)
+            }
+            return
+        }
         if isRunning, decision.shouldResume {
             scheduleUsageResume(replayChunks: decision.replayChunks)
             updateRunningUsageStatus(now: now, force: true)

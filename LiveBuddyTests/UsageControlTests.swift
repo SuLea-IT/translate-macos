@@ -136,6 +136,27 @@ struct UsageControlTests {
         #expect(engine.snapshot.sessionSentAudioSeconds == 2)
     }
 
+    @Test func settingsChangePausesImmediatelyWhenCurrentSessionAlreadyExceedsNewLimit() {
+        var settings = LiveUsageSettings()
+        settings.idleAutoPauseEnabled = false
+        let start = Date(timeIntervalSince1970: 6_500)
+        var engine = UsageControlEngine(settings: settings, now: start, ledger: .empty(for: start))
+
+        let firstChunk = chunk(seconds: 4, at: start)
+        let firstDecision = engine.ingest(chunk: firstChunk, level: 0.08, now: start)
+        #expect(firstDecision.shouldSend)
+        engine.markSent(firstChunk)
+
+        settings.perSessionLimitMinutes = 0.05
+        engine.updateSettings(settings, now: start.addingTimeInterval(1))
+        let decision = engine.reevaluatePauseAfterSettingsChange(now: start.addingTimeInterval(1))
+
+        #expect(decision.shouldSend == false)
+        #expect(decision.pauseReason == .sessionLimit)
+        #expect(engine.snapshot.runtimeState == .paused(reason: .sessionLimit))
+        #expect(engine.snapshot.sessionSentAudioSeconds == 4)
+    }
+
     @Test func dailyLedgerResetsWhenDayChanges() {
         let today = Date(timeIntervalSince1970: 1_783_008_000)
         let yesterday = today.addingTimeInterval(-86_400)
