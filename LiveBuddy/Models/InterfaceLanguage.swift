@@ -124,6 +124,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case importedTermsResult
     case unsupportedGlossaryFormat
     case glossaryDownloadFailed
+    case glossaryFileTooLarge
+    case glossaryImportFailed
     case glossaryImportEmpty
     case httpsLinksOnly
     case importingGlossary
@@ -462,6 +464,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .importedTermsResult: "Imported %d terms from %@. Skipped duplicates: %d.",
         .unsupportedGlossaryFormat: "Unsupported glossary format",
         .glossaryDownloadFailed: "Glossary download failed",
+        .glossaryFileTooLarge: "The glossary file is too large",
+        .glossaryImportFailed: "Glossary import failed",
         .glossaryImportEmpty: "No glossary terms were found",
         .httpsLinksOnly: "Only HTTPS glossary links are supported",
         .importingGlossary: "Importing glossary…",
@@ -768,6 +772,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "已导入 %d 条术语（来源：%@），跳过重复 %d 条。",
             .unsupportedGlossaryFormat: "不支持的术语格式",
             .glossaryDownloadFailed: "术语下载失败",
+            .glossaryFileTooLarge: "术语文件太大",
+            .glossaryImportFailed: "术语导入失败",
             .glossaryImportEmpty: "未找到可导入术语",
             .httpsLinksOnly: "仅支持 HTTPS 术语链接",
             .importingGlossary: "正在导入术语表…",
@@ -1071,6 +1077,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "%d 件の用語を %@ からインポートしました。重複スキップ: %d。",
             .unsupportedGlossaryFormat: "未対応の用語形式",
             .glossaryDownloadFailed: "用語集のダウンロードに失敗しました",
+            .glossaryFileTooLarge: "用語ファイルが大きすぎます",
+            .glossaryImportFailed: "用語集のインポートに失敗しました",
             .glossaryImportEmpty: "インポートできる用語が見つかりません",
             .httpsLinksOnly: "HTTPS の用語リンクのみ対応しています",
             .importingGlossary: "用語集をインポート中…",
@@ -1369,6 +1377,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "%d개 용어를 %@에서 가져왔습니다. 중복 건너뜀: %d.",
             .unsupportedGlossaryFormat: "지원하지 않는 용어 형식",
             .glossaryDownloadFailed: "용어 다운로드 실패",
+            .glossaryFileTooLarge: "용어 파일이 너무 큽니다",
+            .glossaryImportFailed: "용어 가져오기 실패",
             .glossaryImportEmpty: "가져올 용어를 찾지 못했습니다",
             .httpsLinksOnly: "HTTPS 용어 링크만 지원합니다",
             .importingGlossary: "용어집 가져오는 중…",
@@ -1666,6 +1676,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "Importados %d términos desde %@. Duplicados omitidos: %d.",
             .unsupportedGlossaryFormat: "Formato de glosario no compatible",
             .glossaryDownloadFailed: "Error al descargar el glosario",
+            .glossaryFileTooLarge: "El archivo de glosario es demasiado grande",
+            .glossaryImportFailed: "Error al importar el glosario",
             .glossaryImportEmpty: "No se encontraron términos",
             .httpsLinksOnly: "Solo se admiten enlaces HTTPS",
             .importingGlossary: "Importando glosario…",
@@ -1963,6 +1975,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "%d termes importés depuis %@. Doublons ignorés : %d.",
             .unsupportedGlossaryFormat: "Format de glossaire non pris en charge",
             .glossaryDownloadFailed: "Échec du téléchargement du glossaire",
+            .glossaryFileTooLarge: "Le fichier de glossaire est trop volumineux",
+            .glossaryImportFailed: "Échec de l’importation du glossaire",
             .glossaryImportEmpty: "Aucun terme trouvé",
             .httpsLinksOnly: "Seuls les liens HTTPS sont pris en charge",
             .importingGlossary: "Importation du glossaire…",
@@ -2260,6 +2274,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "%d Begriffe aus %@ importiert. Duplikate übersprungen: %d.",
             .unsupportedGlossaryFormat: "Nicht unterstütztes Glossarformat",
             .glossaryDownloadFailed: "Glossar-Download fehlgeschlagen",
+            .glossaryFileTooLarge: "Die Glossardatei ist zu groß",
+            .glossaryImportFailed: "Glossarimport fehlgeschlagen",
             .glossaryImportEmpty: "Keine Begriffe gefunden",
             .httpsLinksOnly: "Nur HTTPS-Glossarlinks werden unterstützt",
             .importingGlossary: "Glossar wird importiert…",
@@ -2557,6 +2573,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .importedTermsResult: "Đã nhập %d thuật ngữ từ %@. Bỏ qua trùng lặp: %d.",
             .unsupportedGlossaryFormat: "Định dạng bảng thuật ngữ không hỗ trợ",
             .glossaryDownloadFailed: "Tải bảng thuật ngữ thất bại",
+            .glossaryFileTooLarge: "Tệp bảng thuật ngữ quá lớn",
+            .glossaryImportFailed: "Nhập bảng thuật ngữ thất bại",
             .glossaryImportEmpty: "Không tìm thấy thuật ngữ",
             .httpsLinksOnly: "Chỉ hỗ trợ liên kết HTTPS",
             .importingGlossary: "Đang nhập bảng thuật ngữ…",

@@ -678,8 +678,12 @@ final class AppState: ObservableObject {
                 let baseMessage = settings.interfaceLanguage.localized(.glossaryDownloadFailed)
                 let detail = message.trimmingCharacters(in: .whitespacesAndNewlines)
                 glossaryImportMessage = detail.isEmpty ? baseMessage : "\(baseMessage): \(detail)"
-            case .fileTooLarge, .parseFailed:
-                glossaryImportMessage = importError.localizedDescription
+            case .fileTooLarge:
+                glossaryImportMessage = settings.interfaceLanguage.localized(.glossaryFileTooLarge)
+            case .parseFailed(let message):
+                let baseMessage = settings.interfaceLanguage.localized(.glossaryImportFailed)
+                let detail = message.trimmingCharacters(in: .whitespacesAndNewlines)
+                glossaryImportMessage = detail.isEmpty ? baseMessage : "\(baseMessage): \(detail)"
             }
         } else {
             glossaryImportMessage = error.localizedDescription
