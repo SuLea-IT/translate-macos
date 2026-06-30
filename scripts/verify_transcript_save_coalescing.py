@@ -22,14 +22,16 @@ else:
     body = append_match.group("body")
     for token in [
         "currentTranscriptLines.append(transcriptLine)",
-        "transcriptSessions[index].lines = currentTranscriptLines",
+        "transcriptSessions[index].lines.append(transcriptLine)",
         "scheduleTranscriptSave()",
     ]:
         if token not in body:
             errors.append(f"appendCurrentTranscriptLine must update memory immediately and coalesce disk writes through {token}")
+    if "transcriptSessions[index].lines = currentTranscriptLines" in body:
+        errors.append("appendCurrentTranscriptLine must not rewrite the full active session line array for every sentence")
     if "saveTranscriptSessions()" in body:
         errors.append("appendCurrentTranscriptLine must not synchronously rewrite the full transcript archive for every sentence")
-    sync_idx = body.find("transcriptSessions[index].lines = currentTranscriptLines")
+    sync_idx = body.find("transcriptSessions[index].lines.append(transcriptLine)")
     schedule_idx = body.find("scheduleTranscriptSave()")
     if min(sync_idx, schedule_idx) != -1 and not (sync_idx < schedule_idx):
         errors.append("appendCurrentTranscriptLine must schedule persistence after syncing the active session")

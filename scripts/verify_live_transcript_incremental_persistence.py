@@ -24,7 +24,7 @@ else:
         "currentTranscriptLines.append(transcriptLine)",
         "if let sessionID = currentSessionID",
         "transcriptSessions.firstIndex(where: { $0.id == sessionID })",
-        "transcriptSessions[index].lines = currentTranscriptLines",
+        "transcriptSessions[index].lines.append(transcriptLine)",
         "scheduleTranscriptSave()",
     ]
     for token in required_tokens:
@@ -32,10 +32,12 @@ else:
             errors.append(f"appendCurrentTranscriptLine must incrementally sync and persist live transcript history through {token}")
 
     append_index = body.find("currentTranscriptLines.append(transcriptLine)")
-    sync_index = body.find("transcriptSessions[index].lines = currentTranscriptLines")
+    sync_index = body.find("transcriptSessions[index].lines.append(transcriptLine)")
     save_index = body.find("scheduleTranscriptSave()")
     if min(append_index, sync_index, save_index) != -1 and not (append_index < sync_index < save_index):
-        errors.append("appendCurrentTranscriptLine must append, sync the active session, then schedule persistence in that order")
+        errors.append("appendCurrentTranscriptLine must append the new line to live history, append it to the active session, then schedule persistence in that order")
+    if "transcriptSessions[index].lines = currentTranscriptLines" in body:
+        errors.append("appendCurrentTranscriptLine must not rewrite the full active session line array for every new line")
     if "saveTranscriptSessions()" in body:
         errors.append("appendCurrentTranscriptLine must coalesce disk writes instead of synchronously saving every sentence")
 

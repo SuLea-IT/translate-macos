@@ -1631,7 +1631,7 @@ final class AppState: ObservableObject {
         currentTranscriptLines.append(transcriptLine)
         if let sessionID = currentSessionID,
            let index = transcriptSessions.firstIndex(where: { $0.id == sessionID }) {
-            transcriptSessions[index].lines = currentTranscriptLines
+            transcriptSessions[index].lines.append(transcriptLine)
             scheduleTranscriptSave()
         }
     }

@@ -163,11 +163,13 @@ else:
         "currentTranscriptLines.append(transcriptLine)",
         "if let sessionID = currentSessionID",
         "transcriptSessions.firstIndex(where: { $0.id == sessionID })",
-        "transcriptSessions[index].lines = currentTranscriptLines",
+        "transcriptSessions[index].lines.append(transcriptLine)",
         "scheduleTranscriptSave()",
     ]:
         if token not in body:
             errors.append(f"AppState.appendCurrentTranscriptLine must keep running transcript detail current and schedule disk persistence through {token}")
+    if "transcriptSessions[index].lines = currentTranscriptLines" in body:
+        errors.append("AppState.appendCurrentTranscriptLine must append the new transcript line instead of rewriting the full active session array")
     if "saveTranscriptSessions()" in body:
         errors.append("AppState.appendCurrentTranscriptLine must coalesce transcript disk writes instead of saving every sentence")
 
