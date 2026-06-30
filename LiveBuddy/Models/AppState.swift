@@ -122,6 +122,8 @@ final class AppState: ObservableObject {
     private var originalDraft = ""
     private var completedOriginalSentences: [String] = []
     private var pendingAPIKeyForKeychain: String?
+    private var cachedProviderHealthAPIKey: String?
+    private var cachedProviderHealthStatus: ProviderHealthStatus?
 
     init(
         apiKeyStore: APIKeyStore = .liveBuddy,
@@ -405,6 +407,7 @@ final class AppState: ObservableObject {
     }
 
     func updateAPIKey(_ apiKey: String) {
+        invalidateCachedProviderHealthStatusIfNeeded(for: apiKey)
         settings.apiKey = apiKey
         scheduleAPIKeySave(apiKey)
     }
@@ -770,7 +773,13 @@ final class AppState: ObservableObject {
     }
 
     private var providerHealthStatusForCurrentKey: ProviderHealthStatus {
-        settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .missing : .unchecked
+        let trimmed = settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .missing }
+        if cachedProviderHealthAPIKey == trimmed,
+           let cachedProviderHealthStatus {
+            return cachedProviderHealthStatus
+        }
+        return .unchecked
     }
 
     func clearLogs() {
@@ -806,6 +815,8 @@ final class AppState: ObservableObject {
         try Task.checkCancellation()
         let status = await providerHealthService.verify(apiKey: settings.apiKey)
         try Task.checkCancellation()
+        rememberProviderHealthStatus(status, apiKey: settings.apiKey)
+        updateSetupChecklist(apiKeyStatus: status)
         switch status {
         case .valid:
             setDiagnosticIssue(nil)
@@ -823,6 +834,41 @@ final class AppState: ObservableObject {
             setDiagnosticIssue(DiagnosticClassifier.from(providerStatus: status))
             throw NSError(domain: "LiveBuddy", code: 500, userInfo: [NSLocalizedDescriptionKey: "Verification failed"])
         }
+    }
+
+    private func rememberProviderHealthStatus(_ status: ProviderHealthStatus, apiKey: String) {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            cachedProviderHealthAPIKey = nil
+            cachedProviderHealthStatus = nil
+            return
+        }
+        cachedProviderHealthAPIKey = trimmed
+        cachedProviderHealthStatus = status
+    }
+
+    private func invalidateCachedProviderHealthStatusIfNeeded(for apiKey: String) {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cachedProviderHealthAPIKey != trimmed else { return }
+        cachedProviderHealthAPIKey = nil
+        cachedProviderHealthStatus = nil
+    }
+
+    private func updateSetupChecklist(apiKeyStatus: ProviderHealthStatus) {
+        setupChecklist = SetupChecklistState.derive(
+            audioSource: settings.audioSource,
+            apiKey: apiKeyStatus,
+            microphone: permissionStatus(from: setupChecklist.microphone),
+            screenRecording: permissionStatus(from: setupChecklist.screenRecording)
+        )
+    }
+
+    private func permissionStatus(from item: PermissionChecklistItem) -> PermissionStatus {
+        PermissionStatus(
+            requirement: item.requirement,
+            state: item.permissionState,
+            checkedAt: item.checkedAt
+        )
     }
 
 
