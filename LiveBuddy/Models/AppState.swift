@@ -113,6 +113,7 @@ final class AppState: ObservableObject {
     private var connectionStopGeneration = UUID()
     private var usageResumeTask: Task<Void, Never>?
     private var usageResumeGeneration = UUID()
+    private var pendingUsageResumeReplayChunks: [BufferedAudioChunk] = []
     private var setupChecklistRefreshTask: Task<Void, Never>?
     private var setupChecklistRefreshGeneration = UUID()
     private var audioSendTask: Task<Void, Never>?
@@ -234,6 +235,7 @@ final class AppState: ObservableObject {
         usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
+        pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
         resetAudioSendPipeline()
         audioCaptureGeneration = UUID()
         detectedSourceLanguageCode = nil
@@ -279,6 +281,7 @@ final class AppState: ObservableObject {
         usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
+        pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
         reconnectAttempts = 0
         if cancelPendingRestart {
             restartGeneration = UUID()
@@ -1219,6 +1222,7 @@ final class AppState: ObservableObject {
         usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
+        pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
         reconnectAttempts = 0
         resetAudioSendPipeline()
         audioCaptureGeneration = UUID()
@@ -1464,6 +1468,7 @@ final class AppState: ObservableObject {
         usageResumeGeneration = UUID()
         usageResumeTask?.cancel()
         usageResumeTask = nil
+        pendingUsageResumeReplayChunks.removeAll(keepingCapacity: true)
         resetAudioSendPipeline()
         client?.close()
         client = nil
@@ -1473,18 +1478,20 @@ final class AppState: ObservableObject {
     }
 
     private func scheduleUsageResume(replayChunks: [BufferedAudioChunk]) {
+        pendingUsageResumeReplayChunks = replayChunks
         guard usageResumeTask == nil else { return }
         let generation = UUID()
         usageResumeGeneration = generation
         usageResumeTask = Task { [weak self] in
-            await self?.resumeFromUsagePause(replayChunks: replayChunks, generation: generation)
+            await self?.resumeFromUsagePause(generation: generation)
         }
     }
 
-    private func resumeFromUsagePause(replayChunks: [BufferedAudioChunk], generation: UUID) async {
+    private func resumeFromUsagePause(generation: UUID) async {
         guard usageResumeGeneration == generation else { return }
         guard shouldContinueRuntimeConnection() else {
             if usageResumeGeneration == generation {
+                pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
                 usageResumeTask = nil
             }
             return
@@ -1497,15 +1504,21 @@ final class AppState: ObservableObject {
             guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else {
                 discardAsyncClient(newClient)
                 if usageResumeGeneration == generation {
+                    pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
                     usageResumeTask = nil
                 }
                 return
             }
             client = newClient
+            let replayChunks = pendingUsageResumeReplayChunks
+            pendingUsageResumeReplayChunks.removeAll(keepingCapacity: true)
+            usageEngine.markResumed(now: Date())
+            usageSnapshot = usageEngine.snapshot
             for chunk in replayChunks {
                 guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else {
                     discardAsyncClient(newClient)
                     if usageResumeGeneration == generation {
+                        pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
                         usageResumeTask = nil
                     }
                     return
@@ -1515,13 +1528,13 @@ final class AppState: ObservableObject {
             guard usageResumeGeneration == generation, shouldContinueRuntimeConnection(), client === newClient else {
                 discardAsyncClient(newClient)
                 if usageResumeGeneration == generation {
+                    pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
                     usageResumeTask = nil
                 }
                 return
             }
             sentChunkCount += replayChunks.count
             usageEngine.markReplaySent(replayChunks)
-            usageEngine.markResumed(now: Date())
             usageSnapshot = usageEngine.snapshot
             saveUsageLedger()
             updateStatus(runningUsageStatusMessage(), level: .running, log: true)
@@ -1529,11 +1542,13 @@ final class AppState: ObservableObject {
             newClient.close()
             guard usageResumeGeneration == generation, shouldContinueRuntimeConnection() else {
                 if usageResumeGeneration == generation {
+                    pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
                     usageResumeTask = nil
                 }
                 return
             }
             client = nil
+            pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
             usageEngine.forcePause(.idle)
             usageSnapshot = usageEngine.snapshot
             let diagnostic = DiagnosticClassifier.from(error: error, context: .runtime)
@@ -1541,6 +1556,7 @@ final class AppState: ObservableObject {
             updateStatus(settings.interfaceLanguage.localized(diagnostic.titleKey), level: .error, log: true)
         }
         if usageResumeGeneration == generation {
+            pendingUsageResumeReplayChunks.removeAll(keepingCapacity: false)
             usageResumeTask = nil
         }
     }
