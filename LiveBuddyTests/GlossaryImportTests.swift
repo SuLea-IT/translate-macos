@@ -169,6 +169,39 @@ struct GlossaryImportTests {
         #expect(result.entries.map(\.sourceTerm) == ["screen recording"])
     }
 
+    @Test func zipImportPrioritizesSelectableLanguageNameAliases() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlossaryImportZipYiddishPriorityTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try "generic first\t通用优先\n".write(to: root.appendingPathComponent("terms.tsv"), atomically: true, encoding: .utf8)
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <tbx><text><body>
+          <termEntry id="c1">
+            <langSet xml:lang="en"><tig><term>screen recording</term></tig></langSet>
+            <langSet xml:lang="yi"><tig><term>סקרין רעקאָרדינג</term></tig></langSet>
+          </termEntry>
+        </body></text></tbx>
+        """.write(to: root.appendingPathComponent("Yiddish.tbx"), atomically: true, encoding: .utf8)
+
+        let archiveURL = try makeArchive(
+            root: root,
+            name: "yiddish-priority.zip",
+            files: ["terms.tsv", "Yiddish.tbx"]
+        )
+        let result = try GlossaryImportParser().parse(
+            fileURL: archiveURL,
+            sourceName: "ZIP",
+            existingEntries: [],
+            options: GlossaryImportOptions(sourceLanguageCode: "en", targetLanguageCode: "yi", importLimit: 1)
+        )
+
+        #expect(result.added == 1)
+        #expect(result.entries.map(\.sourceTerm) == ["screen recording"])
+    }
+
     @Test func zipImportReadsEntriesLargerThanPipeBuffer() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GlossaryImportZipLargePipeTests-\(UUID().uuidString)", isDirectory: true)
