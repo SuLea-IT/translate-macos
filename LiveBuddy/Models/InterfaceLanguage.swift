@@ -174,6 +174,15 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case subtitleTestMessage
     case translationAndAudio
     case audioSource
+    case audioPlaybackMode
+    case playbackMediaAndTranslation
+    case playbackMediaOnly
+    case playbackTranslationOnly
+    case translationAudioOutput
+    case systemDefaultOutput
+    case translationOnlySetupMessage
+    case blackHoleNotDetected
+    case blackHoleDetected
     case screenAudio
     case microphone
     case screenAndMic
@@ -520,6 +529,15 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .subtitleTestMessage: "LiveBuddy subtitle test",
         .translationAndAudio: "Translation & Audio",
         .audioSource: "Audio Source",
+        .audioPlaybackMode: "Sound playback mode",
+        .playbackMediaAndTranslation: "Media + translation",
+        .playbackMediaOnly: "Media only",
+        .playbackTranslationOnly: "Translation only",
+        .translationAudioOutput: "Translated voice output",
+        .systemDefaultOutput: "System Default Output",
+        .translationOnlySetupMessage: "For translation-only listening, route the media/system output to BlackHole, then select your real speakers or headphones here for translated voice. This keeps media out of your ears while LiveBuddy still hears it.",
+        .blackHoleNotDetected: "BlackHole not detected",
+        .blackHoleDetected: "BlackHole detected",
         .screenAudio: "Screen audio",
         .microphone: "Microphone",
         .screenAndMic: "Screen + Mic",
@@ -834,6 +852,15 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .subtitleTestMessage: "LiveBuddy 字幕测试",
             .translationAndAudio: "翻译与音频",
             .audioSource: "音频来源",
+            .audioPlaybackMode: "声音播放模式",
+            .playbackMediaAndTranslation: "媒体 + 翻译",
+            .playbackMediaOnly: "只播放媒体声音",
+            .playbackTranslationOnly: "只播放翻译声音",
+            .translationAudioOutput: "翻译语音输出",
+            .systemDefaultOutput: "系统默认输出",
+            .translationOnlySetupMessage: "如需只听翻译声音，请把 macOS 或媒体软件的输出切到 BlackHole，然后在这里选择真实扬声器或耳机播放翻译语音。这样媒体声不会进耳朵，LiveBuddy 仍然可以听到媒体声。",
+            .blackHoleNotDetected: "未检测到 BlackHole",
+            .blackHoleDetected: "已检测到 BlackHole",
             .screenAudio: "屏幕音频",
             .microphone: "麦克风",
             .screenAndMic: "屏幕 + 麦克风",
@@ -2857,6 +2884,19 @@ extension AudioSource {
             language.localized(.microphone)
         case .both:
             language.localized(.screenAndMic)
+        }
+    }
+}
+
+extension AudioPlaybackMode {
+    func localizedTitle(language: InterfaceLanguage) -> String {
+        switch self {
+        case .mediaAndTranslation:
+            language.localized(.playbackMediaAndTranslation)
+        case .mediaOnly:
+            language.localized(.playbackMediaOnly)
+        case .translationOnly:
+            language.localized(.playbackTranslationOnly)
         }
     }
 }

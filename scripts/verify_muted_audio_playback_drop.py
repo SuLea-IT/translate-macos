@@ -33,7 +33,7 @@ if not update_match:
 else:
     body = update_match.group("body")
     for token in [
-        "let volume = settings.audioPlayerMuted ? 0.0 : settings.audioPlayerVolume",
+        "let volume = settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted ? settings.audioPlayerVolume : 0.0",
         "if volume <= 0 {",
         "audioPlayer.stop()",
         "return",

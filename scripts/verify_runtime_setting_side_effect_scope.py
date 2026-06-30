@@ -32,6 +32,8 @@ else:
     for token in [
         "oldValue.audioPlayerVolume != settings.audioPlayerVolume",
         "oldValue.audioPlayerMuted != settings.audioPlayerMuted",
+        "oldValue.audioPlaybackMode != settings.audioPlaybackMode",
+        "oldValue.translationAudioOutputDeviceUID != settings.translationAudioOutputDeviceUID",
         "guard audioOutputChanged else { return }",
         "updateAudioPlayerVolume()",
     ]:
@@ -56,7 +58,7 @@ for token in [
     "private func updateAudioPlayerVolume()",
     "private func updateUsageControlSettings()",
     "usageEngine.updateSettings(settings.usageControls, now: now)",
-    "let volume = settings.audioPlayerMuted ? 0.0 : settings.audioPlayerVolume",
+    "let volume = settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted ? settings.audioPlayerVolume : 0.0",
 ]:
     if token not in text:
         errors.append(f"AppState must keep runtime effect implementation through {token}")

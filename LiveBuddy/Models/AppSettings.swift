@@ -17,6 +17,18 @@ enum AudioSource: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+enum AudioPlaybackMode: String, CaseIterable, Codable, Identifiable {
+    case mediaAndTranslation
+    case mediaOnly
+    case translationOnly
+
+    var id: String { rawValue }
+
+    var allowsTranslatedAudio: Bool {
+        self != .mediaOnly
+    }
+}
+
 enum AIProvider: String, CaseIterable, Codable, Identifiable {
     case gemini
     
@@ -246,6 +258,8 @@ struct AppSettings: Codable, Equatable {
     // Audio Player
     var audioPlayerVolume: Double = 1.0
     var audioPlayerMuted: Bool = false
+    var audioPlaybackMode: AudioPlaybackMode = .mediaAndTranslation
+    var translationAudioOutputDeviceUID: String? = nil
 
     // Subtitle styling
     var subtitleFontSize: Double = 28
@@ -276,6 +290,8 @@ struct AppSettings: Codable, Equatable {
         case usageControls
         case audioPlayerVolume
         case audioPlayerMuted
+        case audioPlaybackMode
+        case translationAudioOutputDeviceUID
         case subtitleFontSize
         case subtitleFontName
         case subtitleIsBold
@@ -306,6 +322,8 @@ struct AppSettings: Codable, Equatable {
         usageControls = try container.decodeIfPresent(LiveUsageSettings.self, forKey: .usageControls) ?? defaults.usageControls
         audioPlayerVolume = try container.decodeIfPresent(Double.self, forKey: .audioPlayerVolume) ?? defaults.audioPlayerVolume
         audioPlayerMuted = try container.decodeIfPresent(Bool.self, forKey: .audioPlayerMuted) ?? defaults.audioPlayerMuted
+        audioPlaybackMode = try container.decodeIfPresent(AudioPlaybackMode.self, forKey: .audioPlaybackMode) ?? defaults.audioPlaybackMode
+        translationAudioOutputDeviceUID = try container.decodeIfPresent(String.self, forKey: .translationAudioOutputDeviceUID)
         subtitleFontSize = try container.decodeIfPresent(Double.self, forKey: .subtitleFontSize) ?? defaults.subtitleFontSize
         subtitleFontName = try container.decodeIfPresent(SubtitleFontName.self, forKey: .subtitleFontName) ?? defaults.subtitleFontName
         subtitleIsBold = try container.decodeIfPresent(Bool.self, forKey: .subtitleIsBold) ?? defaults.subtitleIsBold
@@ -333,6 +351,8 @@ struct AppSettings: Codable, Equatable {
         try container.encode(usageControls, forKey: .usageControls)
         try container.encode(audioPlayerVolume, forKey: .audioPlayerVolume)
         try container.encode(audioPlayerMuted, forKey: .audioPlayerMuted)
+        try container.encode(audioPlaybackMode, forKey: .audioPlaybackMode)
+        try container.encodeIfPresent(translationAudioOutputDeviceUID, forKey: .translationAudioOutputDeviceUID)
         try container.encode(subtitleFontSize, forKey: .subtitleFontSize)
         try container.encode(subtitleFontName, forKey: .subtitleFontName)
         try container.encode(subtitleIsBold, forKey: .subtitleIsBold)

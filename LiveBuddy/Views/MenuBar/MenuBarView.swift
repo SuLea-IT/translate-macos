@@ -133,13 +133,14 @@ struct MenuBarView: View {
                         Button {
                             appState.updateSetting(\.audioPlayerMuted, to: !appState.settings.audioPlayerMuted)
                         } label: {
-                            Image(systemName: appState.settings.audioPlayerMuted || appState.settings.audioPlayerVolume == 0 ? "speaker.slash.fill" : (appState.settings.audioPlayerVolume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"))
+                            Image(systemName: !appState.settings.audioPlaybackMode.allowsTranslatedAudio || appState.settings.audioPlayerMuted || appState.settings.audioPlayerVolume == 0 ? "speaker.slash.fill" : (appState.settings.audioPlayerVolume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"))
                         }
                         .buttonStyle(.plain)
                         .help(appState.settings.audioPlayerMuted ? appState.t(.unmute) : appState.t(.mute))
+                        .disabled(!appState.settings.audioPlaybackMode.allowsTranslatedAudio)
                         
                         Slider(value: appState.binding(\.audioPlayerVolume), in: 0...1)
-                            .disabled(appState.settings.audioPlayerMuted)
+                            .disabled(!appState.settings.audioPlaybackMode.allowsTranslatedAudio || appState.settings.audioPlayerMuted)
                     }
                 }
                 

@@ -1,5 +1,14 @@
 import AVFoundation
+import AudioToolbox
+import CoreAudio
 import Foundation
+
+private enum PCM16AudioPlayerOutputError: Error {
+    case outputDeviceNotFound(String)
+    case defaultOutputDeviceUnavailable
+    case outputAudioUnitUnavailable
+    case routeChangeFailed(OSStatus)
+}
 
 final class PCM16AudioPlayer: @unchecked Sendable {
     private static let playbackQueueKey = DispatchSpecificKey<Bool>()
@@ -13,6 +22,8 @@ final class PCM16AudioPlayer: @unchecked Sendable {
     nonisolated(unsafe) private var isShuttingDown = false
     nonisolated(unsafe) private var pendingPlaybackBuffers = 0
     nonisolated(unsafe) private var playbackGeneration = UUID()
+    nonisolated(unsafe) private var selectedOutputDeviceUID: String?
+    nonisolated(unsafe) private var appliedOutputDeviceUID: String?
 
     init() {
         queue.setSpecific(key: Self.playbackQueueKey, value: Self.playbackQueueValue)
@@ -47,6 +58,18 @@ final class PCM16AudioPlayer: @unchecked Sendable {
             guard let self else { return }
             guard !isShuttingDown else { return }
             self.player.volume = volume
+        }
+    }
+
+    nonisolated func setOutputDeviceUID(_ uid: String?) {
+        let normalizedUID = uid?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let selectedUID = normalizedUID?.isEmpty == false ? normalizedUID : nil
+        queue.async { [weak self] in
+            guard let self else { return }
+            guard !isShuttingDown else { return }
+            guard self.selectedOutputDeviceUID != selectedUID else { return }
+            self.selectedOutputDeviceUID = selectedUID
+            self.stopOnPlaybackQueue()
         }
     }
 
@@ -118,7 +141,41 @@ final class PCM16AudioPlayer: @unchecked Sendable {
         guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false) else { return }
         engine.disconnectNodeOutput(player)
         engine.connect(player, to: engine.mainMixerNode, format: format)
+        try applyOutputDeviceIfNeeded()
         try engine.start()
         isPrepared = true
+    }
+
+    private nonisolated func applyOutputDeviceIfNeeded() throws {
+        guard appliedOutputDeviceUID != selectedOutputDeviceUID else { return }
+        let deviceID: AudioDeviceID
+        if let uid = selectedOutputDeviceUID {
+            guard let selectedDeviceID = AudioDeviceManager.getOutputDeviceID(for: uid) else {
+                throw PCM16AudioPlayerOutputError.outputDeviceNotFound(uid)
+            }
+            deviceID = selectedDeviceID
+        } else {
+            guard let defaultDeviceID = AudioDeviceManager.getDefaultOutputDeviceID() else {
+                throw PCM16AudioPlayerOutputError.defaultOutputDeviceUnavailable
+            }
+            deviceID = defaultDeviceID
+        }
+
+        guard let audioUnit = engine.outputNode.audioUnit else {
+            throw PCM16AudioPlayerOutputError.outputAudioUnitUnavailable
+        }
+        var mutableDeviceID = deviceID
+        let status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &mutableDeviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+        guard status == noErr else {
+            throw PCM16AudioPlayerOutputError.routeChangeFailed(status)
+        }
+        appliedOutputDeviceUID = selectedOutputDeviceUID
     }
 }

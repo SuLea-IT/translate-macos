@@ -19,6 +19,10 @@ final class AudioDeviceManager {
         getDevices(scope: kAudioDevicePropertyScopeInput)
     }
 
+    static func getOutputDevices() -> [AudioDevice] {
+        getDevices(scope: kAudioDevicePropertyScopeOutput)
+    }
+
     private static func getDevices(scope: AudioObjectPropertyScope) -> [AudioDevice] {
         var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
@@ -121,7 +125,42 @@ final class AudioDeviceManager {
         return devices
     }
 
-    static func getDeviceID(for uid: String) -> AudioDeviceID? {
+    static func getInputDeviceID(for uid: String) -> AudioDeviceID? {
         getInputDevices().first { $0.uid == uid }?.deviceID
+    }
+
+    static func getOutputDeviceID(for uid: String) -> AudioDeviceID? {
+        getOutputDevices().first { $0.uid == uid }?.deviceID
+    }
+
+    static func getDefaultOutputDeviceID() -> AudioDeviceID? {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID = AudioDeviceID(0)
+        var dataSize = UInt32(MemoryLayout<AudioDeviceID>.size)
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &dataSize,
+            &deviceID
+        )
+        guard status == noErr, deviceID != 0 else { return nil }
+        return deviceID
+    }
+
+    static func getDeviceID(for uid: String) -> AudioDeviceID? {
+        getInputDeviceID(for: uid)
+    }
+
+    static func hasBlackHoleDevice(in devices: [AudioDevice]) -> Bool {
+        devices.contains { device in
+            device.name.localizedCaseInsensitiveContains("BlackHole") ||
+                device.uid.localizedCaseInsensitiveContains("BlackHole")
+        }
     }
 }

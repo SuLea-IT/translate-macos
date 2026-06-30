@@ -300,6 +300,13 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
+                Picker(appState.t(.audioPlaybackMode), selection: appState.binding(\.audioPlaybackMode)) {
+                    ForEach(AudioPlaybackMode.allCases) { mode in
+                        Text(mode.localizedTitle(language: appState.settings.interfaceLanguage)).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+
                 if appState.settings.audioSource == .microphone || appState.settings.audioSource == .both {
                     Picker(appState.t(.microphone), selection: appState.binding(\.selectedMicrophoneDeviceUID)) {
                         Text(appState.t(.systemDefault)).tag(nil as String?)
@@ -310,6 +317,29 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .onAppear {
                         appState.refreshAvailableMicrophones()
+                    }
+                }
+
+                Picker(appState.t(.translationAudioOutput), selection: appState.binding(\.translationAudioOutputDeviceUID)) {
+                    Text(appState.t(.systemDefaultOutput)).tag(nil as String?)
+                    ForEach(appState.availableAudioOutputs) { device in
+                        Text(device.name).tag(device.uid as String?)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                if appState.settings.audioPlaybackMode == .translationOnly {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(
+                            appState.t(appState.shouldShowTranslationOnlyRoutingWarning ? .blackHoleNotDetected : .blackHoleDetected),
+                            systemImage: appState.shouldShowTranslationOnlyRoutingWarning ? "exclamationmark.triangle" : "checkmark.circle"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(appState.shouldShowTranslationOnlyRoutingWarning ? .orange : .green)
+
+                        Text(appState.t(.translationOnlySetupMessage))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 
@@ -340,13 +370,14 @@ struct SettingsView: View {
                     Button {
                         appState.updateSetting(\.audioPlayerMuted, to: !appState.settings.audioPlayerMuted)
                     } label: {
-                        Image(systemName: appState.settings.audioPlayerMuted || appState.settings.audioPlayerVolume == 0 ? "speaker.slash.fill" : (appState.settings.audioPlayerVolume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"))
+                        Image(systemName: !appState.settings.audioPlaybackMode.allowsTranslatedAudio || appState.settings.audioPlayerMuted || appState.settings.audioPlayerVolume == 0 ? "speaker.slash.fill" : (appState.settings.audioPlayerVolume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"))
                             .frame(width: 20)
                     }
                     .buttonStyle(.plain)
+                    .disabled(!appState.settings.audioPlaybackMode.allowsTranslatedAudio)
                     
                     Slider(value: appState.binding(\.audioPlayerVolume), in: 0...1)
-                        .disabled(appState.settings.audioPlayerMuted)
+                        .disabled(!appState.settings.audioPlaybackMode.allowsTranslatedAudio || appState.settings.audioPlayerMuted)
                         .frame(width: 100)
                     
                     Text("\(Int(appState.settings.audioPlayerVolume * 100))%")
@@ -355,7 +386,7 @@ struct SettingsView: View {
                 }
             }
             .onAppear {
-                appState.refreshAvailableMicrophones()
+                appState.refreshAvailableAudioDevices()
             }
 
             usageControlSection

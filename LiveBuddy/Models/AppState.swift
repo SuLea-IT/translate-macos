@@ -54,6 +54,7 @@ final class AppState: ObservableObject {
     @Published var showSetupSheet = false
     @Published private(set) var providerSettingsFocusRequest: UUID?
     @Published private(set) var availableMicrophones: [AudioDevice] = []
+    @Published private(set) var availableAudioOutputs: [AudioDevice] = []
     @Published private(set) var audioLevel: Float = 0.0
     @Published private(set) var setupChecklist: SetupChecklistState = .initial
     @Published private(set) var currentUserFacingError: UserFacingError?
@@ -88,6 +89,11 @@ final class AppState: ObservableObject {
 
     var languagePairDisplayText: String {
         "\(sourceLanguageDisplayText) → \(TranslationLanguage.name(for: settings.targetLanguageCode, language: settings.interfaceLanguage))"
+    }
+
+    var shouldShowTranslationOnlyRoutingWarning: Bool {
+        settings.audioPlaybackMode == .translationOnly &&
+            !AudioDeviceManager.hasBlackHoleDevice(in: availableMicrophones + availableAudioOutputs)
     }
 
 
@@ -203,7 +209,7 @@ final class AppState: ObservableObject {
             saveSettingsImmediately()
         }
         updateAudioPlayerVolume()
-        refreshAvailableMicrophones()
+        refreshAvailableAudioDevices()
         refreshSetupChecklist()
         startListeningForDeviceChanges()
         configureGlobalShortcuts()
@@ -1944,13 +1950,16 @@ final class AppState: ObservableObject {
     private func updateAudioPlayerVolumeIfNeeded(oldValue: AppSettings) {
         let audioOutputChanged =
             oldValue.audioPlayerVolume != settings.audioPlayerVolume ||
-            oldValue.audioPlayerMuted != settings.audioPlayerMuted
+            oldValue.audioPlayerMuted != settings.audioPlayerMuted ||
+            oldValue.audioPlaybackMode != settings.audioPlaybackMode ||
+            oldValue.translationAudioOutputDeviceUID != settings.translationAudioOutputDeviceUID
         guard audioOutputChanged else { return }
         updateAudioPlayerVolume()
     }
 
     private func updateAudioPlayerVolume() {
-        let volume = settings.audioPlayerMuted ? 0.0 : settings.audioPlayerVolume
+        audioPlayer.setOutputDeviceUID(settings.translationAudioOutputDeviceUID)
+        let volume = settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted ? settings.audioPlayerVolume : 0.0
         if volume <= 0 {
             audioPlayer.stop()
             return
@@ -1959,7 +1968,7 @@ final class AppState: ObservableObject {
     }
 
     private var isTranslatedAudioOutputEnabled: Bool {
-        !settings.audioPlayerMuted && settings.audioPlayerVolume > 0
+        settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted && settings.audioPlayerVolume > 0
     }
 
     private func handleClientStatus(_ message: String) {
@@ -2185,8 +2194,13 @@ final class AppState: ObservableObject {
         }
     }
 
-    func refreshAvailableMicrophones() {
+    func refreshAvailableAudioDevices() {
         availableMicrophones = AudioDeviceManager.getInputDevices()
+        availableAudioOutputs = AudioDeviceManager.getOutputDevices()
+    }
+
+    func refreshAvailableMicrophones() {
+        refreshAvailableAudioDevices()
     }
 
     private func startListeningForDeviceChanges() {
