@@ -1087,12 +1087,27 @@ final class AppState: ObservableObject {
         if event.isRecoverable {
             scheduleReconnect(after: event)
         } else {
-            updateStatus(
-                settings.interfaceLanguage.localized(.connectionProviderError, arguments: [event.statusMessage]),
-                level: .error,
-                log: true
-            )
+            updateStatus(localizedConnectionEventStatus(event), level: .error, log: true)
             scheduleStopRuntimeAfterConnectionFailure()
+        }
+    }
+
+    private func localizedConnectionEventStatus(_ event: LiveConnectionEvent) -> String {
+        switch event {
+        case .socketOpened:
+            return settings.interfaceLanguage.localized(.connectionSocketOpened)
+        case .sessionReady:
+            return settings.interfaceLanguage.localized(.connectionSessionReady)
+        case .disconnected(let message):
+            return settings.interfaceLanguage.localized(.connectionDisconnected, arguments: [message])
+        case .socketClosed(let message):
+            return settings.interfaceLanguage.localized(.connectionSocketClosed, arguments: [message])
+        case .sendFailed(let message):
+            return settings.interfaceLanguage.localized(.connectionSendFailed, arguments: [message])
+        case .serverError(let message):
+            return settings.interfaceLanguage.localized(.connectionServerError, arguments: [message])
+        case .parseFailed(let message):
+            return settings.interfaceLanguage.localized(.connectionParseFailed, arguments: [message])
         }
     }
 
@@ -1116,7 +1131,7 @@ final class AppState: ObservableObject {
             arguments: reconnectingArguments(attempt: reconnectAttempts, maxAttempts: connectionRecoveryPolicy.maxAttempts, delay: delay)
         )
         updateStatus(message, level: .connecting, log: true)
-        appendLog(event.statusMessage, level: .error)
+        appendLog(localizedConnectionEventStatus(event), level: .error)
 
         let oldClient = client
         resetAudioSendPipeline()
@@ -1832,7 +1847,7 @@ final class AppState: ObservableObject {
     private func handleClientStatus(_ message: String) {
         let lowered = message.lowercased()
         if lowered.contains("error") || lowered.contains("failed") || lowered.contains("closed") || lowered.contains("disconnected") {
-            updateStatus(message, level: .error, log: true)
+            return
         } else if lowered.contains("socket opened") {
             updateLocalizedStatus(.statusConnecting, level: .connecting, log: false)
         } else if lowered.contains("ready") || lowered.contains("listening") {

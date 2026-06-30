@@ -333,7 +333,12 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
 
     private func report(_ event: LiveConnectionEvent) {
         guard !isClosed else { return }
-        onStatus?(event.statusMessage)
+        switch event {
+        case .socketOpened, .sessionReady:
+            onStatus?(event.statusMessage)
+        case .disconnected, .socketClosed, .sendFailed, .serverError, .parseFailed:
+            break
+        }
         onConnectionEvent?(event)
     }
 
