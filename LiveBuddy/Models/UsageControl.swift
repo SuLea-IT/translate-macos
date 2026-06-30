@@ -290,6 +290,9 @@ struct UsageControlEngine {
     }
 
     private mutating func appendPaused(_ chunk: BufferedAudioChunk) {
+        if prerollBuffer.last == chunk {
+            prerollBuffer.removeLast()
+        }
         pausedBuffer.append(chunk)
         trim(&pausedBuffer, toDuration: settings.resumeBufferLimitSeconds, overflowFlag: &didOverflowPausedBuffer)
     }

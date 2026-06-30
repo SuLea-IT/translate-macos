@@ -96,6 +96,27 @@ struct UsageControlTests {
         #expect(engine.snapshot.runtimeState == .resuming)
     }
 
+    @Test func pauseTriggeringChunkIsNotDuplicatedInReplayBuffer() {
+        var settings = LiveUsageSettings()
+        settings.idlePauseDelaySeconds = 3
+        settings.prerollSeconds = 3
+        settings.resumeBufferLimitSeconds = 15
+        let start = Date(timeIntervalSince1970: 5_250)
+        var engine = UsageControlEngine(settings: settings, now: start, ledger: .empty(for: start))
+
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start, byte: 1), level: 0.08, now: start)
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(1), byte: 2), level: 0.08, now: start.addingTimeInterval(1))
+        _ = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(7), byte: 3), level: 0.0, now: start.addingTimeInterval(7))
+
+        let resume = engine.ingest(chunk: chunk(seconds: 1, at: start.addingTimeInterval(8), byte: 4), level: 0.08, now: start.addingTimeInterval(8))
+
+        let replayTimes = resume.replayChunks.map(\.capturedAt)
+
+        #expect(resume.shouldResume)
+        #expect(Set(replayTimes).count == replayTimes.count)
+        #expect(replayTimes.contains(start.addingTimeInterval(7)))
+    }
+
     @Test func pausedBufferOverflowIsReflectedInSnapshot() {
         var settings = LiveUsageSettings()
         settings.idlePauseDelaySeconds = 5
