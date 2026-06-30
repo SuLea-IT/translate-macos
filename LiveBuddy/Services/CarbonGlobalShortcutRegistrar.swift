@@ -24,7 +24,7 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
             }
         }
 
-        return shortcuts.map { shortcut in
+        let results = shortcuts.map { shortcut in
             var hotKeyRef: EventHotKeyRef?
             let hotKeyID = EventHotKeyID(signature: signature, id: shortcut.action.rawValue)
             let status = RegisterEventHotKey(
@@ -41,6 +41,12 @@ final class CarbonGlobalShortcutRegistrar: GlobalShortcutRegistering {
             }
             return GlobalShortcutRegistrationResult(shortcut: shortcut, status: .failed(Int32(status)))
         }
+
+        if !results.contains(where: { $0.status == .registered }) {
+            unregisterAll()
+        }
+
+        return results
     }
 
     func unregisterAll() {
