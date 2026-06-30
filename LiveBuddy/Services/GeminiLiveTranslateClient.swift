@@ -290,6 +290,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func handle(_ root: [String: Any]) {
+        guard !isClosed else { return }
         if let error = root["error"] as? [String: Any],
            let message = error["message"] as? String {
             report(.serverError(message))
@@ -331,6 +332,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func reportReceiveStatusIfNeeded() {
+        guard !isClosed else { return }
         let now = Date()
         guard now.timeIntervalSince(lastReceiveStatusAt) >= 1 else { return }
         lastReceiveStatusAt = now
