@@ -1886,7 +1886,7 @@ final class AppState: ObservableObject {
     private func refreshStatusMessageLanguageIfNeeded(oldValue: AppSettings) {
         guard oldValue.interfaceLanguage != settings.interfaceLanguage else { return }
         guard let localizedStatusKey else { return }
-        if isRunning, statusLevel == .running || statusLevel == .connecting {
+        if isRunning && (statusLevel == .running || statusLevel == .connecting) {
             statusMessage = runningUsageStatusMessage()
         } else {
             statusMessage = localizedStatus(localizedStatusKey)
