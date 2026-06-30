@@ -11,11 +11,12 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     private var webSocket: URLSessionWebSocketTask?
     private var openContinuation: CheckedContinuation<Void, Error>?
     private var isOpen = false
+    private var isClosed = false
     private var receivedAudioChunks = 0
     private var lastReceiveStatusAt = Date.distantPast
     private let socketOpenTimeout: TimeInterval
     private let setupMessageTimeout: TimeInterval
-    private lazy var session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+    private var session: URLSession?
 
     init(settings: AppSettings, socketOpenTimeout: TimeInterval = 8, setupMessageTimeout: TimeInterval = 8) {
         self.settings = settings
@@ -23,16 +24,21 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         self.setupMessageTimeout = setupMessageTimeout
     }
 
+    deinit {
+        close()
+    }
+
     func connect() async throws {
         try await withTaskCancellationHandler {
             try Task.checkCancellation()
+            isClosed = false
             let key = settings.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let escapedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                   let url = URL(string: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=\(escapedKey)") else {
                 throw LiveTranslateError.invalidAPIKey
             }
 
-            let task = session.webSocketTask(with: url)
+            let task = activeSession().webSocketTask(with: url)
             webSocket = task
             do {
                 try await waitForSocketOpen(task)
@@ -50,6 +56,15 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
                 self?.close()
             }
         }
+    }
+
+    private func activeSession() -> URLSession {
+        if let session {
+            return session
+        }
+        let session = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+        self.session = session
+        return session
     }
 
     func sendAudio(_ data: Data) async {
@@ -70,12 +85,24 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func close() {
+        isClosed = true
         openContinuation?.resume(throwing: LiveTranslateError.socketClosed("Closed"))
         openContinuation = nil
         isOpen = false
         webSocket?.cancel(with: .goingAway, reason: nil)
         webSocket = nil
-        session.invalidateAndCancel()
+        let closingSession = session
+        session = nil
+        closingSession?.invalidateAndCancel()
+        clearCallbacks()
+    }
+
+    private func clearCallbacks() {
+        onInputTranscript = nil
+        onOutputTranscript = nil
+        onAudioChunk = nil
+        onStatus = nil
+        onConnectionEvent = nil
     }
 
     private func sendSetup() async throws {
@@ -135,6 +162,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        guard !isClosed else { return }
         isOpen = true
         report(.socketOpened)
         openContinuation?.resume()
@@ -147,6 +175,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
         didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
         reason: Data?
     ) {
+        guard !isClosed else { return }
         isOpen = false
         let reasonText = reason.flatMap { String(data: $0, encoding: .utf8) }
         let message = [String(describing: closeCode), reasonText]
@@ -294,6 +323,7 @@ final class GeminiLiveTranslateClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func report(_ event: LiveConnectionEvent) {
+        guard !isClosed else { return }
         onStatus?(event.statusMessage)
         onConnectionEvent?(event)
     }
