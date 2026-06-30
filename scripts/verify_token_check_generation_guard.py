@@ -25,7 +25,7 @@ else:
         "guard tokenCheckGeneration == generation, !Task.isCancelled else { return }",
         "isTokenValid = true",
         "isTokenValid = false",
-        "tokenCheckError = error.localizedDescription",
+        "tokenCheckError = localizedTokenCheckError(error)",
         "if tokenCheckGeneration == generation",
         "tokenCheckTask = nil",
     ]:
@@ -37,11 +37,12 @@ else:
     catch_idx = body.find("} catch")
     catch_guard_idx = body.find("guard tokenCheckGeneration == generation, !Task.isCancelled else { return }", catch_idx)
     failure_idx = body.find("isTokenValid = false", catch_idx)
+    error_idx = body.find("tokenCheckError = localizedTokenCheckError(error)", catch_idx)
     clear_idx = body.rfind("tokenCheckTask = nil")
     if -1 in [verify_idx, success_guard_idx, success_idx] or not (verify_idx < success_guard_idx < success_idx):
         errors.append("startTokenCheck must check generation after provider verification before marking success")
-    if -1 in [catch_idx, catch_guard_idx, failure_idx] or not (catch_idx < catch_guard_idx < failure_idx):
-        errors.append("startTokenCheck must check generation before publishing failure state")
+    if -1 in [catch_idx, catch_guard_idx, failure_idx, error_idx] or not (catch_idx < catch_guard_idx < failure_idx < error_idx):
+        errors.append("startTokenCheck must check generation before publishing localized failure state")
     if clear_idx != -1 and "tokenCheckGeneration == generation" not in body[:clear_idx + len("tokenCheckTask = nil")]:
         errors.append("startTokenCheck must not clear tokenCheckTask without checking generation")
 

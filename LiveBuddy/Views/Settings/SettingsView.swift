@@ -772,7 +772,7 @@ struct SettingsView: View {
             } catch {
                 guard tokenCheckGeneration == generation, !Task.isCancelled else { return }
                 isTokenValid = false
-                tokenCheckError = error.localizedDescription
+                tokenCheckError = localizedTokenCheckError(error)
             }
             guard tokenCheckGeneration == generation, !Task.isCancelled else { return }
             isCheckingToken = false
@@ -787,6 +787,17 @@ struct SettingsView: View {
         tokenCheckTask?.cancel()
         tokenCheckTask = nil
         isCheckingToken = false
+    }
+
+    private func localizedTokenCheckError(_ error: Error) -> String {
+        let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if message == "Verification failed" {
+            return appState.t(.verificationFailed)
+        }
+        if message == "API Key cannot be empty" {
+            return appState.t(.apiKeyMissingMessage)
+        }
+        return message.isEmpty ? appState.t(.verificationFailed) : message
     }
 
     private var glossaryImportContentTypes: [UTType] {
