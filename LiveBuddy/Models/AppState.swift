@@ -52,6 +52,7 @@ final class AppState: ObservableObject {
     @Published private(set) var transcriptSessions: [TranscriptSession] = []
     @Published private(set) var logs: [LogEntry] = []
     @Published var showSetupSheet = false
+    @Published private(set) var providerSettingsFocusRequest: UUID?
     @Published private(set) var availableMicrophones: [AudioDevice] = []
     @Published private(set) var audioLevel: Float = 0.0
     @Published private(set) var setupChecklist: SetupChecklistState = .initial
@@ -431,7 +432,7 @@ final class AppState: ObservableObject {
     func performDiagnosticRecoveryAction(_ action: DiagnosticRecoveryAction) {
         switch action {
         case .openProviderSettings:
-            openSettingsWindow()
+            openProviderSettings()
         case .openMicrophoneSettings:
             openMicrophoneSettings()
         case .openScreenRecordingSettings:
@@ -890,6 +891,15 @@ final class AppState: ObservableObject {
             captionDraft = previousDraft
         }
         temporaryTestCaptionPreviousDraft = nil
+    }
+
+    func clearProviderSettingsFocusRequest() {
+        providerSettingsFocusRequest = nil
+    }
+
+    func openProviderSettings() {
+        providerSettingsFocusRequest = UUID()
+        openSettingsWindow()
     }
 
     func openMicrophoneSettings() {

@@ -147,10 +147,22 @@ struct SettingsView: View {
         .sheet(isPresented: $appState.showSetupSheet) {
             ProviderSetupSheet()
         }
+        .onAppear {
+            applyProviderSettingsFocusRequest()
+        }
+        .onChange(of: appState.providerSettingsFocusRequest) { _, _ in
+            applyProviderSettingsFocusRequest()
+        }
         .onDisappear {
             cancelTokenCheck()
             recordingShortcutAction = nil
         }
+    }
+
+    private func applyProviderSettingsFocusRequest() {
+        guard appState.providerSettingsFocusRequest != nil else { return }
+        selectedItem = .provider
+        appState.clearProviderSettingsFocusRequest()
     }
 
     private var canUseRuntimeToolbarButton: Bool {
