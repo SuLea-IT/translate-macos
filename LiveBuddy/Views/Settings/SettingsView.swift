@@ -892,6 +892,9 @@ struct SettingsView: View {
             guard let url = urls.first else { return }
             appState.startGlossaryImportFromLocalFile(url: url, sourceName: url.lastPathComponent, importLimit: glossaryImportLimit)
         case .failure(let error):
+            if isUserCancelledFileDialog(error) {
+                return
+            }
             glossaryImportInputMessage = error.localizedDescription
         }
     }
