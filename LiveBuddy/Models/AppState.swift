@@ -99,6 +99,7 @@ final class AppState: ObservableObject {
     private var apiKeySaveTask: Task<Void, Never>?
     private var settingsSaveTask: Task<Void, Never>?
     private var preflightTestTask: Task<Void, Never>?
+    private var preflightTestGeneration = UUID()
     private var temporaryTestCaptionTask: Task<Void, Never>?
     private var temporaryTestCaptionPreviousDraft: String?
     private var glossaryImportTask: Task<Void, Never>?
@@ -706,7 +707,8 @@ final class AppState: ObservableObject {
         return SetupPreflightResult.from(checklist)
     }
 
-    func runPreflightTest() async {
+    func runPreflightTest(generation: UUID) async {
+        guard preflightTestGeneration == generation else { return }
         guard !isRunning else {
             preflightTestReport = PreflightTestReport(steps: [
                 PreflightTestStep(id: .apiKey, state: .failed, message: "Stop translation before running diagnostics")
@@ -715,25 +717,34 @@ final class AppState: ObservableObject {
         }
         guard !isRunningPreflightTest else { return }
         isRunningPreflightTest = true
-        defer { isRunningPreflightTest = false }
+        defer {
+            if preflightTestGeneration == generation {
+                isRunningPreflightTest = false
+            }
+        }
 
         let runner = PreflightTestRunner.live(settings: settings) { [weak self] in
             await self?.showTemporaryTestCaption()
         }
         _ = await runner.run(settings: settings) { [weak self] report in
             guard !Task.isCancelled else { return }
+            guard self?.preflightTestGeneration == generation else { return }
             self?.preflightTestReport = report
         }
         guard !Task.isCancelled else { return }
+        guard preflightTestGeneration == generation else { return }
         refreshSetupChecklist()
     }
 
     func startPreflightTest() {
         guard preflightTestTask == nil else { return }
+        let generation = UUID()
+        preflightTestGeneration = generation
         preflightTestTask = Task { @MainActor [weak self] in
-            await self?.runPreflightTest()
-            guard !Task.isCancelled else { return }
-            self?.preflightTestTask = nil
+            await self?.runPreflightTest(generation: generation)
+            if self?.preflightTestGeneration == generation {
+                self?.preflightTestTask = nil
+            }
         }
     }
 
@@ -756,6 +767,7 @@ final class AppState: ObservableObject {
     }
 
     private func cancelPreflightTest() {
+        preflightTestGeneration = UUID()
         preflightTestTask?.cancel()
         preflightTestTask = nil
         temporaryTestCaptionTask?.cancel()

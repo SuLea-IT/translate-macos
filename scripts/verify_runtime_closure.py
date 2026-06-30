@@ -421,6 +421,7 @@ if "appState?.requestStop()" not in caption_panel_text or "await appState?.stop(
 
 for token in [
     "private var preflightTestTask: Task<Void, Never>?",
+    "private var preflightTestGeneration = UUID()",
     "private var temporaryTestCaptionTask: Task<Void, Never>?",
     "func startPreflightTest()",
 ]:
@@ -438,9 +439,9 @@ if not start_preflight_match:
     errors.append("AppState.startPreflightTest() not found")
 else:
     body = start_preflight_match.group("body")
-    for token in ["guard preflightTestTask == nil", "preflightTestTask = Task", "await self?.runPreflightTest()", "preflightTestTask = nil"]:
+    for token in ["guard preflightTestTask == nil", "let generation = UUID()", "preflightTestGeneration = generation", "preflightTestTask = Task", "await self?.runPreflightTest(generation: generation)", "preflightTestTask = nil"]:
         if token not in body:
-            errors.append(f"AppState.startPreflightTest() must manage preflight lifecycle through {token}")
+            errors.append(f"AppState.startPreflightTest() must manage generation-scoped preflight lifecycle through {token}")
 
 start_cleanup_match = re.search(r"func start\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not start_cleanup_match:
@@ -455,19 +456,19 @@ if "private func cancelPreflightTest()" not in app_state_text:
 else:
     cancel_match = re.search(r"private func cancelPreflightTest\(\) \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
     body = cancel_match.group("body") if cancel_match else ""
-    for token in ["preflightTestTask?.cancel()", "preflightTestTask = nil", "temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = nil", "isRunningPreflightTest = false"]:
+    for token in ["preflightTestGeneration = UUID()", "preflightTestTask?.cancel()", "preflightTestTask = nil", "temporaryTestCaptionTask?.cancel()", "temporaryTestCaptionTask = nil", "isRunningPreflightTest = false"]:
         if token not in body:
             errors.append(f"AppState.cancelPreflightTest() must release preflight resource through {token}")
 
 
-run_preflight_match = re.search(r"func runPreflightTest\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
+run_preflight_match = re.search(r"func runPreflightTest\(generation: UUID\) async \{(?P<body>[\s\S]*?)\n    \}\n\n    func startPreflightTest", app_state_text)
 if not run_preflight_match:
-    errors.append("AppState.runPreflightTest() not found")
+    errors.append("AppState.runPreflightTest(generation:) not found")
 else:
     body = run_preflight_match.group("body")
-    for token in ["guard !Task.isCancelled else { return }", "self?.preflightTestReport = report"]:
+    for token in ["guard !Task.isCancelled else { return }", "guard self?.preflightTestGeneration == generation else { return }", "self?.preflightTestReport = report", "if preflightTestGeneration == generation", "isRunningPreflightTest = false"]:
         if token not in body:
-            errors.append(f"AppState.runPreflightTest() must ignore cancelled preflight updates through {token}")
+            errors.append(f"AppState.runPreflightTest(generation:) must ignore cancelled or stale preflight updates through {token}")
 
 show_caption_match = re.search(r"func showTemporaryTestCaption\(\) async \{(?P<body>[\s\S]*?)\n    \}", app_state_text)
 if not show_caption_match:
