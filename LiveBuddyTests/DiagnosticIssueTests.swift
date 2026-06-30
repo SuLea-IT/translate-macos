@@ -10,6 +10,24 @@ struct DiagnosticIssueTests {
         #expect(issue?.action == .openProviderSettings)
     }
 
+    @Test func providerInvalidStatusFallsBackToAPIKeyDiagnostic() {
+        let issue = DiagnosticClassifier.from(providerStatus: .invalid(message: "Provider rejected the credential.", checkedAt: Date()))
+
+        #expect(issue?.code == .apiKeyInvalid)
+        #expect(issue?.kind == .provider)
+        #expect(issue?.action == .openProviderSettings)
+        #expect(issue?.underlyingMessage == "Provider rejected the credential.")
+    }
+
+    @Test func providerFailedStatusFallsBackToProviderDiagnostic() {
+        let issue = DiagnosticClassifier.from(providerStatus: .failed(message: "Unexpected upstream failure.", checkedAt: Date()))
+
+        #expect(issue?.code == .providerServerError)
+        #expect(issue?.kind == .provider)
+        #expect(issue?.action == .retry)
+        #expect(issue?.underlyingMessage == "Unexpected upstream failure.")
+    }
+
     @Test func classifiesQuotaAndBillingMessages() {
         let issue = DiagnosticClassifier.from(connectionEvent: .serverError("Quota exceeded. Please enable billing."))
 

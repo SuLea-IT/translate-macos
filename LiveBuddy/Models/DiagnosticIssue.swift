@@ -79,8 +79,10 @@ struct DiagnosticClassifier {
         switch providerStatus {
         case .missing:
             return issue(.apiKeyMissing, kind: .provider, title: .diagnosticAPIKeyMissingTitle, message: .diagnosticAPIKeyMissingMessage, recovery: .diagnosticOpenProviderRecovery, action: .openProviderSettings)
-        case .invalid(let message, _), .failed(let message, _):
-            return classify(message: message, context: .providerCheck)
+        case .invalid(let message, _):
+            return classify(message: message, context: .providerCheck, fallbackCode: .apiKeyInvalid)
+        case .failed(let message, _):
+            return classify(message: message, context: .providerCheck, fallbackCode: .providerServerError)
         case .unchecked, .checking, .valid:
             return nil
         }
@@ -146,6 +148,8 @@ struct DiagnosticClassifier {
         }
         if let fallbackCode {
             switch fallbackCode {
+            case .apiKeyInvalid:
+                return issue(.apiKeyInvalid, kind: .provider, title: .diagnosticAPIKeyInvalidTitle, message: .diagnosticAPIKeyInvalidMessage, recovery: .diagnosticOpenProviderRecovery, underlying: message, action: .openProviderSettings)
             case .connectionLost:
                 return issue(.connectionLost, kind: .network, title: .diagnosticConnectionLostTitle, message: .diagnosticConnectionLostMessage, recovery: .diagnosticRetryRecovery, underlying: message, action: .retry)
             case .providerServerError:
