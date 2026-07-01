@@ -113,6 +113,17 @@ struct CaptionView: View {
             Color.white.opacity(0.2)
                 .frame(width: 1, height: 12)
 
+            Picker(appState.t(.audioPlaybackMode), selection: appState.binding(\.audioPlaybackMode)) {
+                ForEach(AudioPlaybackMode.allCases) { mode in
+                    Text(mode.localizedTitle(language: appState.settings.interfaceLanguage)).tag(mode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .controlSize(.small)
+            .frame(width: 128)
+            .help(appState.t(.audioPlaybackMode))
+
             Button {
                 appState.updateSetting(\.audioPlayerMuted, to: !appState.settings.audioPlayerMuted)
             } label: {
