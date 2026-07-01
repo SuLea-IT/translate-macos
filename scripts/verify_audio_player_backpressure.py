@@ -39,7 +39,8 @@ if not enqueue_match:
 else:
     body = enqueue_match.group("body")
     for token in [
-        "guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else { return }",
+        "guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else {",
+        "notifyPlaybackDrop(.backlogLimit(maxPendingPlaybackBuffers))",
         "pendingPlaybackBuffers += 1",
         "let generation = playbackGeneration",
         "player.scheduleBuffer(buffer, completionHandler:",
@@ -48,7 +49,7 @@ else:
     ]:
         if token not in body:
             errors.append(f"PCM16AudioPlayer.enqueue must apply playback backpressure through {token}")
-    guard_idx = body.find("guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else { return }")
+    guard_idx = body.find("guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else {")
     increment_idx = body.find("pendingPlaybackBuffers += 1")
     schedule_idx = body.find("player.scheduleBuffer(buffer")
     if min(guard_idx, increment_idx, schedule_idx) != -1 and not (guard_idx < increment_idx < schedule_idx):

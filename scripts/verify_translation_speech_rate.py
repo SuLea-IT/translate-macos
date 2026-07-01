@@ -18,7 +18,7 @@ language = read("LiveBuddy/Models/InterfaceLanguage.swift")
 
 for token in [
     "static let translationSpeechRateRange: ClosedRange<Double> = 1.0...1.6",
-    "static let defaultTranslationSpeechRate = 1.15",
+    "static let defaultTranslationSpeechRate = 1.0",
     "var translationSpeechRate: Double = Self.defaultTranslationSpeechRate",
     "case translationSpeechRate",
     "translationSpeechRate = Self.clampedTranslationSpeechRate(try container.decodeIfPresent(Double.self, forKey: .translationSpeechRate) ?? defaults.translationSpeechRate)",

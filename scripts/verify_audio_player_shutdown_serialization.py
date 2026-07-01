@@ -69,8 +69,13 @@ for method_name, pattern in [
     match = re.search(pattern, text)
     if not match:
         errors.append(f"PCM16AudioPlayer.{method_name} not found")
-    elif "guard !isShuttingDown else { return }" not in match.group("body"):
-        errors.append(f"PCM16AudioPlayer.{method_name} must ignore queued work after teardown starts")
+    else:
+        body = match.group("body")
+        if method_name == "enqueue":
+            if "guard !isShuttingDown else {" not in body or "notifyPlaybackDrop(.playerShuttingDown)" not in body:
+                errors.append(f"PCM16AudioPlayer.{method_name} must ignore queued work after teardown starts")
+        elif "guard !isShuttingDown else { return }" not in body:
+            errors.append(f"PCM16AudioPlayer.{method_name} must ignore queued work after teardown starts")
 
 if errors:
     print("Audio player shutdown serialization verification failed:", file=sys.stderr)

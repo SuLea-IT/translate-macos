@@ -17,12 +17,13 @@ if not make_match:
 else:
     body = make_match.group("body")
     for token in [
-        "guard self.isTranslatedAudioOutputEnabled else { return }",
+        "guard self.isTranslatedAudioOutputEnabled else {",
+        "handleTranslatedAudioPlaybackDrop(settings.interfaceLanguage.localized(.translatedAudioDropOutputDisabled))",
         "audioPlayer.playPCM16(data, sampleRate: 24_000)",
     ]:
         if token not in body:
             errors.append(f"onAudioChunk must drop translated audio while muted/zero-volume through {token}")
-    guard_idx = body.find("guard self.isTranslatedAudioOutputEnabled else { return }")
+    guard_idx = body.find("guard self.isTranslatedAudioOutputEnabled else {")
     play_idx = body.find("audioPlayer.playPCM16(data, sampleRate: 24_000)")
     if -1 in [guard_idx, play_idx] or guard_idx > play_idx:
         errors.append("onAudioChunk must check translated audio output before enqueueing playback")

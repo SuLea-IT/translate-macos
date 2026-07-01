@@ -10,6 +10,8 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case transcripts
     case logs
     case logAppReady
+    case translatedAudioPlaybackDropped
+    case translatedAudioDropOutputDisabled
     case backToTranscriptsList
     case stop
     case start
@@ -366,6 +368,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .transcripts: "Transcripts",
         .logs: "Logs",
         .logAppReady: "App ready",
+        .translatedAudioPlaybackDropped: "Translated audio playback skipped: %@ (total %d).",
+        .translatedAudioDropOutputDisabled: "translated audio output is disabled",
         .backToTranscriptsList: "Back to transcripts list",
         .stop: "Stop",
         .start: "Start",
@@ -691,6 +695,8 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .transcripts: "转录记录",
             .logs: "日志",
             .logAppReady: "应用已就绪",
+            .translatedAudioPlaybackDropped: "翻译语音已跳过：%@（累计 %d 次）。",
+            .translatedAudioDropOutputDisabled: "翻译语音输出已关闭",
             .backToTranscriptsList: "返回转录列表",
             .stop: "停止",
             .start: "开始",

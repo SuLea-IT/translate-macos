@@ -146,6 +146,8 @@ final class AppState: ObservableObject {
     private var audioSendGeneration = UUID()
     private var audioCaptureGeneration = UUID()
     private var lastAudioSendBackpressureLogAt = Date.distantPast
+    private var lastTranslatedAudioDropLogAt = Date.distantPast
+    private var translatedAudioDropCount = 0
     private var reconnectAttempts = 0
     private var userInitiatedStop = false
     private var currentSessionID: UUID?
@@ -209,6 +211,7 @@ final class AppState: ObservableObject {
         usageSnapshot = usageEngine.snapshot
         loadTranscriptSessions()
         appendLog(loadedSettings.interfaceLanguage.localized(.logAppReady), level: .info)
+        configureAudioPlayerDiagnostics()
         if shouldRewriteSettings {
             saveSettingsImmediately()
         }
@@ -1102,7 +1105,11 @@ final class AppState: ObservableObject {
         client.onAudioChunk = { [weak self, weak client, audioPlayer] data in
             Task { @MainActor [weak self, weak client] in
                 guard let self, let client, self.client === client else { return }
-                guard self.isTranslatedAudioOutputEnabled else { return }
+                guard self.isTranslatedAudioOutputEnabled else {
+                    let settings = self.settings
+                    self.handleTranslatedAudioPlaybackDrop(settings.interfaceLanguage.localized(.translatedAudioDropOutputDisabled))
+                    return
+                }
                 audioPlayer.playPCM16(data, sampleRate: 24_000)
             }
         }
@@ -1975,6 +1982,23 @@ final class AppState: ObservableObject {
 
     private var isTranslatedAudioOutputEnabled: Bool {
         settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted && settings.audioPlayerVolume > 0
+    }
+
+    private func configureAudioPlayerDiagnostics() {
+        audioPlayer.setPlaybackDropHandler { [weak self] (reason: PCM16AudioPlaybackDropReason) in
+            Task { @MainActor [weak self] in
+                self?.handleTranslatedAudioPlaybackDrop(reason.description)
+            }
+        }
+    }
+
+    private func handleTranslatedAudioPlaybackDrop(_ reason: String) {
+        translatedAudioDropCount += 1
+        let now = Date()
+        guard now.timeIntervalSince(lastTranslatedAudioDropLogAt) >= 5 else { return }
+        lastTranslatedAudioDropLogAt = now
+        let message = settings.interfaceLanguage.localized(.translatedAudioPlaybackDropped, arguments: [reason, translatedAudioDropCount])
+        appendLog(message, level: .info)
     }
 
     private func handleClientStatus(_ message: String) {

@@ -236,7 +236,7 @@ import SwiftUI
 
 struct AppSettings: Codable, Equatable {
     static let translationSpeechRateRange: ClosedRange<Double> = 1.0...1.6
-    static let defaultTranslationSpeechRate = 1.15
+    static let defaultTranslationSpeechRate = 1.0
 
     var activeProvider: AIProvider = .gemini
     var apiKey = ""
