@@ -124,6 +124,20 @@ struct CaptionView: View {
             .frame(width: 128)
             .help(appState.t(.audioPlaybackMode))
 
+            Image(systemName: "speedometer")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.72))
+
+            Slider(value: appState.binding(\.translationSpeechRate), in: AppSettings.translationSpeechRateRange, step: 0.05)
+                .controlSize(.small)
+                .frame(width: 58)
+                .help(appState.t(.translationSpeechRate))
+
+            Text(appState.formattedTranslationSpeechRate)
+                .font(.caption2.monospacedDigit().weight(.semibold))
+                .foregroundStyle(.white.opacity(0.72))
+                .frame(width: 36, alignment: .trailing)
+
             Button {
                 appState.updateSetting(\.audioPlayerMuted, to: !appState.settings.audioPlayerMuted)
             } label: {

@@ -235,6 +235,9 @@ struct SubtitleColor: Codable, Equatable, Hashable {
 import SwiftUI
 
 struct AppSettings: Codable, Equatable {
+    static let translationSpeechRateRange: ClosedRange<Double> = 1.0...1.6
+    static let defaultTranslationSpeechRate = 1.15
+
     var activeProvider: AIProvider = .gemini
     var apiKey = ""
     var interfaceLanguage: InterfaceLanguage = .english
@@ -260,6 +263,7 @@ struct AppSettings: Codable, Equatable {
     var audioPlayerMuted: Bool = false
     var audioPlaybackMode: AudioPlaybackMode = .mediaAndTranslation
     var translationAudioOutputDeviceUID: String? = nil
+    var translationSpeechRate: Double = Self.defaultTranslationSpeechRate
 
     // Subtitle styling
     var subtitleFontSize: Double = 28
@@ -292,6 +296,7 @@ struct AppSettings: Codable, Equatable {
         case audioPlayerMuted
         case audioPlaybackMode
         case translationAudioOutputDeviceUID
+        case translationSpeechRate
         case subtitleFontSize
         case subtitleFontName
         case subtitleIsBold
@@ -324,6 +329,7 @@ struct AppSettings: Codable, Equatable {
         audioPlayerMuted = try container.decodeIfPresent(Bool.self, forKey: .audioPlayerMuted) ?? defaults.audioPlayerMuted
         audioPlaybackMode = try container.decodeIfPresent(AudioPlaybackMode.self, forKey: .audioPlaybackMode) ?? defaults.audioPlaybackMode
         translationAudioOutputDeviceUID = try container.decodeIfPresent(String.self, forKey: .translationAudioOutputDeviceUID)
+        translationSpeechRate = Self.clampedTranslationSpeechRate(try container.decodeIfPresent(Double.self, forKey: .translationSpeechRate) ?? defaults.translationSpeechRate)
         subtitleFontSize = try container.decodeIfPresent(Double.self, forKey: .subtitleFontSize) ?? defaults.subtitleFontSize
         subtitleFontName = try container.decodeIfPresent(SubtitleFontName.self, forKey: .subtitleFontName) ?? defaults.subtitleFontName
         subtitleIsBold = try container.decodeIfPresent(Bool.self, forKey: .subtitleIsBold) ?? defaults.subtitleIsBold
@@ -353,6 +359,7 @@ struct AppSettings: Codable, Equatable {
         try container.encode(audioPlayerMuted, forKey: .audioPlayerMuted)
         try container.encode(audioPlaybackMode, forKey: .audioPlaybackMode)
         try container.encodeIfPresent(translationAudioOutputDeviceUID, forKey: .translationAudioOutputDeviceUID)
+        try container.encode(translationSpeechRate, forKey: .translationSpeechRate)
         try container.encode(subtitleFontSize, forKey: .subtitleFontSize)
         try container.encode(subtitleFontName, forKey: .subtitleFontName)
         try container.encode(subtitleIsBold, forKey: .subtitleIsBold)
@@ -367,6 +374,10 @@ struct AppSettings: Codable, Equatable {
         current.apiKey = ""
         comparison.apiKey = ""
         return current != comparison
+    }
+
+    static func clampedTranslationSpeechRate(_ rate: Double) -> Double {
+        min(max(rate, translationSpeechRateRange.lowerBound), translationSpeechRateRange.upperBound)
     }
 
     func requiresSessionRestart(comparedTo other: AppSettings) -> Bool {

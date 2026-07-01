@@ -96,6 +96,10 @@ final class AppState: ObservableObject {
             !AudioDeviceManager.hasBlackHoleDevice(in: availableMicrophones + availableAudioOutputs)
     }
 
+    var formattedTranslationSpeechRate: String {
+        String(format: "%.2fx", settings.translationSpeechRate)
+    }
+
 
     private let settingsURL: URL
     private let transcriptsURL: URL
@@ -1952,13 +1956,15 @@ final class AppState: ObservableObject {
             oldValue.audioPlayerVolume != settings.audioPlayerVolume ||
             oldValue.audioPlayerMuted != settings.audioPlayerMuted ||
             oldValue.audioPlaybackMode != settings.audioPlaybackMode ||
-            oldValue.translationAudioOutputDeviceUID != settings.translationAudioOutputDeviceUID
+            oldValue.translationAudioOutputDeviceUID != settings.translationAudioOutputDeviceUID ||
+            oldValue.translationSpeechRate != settings.translationSpeechRate
         guard audioOutputChanged else { return }
         updateAudioPlayerVolume()
     }
 
     private func updateAudioPlayerVolume() {
         audioPlayer.setOutputDeviceUID(settings.translationAudioOutputDeviceUID)
+        audioPlayer.setPlaybackRate(Float(settings.translationSpeechRate))
         let volume = settings.audioPlaybackMode.allowsTranslatedAudio && !settings.audioPlayerMuted ? settings.audioPlayerVolume : 0.0
         if volume <= 0 {
             audioPlayer.stop()

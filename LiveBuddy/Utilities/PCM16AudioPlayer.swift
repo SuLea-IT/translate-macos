@@ -15,6 +15,7 @@ final class PCM16AudioPlayer: @unchecked Sendable {
     private static let playbackQueueValue = true
     nonisolated(unsafe) private let engine = AVAudioEngine()
     nonisolated(unsafe) private let player = AVAudioPlayerNode()
+    nonisolated(unsafe) private let timePitch = AVAudioUnitTimePitch()
     private let queue = DispatchQueue(label: "livebuddy.audio.playback")
     private let maxPendingPlaybackBuffers = 120
     nonisolated(unsafe) private var isPrepared = false
@@ -24,6 +25,7 @@ final class PCM16AudioPlayer: @unchecked Sendable {
     nonisolated(unsafe) private var playbackGeneration = UUID()
     nonisolated(unsafe) private var selectedOutputDeviceUID: String?
     nonisolated(unsafe) private var appliedOutputDeviceUID: String?
+    nonisolated(unsafe) private var playbackRate: Float = Float(AppSettings.defaultTranslationSpeechRate)
 
     init() {
         queue.setSpecific(key: Self.playbackQueueKey, value: Self.playbackQueueValue)
@@ -73,6 +75,19 @@ final class PCM16AudioPlayer: @unchecked Sendable {
         }
     }
 
+    nonisolated func setPlaybackRate(_ rate: Float) {
+        let clampedRate = min(
+            max(rate, Float(AppSettings.translationSpeechRateRange.lowerBound)),
+            Float(AppSettings.translationSpeechRateRange.upperBound)
+        )
+        queue.async { [weak self] in
+            guard let self else { return }
+            guard !isShuttingDown else { return }
+            self.playbackRate = clampedRate
+            self.timePitch.rate = playbackRate
+        }
+    }
+
     private nonisolated func enqueue(_ data: Data, sampleRate: Double) {
         guard !isShuttingDown else { return }
         guard pendingPlaybackBuffers < maxPendingPlaybackBuffers else { return }
@@ -119,6 +134,7 @@ final class PCM16AudioPlayer: @unchecked Sendable {
         isShuttingDown = true
         stopOnPlaybackQueue()
         if isAttached {
+            engine.detach(timePitch)
             engine.detach(player)
             isAttached = false
         }
@@ -136,11 +152,15 @@ final class PCM16AudioPlayer: @unchecked Sendable {
         guard !isPrepared else { return }
         if !isAttached {
             engine.attach(player)
+            engine.attach(timePitch)
             isAttached = true
         }
         guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false) else { return }
+        timePitch.rate = playbackRate
         engine.disconnectNodeOutput(player)
-        engine.connect(player, to: engine.mainMixerNode, format: format)
+        engine.disconnectNodeOutput(timePitch)
+        engine.connect(player, to: timePitch, format: format)
+        engine.connect(timePitch, to: engine.mainMixerNode, format: format)
         try applyOutputDeviceIfNeeded()
         try engine.start()
         isPrepared = true

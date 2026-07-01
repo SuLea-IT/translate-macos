@@ -384,6 +384,16 @@ struct SettingsView: View {
                         .monospacedDigit()
                         .frame(width: 42, alignment: .trailing)
                 }
+
+                HStack {
+                    Text(appState.t(.translationSpeechRate))
+                    Spacer()
+                    Slider(value: appState.binding(\.translationSpeechRate), in: AppSettings.translationSpeechRateRange, step: 0.05)
+                        .frame(width: 120)
+                    Text(appState.formattedTranslationSpeechRate)
+                        .monospacedDigit()
+                        .frame(width: 48, alignment: .trailing)
+                }
             }
             .onAppear {
                 appState.refreshAvailableAudioDevices()

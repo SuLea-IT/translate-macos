@@ -193,6 +193,7 @@ enum InterfaceText: String, CaseIterable, Codable, Hashable {
     case translateTo
     case echoTargetLanguage
     case translationVolume
+    case translationSpeechRate
     case usageControl
     case thisSessionTranslatedTime
     case todayTranslatedTime
@@ -548,6 +549,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
         .translateTo: "Translate to",
         .echoTargetLanguage: "Echo target language",
         .translationVolume: "Translated voice volume",
+        .translationSpeechRate: "Translated voice speed",
         .usageControl: "Usage Control",
         .thisSessionTranslatedTime: "This session translated time",
         .todayTranslatedTime: "Today translated time",
@@ -871,6 +873,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable, Hashable {
             .translateTo: "翻译为",
             .echoTargetLanguage: "播放目标语言",
             .translationVolume: "翻译后语音音量",
+            .translationSpeechRate: "翻译语音语速",
             .usageControl: "用量控制",
             .thisSessionTranslatedTime: "本次已翻译时长",
             .todayTranslatedTime: "今日已翻译时长",
